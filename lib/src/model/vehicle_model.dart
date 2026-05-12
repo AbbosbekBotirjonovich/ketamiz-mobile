@@ -1,6 +1,3 @@
-import 'dart:ui';
-import 'package:qadam/src/theme/app_theme.dart';
-
 import 'color_model.dart';
 
 class VehicleModel{

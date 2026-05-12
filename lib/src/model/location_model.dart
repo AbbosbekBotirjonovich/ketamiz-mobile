@@ -5,7 +5,8 @@ class LocationModel {
   final String text;
   final String parentID;
 
-  LocationModel({required this.id, required this.text, required this.parentID});
+  const LocationModel(
+      {required this.id, required this.text, required this.parentID});
 
   static Future<String> _getLanguage() async {
     final prefs = await SharedPreferences.getInstance();

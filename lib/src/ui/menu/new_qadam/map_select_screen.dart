@@ -6,8 +6,6 @@ import 'package:qadam/src/ui/widgets/buttons/primary_button.dart';
 import 'package:qadam/src/ui/widgets/containers/leading_back.dart';
 import 'package:qadam/src/ui/widgets/texts/text_16h_500w.dart';
 
-import '../../../theme/map_style.dart';
-
 class MapSelectScreen extends StatefulWidget {
   final String place;
   final Function(LatLng position) onSelected;
@@ -23,7 +21,6 @@ class MapSelectScreen extends StatefulWidget {
 }
 
 class _MapSelectScreenState extends State<MapSelectScreen> {
-  GoogleMapController? _controller;
   LatLng? _selectedLocation;
   LatLng _initialPosition = const LatLng(41.2995, 69.2401); // Default to Tashkent
   bool _isLoading = true;
@@ -270,9 +267,5 @@ class _MapSelectScreenState extends State<MapSelectScreen> {
     );
   }
 
-  void _onMapCreated(GoogleMapController controllerParam) {
-    setState(() {
-      _controller = controllerParam;
-    });
-  }
+  void _onMapCreated(GoogleMapController controllerParam) {}
 }

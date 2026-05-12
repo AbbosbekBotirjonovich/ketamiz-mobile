@@ -10,9 +10,11 @@ class CarContainer extends StatelessWidget {
   const CarContainer({
     super.key,
     required this.car,
+    this.onDelete,
   });
 
   final VehicleModel car;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -32,42 +34,50 @@ class CarContainer extends StatelessWidget {
                 color: AppTheme.purple, size: 24),
           ),
           SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text14h500w(title: car.vehicleName),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Text12h400w(
-                    title: "${translate("qadam.vehicle_capacity")}:  ",
-                    color: AppTheme.gray,
-                  ),
-                  Text14h400w(
-                      title:
-                          "${car.capacity} ${translate("qadam.passengers")}"),
-                ],
-              ),
-              const SizedBox(height: 2),
-              Row(
-                children: [
-                  Text12h400w(
-                    title: "${translate("profile.car_color")}:  ",
-                    color: AppTheme.gray,
-                  ),
-                  Text14h400w(title: "${car.color?.titleEn}  "),
-                  Container(
-                    width: 16,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: car.color?.colorCode,
-                      borderRadius: BorderRadius.circular(2),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text14h500w(title: car.vehicleName),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text12h400w(
+                      title: "${translate("qadam.vehicle_capacity")}:  ",
+                      color: AppTheme.gray,
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    Text14h400w(
+                        title:
+                            "${car.capacity} ${translate("qadam.passengers")}"),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Text12h400w(
+                      title: "${translate("profile.car_color")}:  ",
+                      color: AppTheme.gray,
+                    ),
+                    Text14h400w(title: "${car.color?.titleEn}  "),
+                    Container(
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: car.color?.colorCode,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
+          if (onDelete != null)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              color: AppTheme.red,
+              onPressed: onDelete,
+            ),
         ],
       ),
     );

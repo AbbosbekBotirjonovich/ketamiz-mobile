@@ -92,6 +92,32 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
     }
   }
 
+  Future<void> _deleteVehicle(int index) async {
+    final vehicle = myVehicles[index];
+    CenterDialog.showConfirmation(
+      context,
+      translate("profile.delete_vehicle"),
+      translate("profile.delete_vehicle_confirm"),
+      onConfirm: () async {
+        Navigator.pop(context);
+        setState(() => isLoading = true);
+        final response = await _repository.fetchDeleteVehicle(vehicle.id);
+        if (!mounted) return;
+        setState(() => isLoading = false);
+        if (response.isSuccess) {
+          setState(() => myVehicles.removeAt(index));
+          CustomSnackBar().showSnackBar(context, translate("profile.vehicle_deleted"), 1);
+        } else {
+          CenterDialog.showActionFailed(
+            context,
+            translate("qadam.error"),
+            translate("profile.delete_vehicle_failed"),
+          );
+        }
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -197,7 +223,10 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(16),
-                              child: CarContainer(car: myVehicles[index]),
+                              child: CarContainer(
+                                car: myVehicles[index],
+                                onDelete: () => _deleteVehicle(index),
+                              ),
                             ),
                           );
                         },

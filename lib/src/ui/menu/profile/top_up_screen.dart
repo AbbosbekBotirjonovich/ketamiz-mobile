@@ -5,7 +5,6 @@ import 'package:qadam/src/model/api/my_registered_cards_model.dart' as model;
 import 'package:qadam/src/theme/app_theme.dart';
 import 'package:qadam/src/ui/dialogs/snack_bar.dart';
 import 'package:qadam/src/ui/dialogs/verify_card_dialog.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../model/credit_card_model.dart';
 import '../../../resources/repository.dart';

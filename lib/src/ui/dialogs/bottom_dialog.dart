@@ -12,12 +12,11 @@ import '../../model/color_model.dart';
 import '../../model/passenger_model.dart';
 import '../../model/vehicle_model.dart';
 import '../../theme/app_theme.dart';
-import '../../utils/validators.dart';
 import '../widgets/picker/custom_birth_date_picker.dart';
 import '../widgets/picker/custom_date_picker.dart';
 import '../widgets/textfield/main_textfield.dart';
 
-enum PassengerStep { fullName, email, phoneNumber }
+enum PassengerStep { fullName, phoneNumber }
 
 class BottomDialog {
   static void showSelectLocation(
@@ -383,12 +382,10 @@ class BottomDialog {
     Function(PassengerModel data) onAdd,
   ) {
     TextEditingController fullNameController = TextEditingController();
-    TextEditingController emailController = TextEditingController();
     TextEditingController phoneController = TextEditingController();
 
     PassengerModel selectedPassenger = PassengerModel(
       fullName: passenger.fullName,
-      email: passenger.email,
       phoneNumber: passenger.phoneNumber,
     );
 
@@ -405,7 +402,6 @@ class BottomDialog {
       builder: (context) {
         // Initialize controllers with existing passenger data
         fullNameController.text = selectedPassenger.fullName;
-        emailController.text = selectedPassenger.email;
         phoneController.text = selectedPassenger.phoneNumber;
 
         return StatefulBuilder(
@@ -415,8 +411,6 @@ class BottomDialog {
               switch (currentStep) {
                 case PassengerStep.fullName:
                   return translate("home.write_full_name");
-                case PassengerStep.email:
-                  return translate("home.write_email");
                 case PassengerStep.phoneNumber:
                   return translate("home.write_phone_number");
               }
@@ -427,8 +421,6 @@ class BottomDialog {
               switch (currentStep) {
                 case PassengerStep.fullName:
                   return translate("home.full_name");
-                case PassengerStep.email:
-                  return translate("home.email");
                 case PassengerStep.phoneNumber:
                   return translate("home.phone_number");
               }
@@ -439,8 +431,6 @@ class BottomDialog {
               switch (currentStep) {
                 case PassengerStep.fullName:
                   return Icons.person;
-                case PassengerStep.email:
-                  return Icons.email;
                 case PassengerStep.phoneNumber:
                   return Icons.phone;
               }
@@ -451,8 +441,6 @@ class BottomDialog {
               switch (currentStep) {
                 case PassengerStep.fullName:
                   return fullNameController;
-                case PassengerStep.email:
-                  return emailController;
                 case PassengerStep.phoneNumber:
                   return phoneController;
               }
@@ -529,11 +517,6 @@ class BottomDialog {
                                       PassengerStep.phoneNumber) {
                                     phoneController.text = '';
                                     selectedPassenger.phoneNumber = '';
-                                    currentStep = PassengerStep.email;
-                                  } else if (currentStep ==
-                                      PassengerStep.email) {
-                                    emailController.text = '';
-                                    selectedPassenger.email = '';
                                     currentStep = PassengerStep.fullName;
                                   } else if (currentStep ==
                                       PassengerStep.fullName) {
@@ -572,17 +555,6 @@ class BottomDialog {
                                     setState(() {
                                       selectedPassenger.fullName =
                                           fullNameController.text;
-                                      currentStep = PassengerStep.email;
-                                    });
-                                  } else if (currentStep ==
-                                          PassengerStep.email &&
-                                      emailController.text.isNotEmpty &&
-                                      Validators.emailValidator(
-                                              emailController.text) ==
-                                          true) {
-                                    setState(() {
-                                      selectedPassenger.email =
-                                          emailController.text;
                                       currentStep = PassengerStep.phoneNumber;
                                     });
                                   } else if (currentStep ==

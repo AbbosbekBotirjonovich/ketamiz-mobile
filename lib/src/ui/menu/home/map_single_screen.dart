@@ -22,7 +22,6 @@ class MapSingleScreen extends StatefulWidget {
 }
 
 class _MapSingleScreenState extends State<MapSingleScreen> {
-  late GoogleMapController _mapController;
   final Set<Marker> _markers = {};
   bool isLoading = true;
   MapType _currentMapType = MapType.normal;
@@ -80,7 +79,6 @@ class _MapSingleScreenState extends State<MapSingleScreen> {
             mapType: _currentMapType,
             myLocationButtonEnabled: false,
             onMapCreated: (GoogleMapController controller) {
-              _mapController = controller;
               setState(() {
                 isLoading = false;
               });

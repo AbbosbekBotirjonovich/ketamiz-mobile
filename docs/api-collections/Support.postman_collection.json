@@ -1,0 +1,62 @@
+{
+  "info": {
+    "_postman_id": "9577a7bb-867f-41e0-a33f-9174cd31093d",
+    "name": "Support",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "35381670",
+    "_collection_link": "https://go.postman.co/collection/19384339-9577a7bb-867f-41e0-a33f-9174cd31093d?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Send message",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "name",
+              "value": "Ramziddin Rustamov",
+              "description": "string max 30",
+              "type": "text",
+              "uuid": "bc4d4ca7-7f29-42c0-9a86-f96d8ec6623f"
+            },
+            {
+              "key": "email",
+              "value": "rustamovvramziddin@gmai.com",
+              "description": "string max 30",
+              "type": "text",
+              "uuid": "c572e8cb-18d4-42b9-9ee6-4f2401aaa9a6"
+            },
+            {
+              "key": "message",
+              "value": "Salom sizda savol bor edi ",
+              "description": "text 250",
+              "type": "text",
+              "uuid": "86afcaab-5d23-4244-8817-cdea956ee680"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/support",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "support"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

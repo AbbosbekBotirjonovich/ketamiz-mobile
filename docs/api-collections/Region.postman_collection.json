@@ -1,0 +1,48 @@
+{
+  "info": {
+    "_postman_id": "47b836eb-c8ec-4bbd-b730-976db0d02081",
+    "name": "Region",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "35381670",
+    "_collection_link": "https://go.postman.co/collection/19384339-47b836eb-c8ec-4bbd-b730-976db0d02081?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "get all",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDAvYXBpL3YxL2F1dGgvbG9naW4iLCJpYXQiOjE3NzQ0NjE5NzMsImV4cCI6MTc4MjIzNzk3MywibmJmIjoxNzc0NDYxOTczLCJqdGkiOiJFVk1BaWhFOWRab0M0ZU1BIiwic3ViIjoiNCIsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjcifQ.4zGhktLCt6bzLE-xgpzLpWBUjWvwwJYdj399yDv38es",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/v1/regions",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "v1",
+            "regions"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

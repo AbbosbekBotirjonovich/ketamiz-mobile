@@ -1,0 +1,996 @@
+{
+  "info": {
+    "_postman_id": "0305337a-62bf-48a9-9cbb-681778dd6281",
+    "name": "HamkorBankTest WITH AUTH",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "35381670",
+    "_collection_link": "https://go.postman.co/collection/19384339-0305337a-62bf-48a9-9cbb-681778dd6281?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Card",
+      "item": [
+        {
+          "name": "card list (for example)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{qardam_base_url}}/api/v1/bank/card-list/",
+              "host": [
+                "{{qardam_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bank",
+                "card-list",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "add card",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "number",
+                  "value": "5614686500050797",
+                  "description": "5614686500050797 | 8600141864105043 ",
+                  "type": "text",
+                  "uuid": "30ea0202-35fb-46f2-87f4-111d02091d5b"
+                },
+                {
+                  "key": "expiry",
+                  "value": "2606",
+                  "description": "2606 | 0228",
+                  "type": "text",
+                  "uuid": "521ed533-f62e-43a0-8631-180ba66326a1"
+                },
+                {
+                  "key": "phone",
+                  "value": "+998777154950 ",
+                  "description": "+998777154950 ",
+                  "type": "text",
+                  "uuid": "8e86dccb-8f97-42ed-bb06-9cd4b3ce2f32"
+                },
+                {
+                  "key": "holder_name",
+                  "value": "Botirjon Shukirov",
+                  "type": "text",
+                  "uuid": "a9680b93-2d71-4a9c-986e-1eaae78d52e4"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{qardam_base_url}}/api/v1/bank/add-card",
+              "host": [
+                "{{qardam_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bank",
+                "add-card"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "delete card",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{qardam_base_url}}/api/v1/bank/delete-card/1",
+              "host": [
+                "{{qardam_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bank",
+                "delete-card",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "verify card with code",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "id",
+                  "value": "2",
+                  "type": "text",
+                  "uuid": "31e76727-bceb-4548-8a15-229a2b50cfdc"
+                },
+                {
+                  "key": "card_key",
+                  "value": "8a4c7edb-9090-4d66-990c-9e54386b840a",
+                  "type": "text",
+                  "uuid": "3c447c0f-591c-48ff-bc9e-2c35d1055455"
+                },
+                {
+                  "key": "confirm_code",
+                  "value": "123321",
+                  "description": "Payment confirmation method (SMS/NONE)\nIf confirm_code is set to \"SMS\", you will confirm the payment via SMS code; if \"NONE\", the payment will be considered confirmed.",
+                  "type": "text",
+                  "uuid": "9c4f1caa-5851-4e90-b36f-88f3ca1c94e5"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{qardam_base_url}}/api/v1/bank/verify-card",
+              "host": [
+                "{{qardam_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bank",
+                "verify-card"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "my registered cards",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{qardam_base_url}}/api/v1/bank/my-registered-cards",
+              "host": [
+                "{{qardam_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bank",
+                "my-registered-cards"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Back end example",
+      "item": [
+        {
+          "name": "refund(example back end)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJ4NXQiOiJNell4TW1Ga09HWXdNV0kwWldObU5EY3hOR1l3WW1NNFpUQTNNV0kyTkRBelpHUXpOR00wWkdSbE5qSmtPREZrWkRSaU9URmtNV0ZoTXpVMlpHVmxOZyIsImtpZCI6Ik16WXhNbUZrT0dZd01XSTBaV05tTkRjeE5HWXdZbU00WlRBM01XSTJOREF6WkdRek5HTTBaR1JsTmpKa09ERmtaRFJpT1RGa01XRmhNelUyWkdWbE5nX1JTMjU2IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJhZG1pbiIsImF1dCI6IkFQUExJQ0FUSU9OIiwiYXVkIjoiX1RsWlhrcG5XRmp6OUg4R0ZGamVmX1k0aVN3YSIsIm5iZiI6MTc2NDk4NTY0OCwiYXpwIjoiX1RsWlhrcG5XRmp6OUg4R0ZGamVmX1k0aVN3YSIsInNjb3BlIjoiZGVmYXVsdCIsImlzcyI6Imh0dHBzOlwvXC90ZXN0LW9wZW5hcGkuaGFta29yYmFuay51elwvdG9rZW4iLCJleHAiOjE3NjQ5ODkyNDgsImlhdCI6MTc2NDk4NTY0OCwianRpIjoiMTc3M2EyNjgtNTBhMS00MWI1LWJlNWQtOWMxYTFkMTBjYjJhIn0.eSlP4_2mItEzl_32MT9i3TwppCRxbEmQ0tSmgLXCdrNTAxPHEdoAxqMtr2wUvqQz4pKwtstKI0PnNgHepLHwsHSnnzyH9HaN_XkDlsSxwlfcpmHDmiDysH9pSxsN3zTFUqXNxtUH3g0OjZk838a6wB5hE9TPYp0hmJgIvR5Y4vA2l-kSir45Mj4xDDrMIDX-I6-4K0jMV6QoZBi70_OOIqk5qeBDhI8v2JsAyJUizdUOVKxYaVoBAlYw_oYWUfdApc2SMRPj9u2VoNrOHoNodSEcpu6uTbJm2alCGJwFtG2bS0CSTVcN2jnQUL04-HPRKVgnupSTTPbVxcfjVZR2eg",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"pay.a2c\",\n    \"params\": [\n        {\n            \"ext_id\": \"deda854ds-d32c9-4c48d-8161-8470dddc4ff702d1d12\",\n            \"amount\": 100000,\n            \"card\": {\n                \"number\": \"5614686500050797\"\n            },\n            \"payer_data\": {\n                \"surname\": \"surname\",\n                \"first_name\": \"first_name\",\n                \"middle_name\": \"Muxtoraliyevich\"\n            }\n        }\n    ],\n    \"id\": \"15c1d0b4-823e-46ba-b4ed-a82557f2d439\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": [
+                "{{base_url}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "perform tranction(only for example )",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "type": "text",
+                  "uuid": "208f6b1b-beb0-4314-a3d6-fc9bd71ef157"
+                },
+                {
+                  "key": "card_key",
+                  "value": "1bdc7042-1819-4341-9983-b8d65face9cf",
+                  "type": "text",
+                  "uuid": "5e29952f-b428-43f8-a786-b2157a7b7e45"
+                },
+                {
+                  "key": "amount",
+                  "value": "2500000000",
+                  "description": "or 250000 ",
+                  "type": "text",
+                  "uuid": "fdd40ee1-2db6-4e9d-ba43-269473679cf1"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{qardam_base_url}}/api/v1/bank/check-card-balance",
+              "host": [
+                "{{qardam_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bank",
+                "check-card-balance"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "!dont useauth token with key and secret(addation use )",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "password",
+                  "value": "c9z1wMRaFJavuZrhHpA7vHWla2Ea",
+                  "type": "string"
+                },
+                {
+                  "key": "username",
+                  "value": "_TlZXkpnWFjz9H8GFFjef_Y4iSwa",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"grant_type\": \"client_credentials\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://dev-open-api.hamkorbank.uz/token",
+              "protocol": "https",
+              "host": [
+                "dev-open-api",
+                "hamkorbank",
+                "uz"
+              ],
+              "path": [
+                "token"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "example",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJ4NXQiOiJNell4TW1Ga09HWXdNV0kwWldObU5EY3hOR1l3WW1NNFpUQTNNV0kyTkRBelpHUXpOR00wWkdSbE5qSmtPREZrWkRSaU9URmtNV0ZoTXpVMlpHVmxOZyIsImtpZCI6Ik16WXhNbUZrT0dZd01XSTBaV05tTkRjeE5HWXdZbU00WlRBM01XSTJOREF6WkdRek5HTTBaR1JsTmpKa09ERmtaRFJpT1RGa01XRmhNelUyWkdWbE5nX1JTMjU2IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJhZG1pbiIsImF1dCI6IkFQUExJQ0FUSU9OIiwiYXVkIjoiX1RsWlhrcG5XRmp6OUg4R0ZGamVmX1k0aVN3YSIsIm5iZiI6MTc2MzQ2Mzk0OCwiYXpwIjoiX1RsWlhrcG5XRmp6OUg4R0ZGamVmX1k0aVN3YSIsInNjb3BlIjoiZGVmYXVsdCIsImlzcyI6Imh0dHBzOlwvXC90ZXN0LW9wZW5hcGkuaGFta29yYmFuay51elwvdG9rZW4iLCJleHAiOjE3NjM0Njc1NDgsImlhdCI6MTc2MzQ2Mzk0OCwianRpIjoiMmJlMTJjNjgtYTQzNi00MmZjLWJkZmMtZThmYTllYTFhODAyIn0.CcBjZdkPv19Be0WVMudD5plqJ-TJ00gxlY8wSognRiE25xV99-whKv7NJ8JiRirNZGZBi_zMjkXga36JwPx-02IrHJFI-dctfIaeFkP57zqqX8fDBpkxtgxkwbhzUMwr5I_pF3MRFPhMNYLkkife3iT2n9aR0-ylYDUdMzyc5VbB0iEe-wQINe3bSnGByI7b2JKkWKXNRd5AhgCgLJvzB4CgvKbP0wejY9wss46sQqIhXOPg42CwhuINIyF4HQGm3pEFrNSicJVHm1dnCkh1l6X36r9XWYlCd4A4t0Xuw4JoobF9zWCoMoK-9ZJtR3gEWf11311IIycRLkhR7H7Kww",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"pay.create\",\n  \"params\": {\n    \"external_id\": \"61f7c9b1-1234-4a1b-9876-abcdef123456\",\n    \"amount\": 100000,\n    \"currency_code\": 860,\n    \"card\": {\n      \"id\": 1,\n      \"number\": \"5614686500050797\",\n      \"expiry\": \"0228\"\n    },\n    \"details\": [\n      {\n        \"field\": \"created_at\",\n        \"value\": \"2025-11-18T10:00:00\"\n      }\n    ],\n    \"payer_data\": {\n      \"nationality\": \"UZB\",\n      \"doc_type\": \"001\",\n      \"serial_no\": \"AA\",\n      \"id_card\": \"3339379\",\n      \"doc_valid_through\": \"2023-12-31\",\n      \"person_code\": \"12345678912345\",\n      \"surname\": \"Husanov\",\n      \"first_name\": \"Maqsadali\",\n      \"middle_name\": \"Muxtoraliyevich\",\n      \"birth_date\": \"1993-04-27\"\n    }\n  },\n  \"id\": \"beac0986-0359-4032-81a9-633b295f4e3b\"\n}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": [
+                "{{base_url}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "balance check",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJ4NXQiOiJNell4TW1Ga09HWXdNV0kwWldObU5EY3hOR1l3WW1NNFpUQTNNV0kyTkRBelpHUXpOR00wWkdSbE5qSmtPREZrWkRSaU9URmtNV0ZoTXpVMlpHVmxOZyIsImtpZCI6Ik16WXhNbUZrT0dZd01XSTBaV05tTkRjeE5HWXdZbU00WlRBM01XSTJOREF6WkdRek5HTTBaR1JsTmpKa09ERmtaRFJpT1RGa01XRmhNelUyWkdWbE5nX1JTMjU2IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJhZG1pbiIsImF1dCI6IkFQUExJQ0FUSU9OIiwiYXVkIjoiX1RsWlhrcG5XRmp6OUg4R0ZGamVmX1k0aVN3YSIsIm5iZiI6MTc3NTQ2ODE5OCwiYXpwIjoiX1RsWlhrcG5XRmp6OUg4R0ZGamVmX1k0aVN3YSIsInNjb3BlIjoiZGVmYXVsdCIsImlzcyI6Imh0dHBzOlwvXC90ZXN0LW9wZW5hcGkuaGFta29yYmFuay51elwvdG9rZW4iLCJleHAiOjE3NzU0NzE3OTgsImlhdCI6MTc3NTQ2ODE5OCwianRpIjoiMTY3MDdkN2UtOTM1Yy00YWUzLWIxY2QtMTI0ZDQ3ZTAwNWVhIn0.AjMREvhXMNbyIVyKAYlN7xsUqx0RN-57V2dWbCLPOo5SVScdo6-K9vze6lo7_gWmNJMahPSF75BO6CKGnWQ52pANmAdIBneEcVrahFEt-ESR_HikzS58ZwnJfr7H_GDBZceznSdywdqiq7EiUDQgk1lhjnvaTtpLYIlLzrqmG_wgv3P4pkimkAB-bScZhAu4CZGO0znRteDKPt076FMGBInvIBJ1LF7SSNIli2jIcOMFRZwKpMMWhug6OtocfpGintBFFzkQaQLJkfDx9SG5mMWQ_cUfUj6wZah9XQmiYDZ7xH5eMV0McAl0JtsLn4R4bZooaMen3XU426hesrM6TA",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "id",
+                  "value": "35",
+                  "type": "text",
+                  "uuid": "938729c4-3287-46bd-aa88-ff1d97c8bb51"
+                },
+                {
+                  "key": "card_key",
+                  "value": "72E7D188AC1F4AB4298F3A79AC6CDE24",
+                  "type": "text",
+                  "uuid": "66c668ca-a7f4-4750-a00d-d253ebe64fcb"
+                },
+                {
+                  "key": "amount",
+                  "value": "2000000000",
+                  "type": "text",
+                  "uuid": "8450b17c-099c-406c-a72d-1926f46f8a4a"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{qardam_base_url}}/api/v1/bank/check-card-balance",
+              "host": [
+                "{{qardam_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bank",
+                "check-card-balance"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "refund-to-my-card-from-balance",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "amount",
+                  "value": "18000",
+                  "type": "text",
+                  "uuid": "3cefb5f4-66f5-4367-8dac-84350d77528b",
+                  "description": "min:1000| max:200000"
+                },
+                {
+                  "key": "card_id",
+                  "value": "6",
+                  "description": "req",
+                  "type": "text",
+                  "uuid": "601c02b3-cd73-47e9-935c-9693a0651d7c"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{qardam_base_url}}/api/v1/bank/refund-to-my-card-from-balance",
+              "host": [
+                "{{qardam_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bank",
+                "refund-to-my-card-from-balance"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "crate payment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJ4NXQiOiJNell4TW1Ga09HWXdNV0kwWldObU5EY3hOR1l3WW1NNFpUQTNNV0kyTkRBelpHUXpOR00wWkdSbE5qSmtPREZrWkRSaU9URmtNV0ZoTXpVMlpHVmxOZyIsImtpZCI6Ik16WXhNbUZrT0dZd01XSTBaV05tTkRjeE5HWXdZbU00WlRBM01XSTJOREF6WkdRek5HTTBaR1JsTmpKa09ERmtaRFJpT1RGa01XRmhNelUyWkdWbE5nX1JTMjU2IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJhZG1pbiIsImF1dCI6IkFQUExJQ0FUSU9OIiwiYXVkIjoiX1RsWlhrcG5XRmp6OUg4R0ZGamVmX1k0aVN3YSIsIm5iZiI6MTc3NTU4Nzg0MiwiYXpwIjoiX1RsWlhrcG5XRmp6OUg4R0ZGamVmX1k0aVN3YSIsInNjb3BlIjoiZGVmYXVsdCIsImlzcyI6Imh0dHBzOlwvXC90ZXN0LW9wZW5hcGkuaGFta29yYmFuay51elwvdG9rZW4iLCJleHAiOjE3NzU1OTE0NDIsImlhdCI6MTc3NTU4Nzg0MiwianRpIjoiNjYxZmEyNjEtMTVlNS00MmIzLThkYTktNmViYTYyZTQ0OGU5In0.Ad4UaKXFqFy3Diecwq73K7UrExazbeKQDkYu2cV6RXUnl6JEFKWlqan1A84v6G3WTw_HHqcYrb9pZyeGJJWWhvMPpOQjGOQ2pMVia4nJAFkg6CAD7521jIxzM_LPiZYg7g6Rn7Pvpr9fMgKFye07lR3XP16FpbQH51nGC7jzo0r8J6fmSEKOlOrzf3AYgwDP1l6ksUcJugmP0fbFTbrPNwww0tOVKlIDUYEX-Wuked8LuuPmTx3ut9_E35T2DS2W7JEyaY5iXZFQkSTy6_Xi7SkiJCcgjiRIJwA-wt_FF64-oofrPJskJsYV8HdLgixOnqKRVRdVNMSPEgVXqv7GKw",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"pay.create\",\n  \"params\": [\n    {\n      \"external_id\": \"6af9c70e-5c92-4945-ad2a-c36cc1ba0de5\",\n      \"amount\": 10000000,\n      \"currency_code\": \"860\",\n      \"card\": {\n        \"id\": \"72E7D188AC1F4AB4298F3A79AC6CDE24\"\n      },\n      \"details\": [\n        {\n          \"field\": \"created_at\",\n          \"value\": \"07.04.2026\"\n        }\n      ],\n      \"payer_data\": {\n        \"nationality\": \"UZB\",\n        \"first_name\": \"Ramz\",\n        \"surname\": \"Rustam\",\n        \"middle_name\": \"Utkir o'g'liii\"\n      }\n    }\n  ],\n  \"id\": \"b1f8c2d4-1234-4c12-9abc-123456789abc\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "dev-open-api.hamkorbank.uz/acquiring/v1",
+              "host": [
+                "dev-open-api",
+                "hamkorbank",
+                "uz"
+              ],
+              "path": [
+                "acquiring",
+                "v1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "add card",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJ4NXQiOiJNell4TW1Ga09HWXdNV0kwWldObU5EY3hOR1l3WW1NNFpUQTNNV0kyTkRBelpHUXpOR00wWkdSbE5qSmtPREZrWkRSaU9URmtNV0ZoTXpVMlpHVmxOZyIsImtpZCI6Ik16WXhNbUZrT0dZd01XSTBaV05tTkRjeE5HWXdZbU00WlRBM01XSTJOREF6WkdRek5HTTBaR1JsTmpKa09ERmtaRFJpT1RGa01XRmhNelUyWkdWbE5nX1JTMjU2IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJhZG1pbiIsImF1dCI6IkFQUExJQ0FUSU9OIiwiYXVkIjoiX1RsWlhrcG5XRmp6OUg4R0ZGamVmX1k0aVN3YSIsIm5iZiI6MTc3NzU0MjA5MywiYXpwIjoiX1RsWlhrcG5XRmp6OUg4R0ZGamVmX1k0aVN3YSIsInNjb3BlIjoiZGVmYXVsdCIsImlzcyI6Imh0dHBzOlwvXC90ZXN0LW9wZW5hcGkuaGFta29yYmFuay51elwvdG9rZW4iLCJleHAiOjE3Nzc1NDU2OTMsImlhdCI6MTc3NzU0MjA5MywianRpIjoiYmZiMjI4MTgtNTdiMi00MDEyLTgwY2YtNjg3M2FjMGY4OTk0In0.V9mpo6-Wo_9e_JK8pxNAQkcROHWrtXWqv1Y6fYfu3jAH6GObOISiwDlDCGFmQzfyM_13IKZ-7SyDv5MMHfSGE6a_i3CdHjsmlumu1hWscHe1ohp1AiHTMcv8HvIFiIjrZ3OzuIEmo2wNLjAyuznohKnwRU2OJDBoLQe-KAmUjubcibvkettn1spcCWAIpEXmpKlmwdyq0uyRkOAtgxAhOGgaTdtLR7hQPeTo5BvAXRG-zcjmFqQBUtxfeo6QrBeUkvqbdhZyu2taJsDda4SYjc0vuwc49SgnOOSBW2Rz2e6xfr2xOsJc0lJr4Q-A_BOfGmFi80SyzLiEicW6OQs_gQ",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": []
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "create-payment(fill the balance)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "amount",
+                  "value": "1000000",
+                  "type": "text",
+                  "uuid": "3cefb5f4-66f5-4367-8dac-84350d77528b"
+                },
+                {
+                  "key": "card_id",
+                  "value": "6",
+                  "description": "optional if not then I will take last added card ",
+                  "type": "text",
+                  "uuid": "601c02b3-cd73-47e9-935c-9693a0651d7c"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{qardam_base_url}}/api/v1/bank/create-payment",
+              "host": [
+                "{{qardam_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bank",
+                "create-payment"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "verify-payment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "pay_id",
+                  "value": "ef7cf10e-51b4-40cb-8774-7df0ee4ce332",
+                  "type": "text",
+                  "uuid": "3cefb5f4-66f5-4367-8dac-84350d77528b"
+                },
+                {
+                  "key": "confirm_code",
+                  "value": "123321",
+                  "type": "text",
+                  "uuid": "4852e3ee-a349-4d78-98e8-7290bf83c630"
+                },
+                {
+                  "key": "hold",
+                  "value": "",
+                  "type": "text",
+                  "uuid": "44a06575-fe8c-43e4-90f2-f4dfed86f422",
+                  "disabled": true
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{qardam_base_url}}/api/v1/bank/confirm-payment",
+              "host": [
+                "{{qardam_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bank",
+                "confirm-payment"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "payment history",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{qardam_base_url}}/api/v1/bank/payment-history",
+              "host": [
+                "{{qardam_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bank",
+                "payment-history"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "resend sms",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "pay_id",
+                  "value": "df93d347-a230-49ea-b1b3-e2dc7cedd80f",
+                  "description": "while creating payment pay_id was given",
+                  "type": "text",
+                  "uuid": "1787f663-cd8c-409b-83b5-6c82aaba8747"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{qardam_base_url}}/api/v1/bank/resend-sms",
+              "host": [
+                "{{qardam_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bank",
+                "resend-sms"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "get payment info",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "pay_id",
+                  "value": "97c22b14-e13f-4532-9651-eaf668034eab",
+                  "description": "while creating payment pay_id was given",
+                  "type": "text",
+                  "uuid": "1787f663-cd8c-409b-83b5-6c82aaba8747"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{qardam_base_url}}/api/v1/bank/get-payment-info",
+              "host": [
+                "{{qardam_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bank",
+                "get-payment-info"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "get my balance",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "pay_id",
+              "value": "1486219e-de3c-481a-8e57-5ee0b8533e7d",
+              "type": "text",
+              "uuid": "3cefb5f4-66f5-4367-8dac-84350d77528b"
+            },
+            {
+              "key": "confirm_code",
+              "value": "123321",
+              "type": "text",
+              "uuid": "4852e3ee-a349-4d78-98e8-7290bf83c630"
+            },
+            {
+              "key": "hold",
+              "value": "",
+              "type": "text",
+              "uuid": "44a06575-fe8c-43e4-90f2-f4dfed86f422",
+              "disabled": true
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/bank/get-balance",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "bank",
+            "get-balance"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "New Request",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "password",
+              "value": "c9z1wMRaFJavuZrhHpA7vHWla2Ea",
+              "type": "string"
+            },
+            {
+              "key": "username",
+              "value": "_TlZXkpnWFjz9H8GFFjef_Y4iSwa",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"grant_type\" : \"client_credentials\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://test-openapi.hamkorbank.uz/token",
+          "protocol": "https",
+          "host": [
+            "test-openapi",
+            "hamkorbank",
+            "uz"
+          ],
+          "path": [
+            "token"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

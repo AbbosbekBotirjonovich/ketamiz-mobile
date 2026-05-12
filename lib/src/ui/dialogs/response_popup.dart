@@ -72,6 +72,9 @@ class _ResponsePopupWidgetState extends State<_ResponsePopupWidget> with SingleT
   Widget build(BuildContext context) {
     final isSuccess = widget.status == 'success';
     final mainColor = isSuccess ? AppTheme.green : AppTheme.red;
+    final backgroundColor = isSuccess ? AppTheme.green : AppTheme.red.withOpacity(0.1);
+    final textColor = isSuccess ? Colors.white : AppTheme.red;
+    final icon = isSuccess ? Icons.check_circle_outline : Icons.error_outline;
 
     return Positioned(
       top: 76,
@@ -84,22 +87,33 @@ class _ResponsePopupWidgetState extends State<_ResponsePopupWidget> with SingleT
           child: SlideTransition(
             position: _slideAnimation,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
-                color: mainColor.withOpacity(0.1),
+                color: backgroundColor,
                 border: Border.all(color: mainColor),
                 borderRadius: BorderRadius.circular(12),
+                boxShadow: isSuccess
+                    ? [
+                        BoxShadow(
+                          color: AppTheme.green.withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : null,
               ),
               child: Row(
                 children: [
+                  Icon(icon, color: textColor, size: 22),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       widget.message,
                       style: TextStyle(
                         fontFamily: AppTheme.fontFamily,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: mainColor,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: textColor,
                       ),
                     ),
                   ),

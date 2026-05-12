@@ -7,7 +7,6 @@ import 'package:flutter_translate/flutter_translate.dart';
 import 'package:qadam/src/model/api/book_model.dart';
 import 'package:qadam/src/model/passenger_model.dart';
 import 'package:qadam/src/ui/dialogs/center_dialog.dart';
-import 'package:qadam/src/ui/menu/home/home_screen.dart';
 import 'package:qadam/src/ui/menu/main_screen.dart';
 import 'package:qadam/src/ui/menu/profile/top_up_screen.dart';
 import 'package:qadam/src/ui/widgets/buttons/primary_button.dart';
@@ -634,62 +633,67 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         setState(() {
                           isLoading = true;
                         });
-                        var response = await _repository.fetchBookTrip(
-                            widget.trip.id.toString(), widget.passengers);
+                        try {
+                          var response = await _repository.fetchBookTrip(
+                              widget.trip.id.toString(), widget.passengers);
 
-                        if (!mounted) return;
+                          if (!mounted) return;
 
-                        if (response.isSuccess) {
-                          var result = BookModel.fromJson(response.result);
-                          setState(() {
-                            isLoading = false;
-                          });
-                          if (result.status == "confirmed") {
-                            CustomSnackBar().showSnackBar(
-                              context,
-                              translate("qadam.booking_success"),
-                              1,
-                            );
-                            SharedPreferences prefs =
-                                await SharedPreferences.getInstance();
-                            prefs.setString("active_booked_id",
-                                result.bookingId.toString());
-                            if (!mounted) return;
-                            Navigator.of(context).popUntil(
-                              (route) => route.isFirst,
-                            );
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) {
-                                  return const MainScreen();
-                                },
-                              ),
-                            );
+                          if (response.isSuccess) {
+                            var result = BookModel.fromJson(response.result);
+                            if (result.status == "confirmed") {
+                              CustomSnackBar().showSnackBar(
+                                context,
+                                translate("qadam.booking_success"),
+                                1,
+                              );
+                              SharedPreferences prefs =
+                                  await SharedPreferences.getInstance();
+                              prefs.setString("active_booked_id",
+                                  result.bookingId.toString());
+                              if (!mounted) return;
+                              Navigator.of(context).popUntil(
+                                (route) => route.isFirst,
+                              );
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) {
+                                    return const MainScreen();
+                                  },
+                                ),
+                              );
+                            } else {
+                              CenterDialog.showActionFailed(
+                                context,
+                                translate("qadam.booking_failed"),
+                                translate("qadam.booking_failed_msg"),
+                              );
+                            }
                           } else {
-                            CenterDialog.showActionFailed(
-                              context,
-                              translate("qadam.booking_failed"),
-                              translate("qadam.booking_failed_msg"),
-                            );
+                            if (response.status == -1) {
+                              CenterDialog.showActionFailed(
+                                context,
+                                translate("auth.connection_failed"),
+                                translate("auth.connection_failed_msg"),
+                              );
+                            } else {
+                              CenterDialog.showActionFailed(
+                                context,
+                                translate("auth.something_went_wrong"),
+                                translate("auth.failed_msg"),
+                              );
+                            }
                           }
-                        } else {
-                          setState(() {
-                            isLoading = false;
-                          });
-                          if (response.status == -1) {
-                            CenterDialog.showActionFailed(
-                              context,
-                              translate("auth.connection_failed"),
-                              translate("auth.connection_failed_msg"),
-                            );
-                          } else {
-                            CenterDialog.showActionFailed(
-                              context,
-                              translate("auth.something_went_wrong"),
-                              translate("auth.failed_msg"),
-                            );
-                          }
+                        } catch (e) {
+                          if (!mounted) return;
+                          CenterDialog.showActionFailed(
+                            context,
+                            translate("auth.something_went_wrong"),
+                            translate("auth.failed_msg"),
+                          );
+                        } finally {
+                          if (mounted) setState(() { isLoading = false; });
                         }
                       } else {
                         CenterDialog.showActionFailed(

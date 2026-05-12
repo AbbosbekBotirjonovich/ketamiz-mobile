@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:qadam/src/lan_localization/load_places.dart';
 import 'package:qadam/src/ui/auth/login_screen.dart';

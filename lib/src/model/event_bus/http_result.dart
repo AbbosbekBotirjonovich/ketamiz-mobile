@@ -1,7 +1,7 @@
 class HttpResult {
   final bool isSuccess;
   final int status;
-  var result;
+  final dynamic result;
 
   HttpResult({
     required this.isSuccess,

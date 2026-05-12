@@ -104,11 +104,6 @@ class _PassengersContainerState extends State<PassengersContainer> {
                           children: [
                             const SizedBox(height: 12),
                             Text14h400w(
-                              title: widget.passenger.email,
-                              color: AppTheme.gray,
-                            ),
-                            const SizedBox(height: 8),
-                            Text14h400w(
                               title: widget.passenger.phoneNumber,
                               color: AppTheme.gray,
                             ),

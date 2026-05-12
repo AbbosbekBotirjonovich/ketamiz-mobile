@@ -8,84 +8,72 @@ import '../../../theme/app_theme.dart';
 import '../../../utils/utils.dart';
 
 class DestinationsContainer extends StatelessWidget {
-  DestinationsContainer({super.key, required this.trip});
+  const DestinationsContainer({super.key, required this.trip});
 
   final TripListModel trip;
-  String weekDay = '';
-  String month = '';
-  String t1 = '';
-  String m1 = '';
-  String h1 = '';
 
-  String from = '';
-  String to = '';
+  static const _weekDays = <int, String>{
+    1: 'Monday',
+    2: 'Tuesday',
+    3: 'Wednesday',
+    4: 'Thursday',
+    5: 'Friday',
+    6: 'Saturday',
+    7: 'Sunday',
+  };
 
-  initState(DateTime time) {
-    m1 = time.minute < 10 ? '0${time.minute}' : time.minute.toString();
-    time.weekday == 1
-        ? weekDay = 'Monday'
-        : time.weekday == 2
-            ? weekDay = 'Tuesday'
-            : time.weekday == 3
-                ? weekDay = 'Wednesday'
-                : time.weekday == 4
-                    ? weekDay = 'Thursday'
-                    : time.weekday == 5
-                        ? weekDay = 'Friday'
-                        : time.weekday == 6
-                            ? weekDay = 'Saturday'
-                            : weekDay = 'Sunday';
-
-    time.month == 1
-        ? month = 'January'
-        : time.month == 2
-            ? month = 'February'
-            : time.month == 3
-                ? month = 'March'
-                : time.month == 4
-                    ? month = 'April'
-                    : time.month == 5
-                        ? month = 'May'
-                        : time.month == 6
-                            ? month = 'June'
-                            : time.month == 7
-                                ? month = 'July'
-                                : time.month == 8
-                                    ? month = 'August'
-                                    : time.month == 9
-                                        ? month = 'September'
-                                        : time.month == 10
-                                            ? month = 'October'
-                                            : time.month == 11
-                                                ? month = 'November'
-                                                : month = 'December';
-
-    time.hour < 13 ? t1 = 'AM' : t1 = 'PM';
-    h1 = time.hour < 13 ? time.hour.toString() : (time.hour - 12).toString();
-
-    final unknown = LocationModel(id: "0", text: "—", parentID: "0");
-
-    final fromVillage = LocationData.villages.firstWhere(
-        (n) => n.id == trip.fromVillageId.toString(), orElse: () => unknown);
-    final fromCityModel = LocationData.cities.firstWhere(
-        (c) => c.id == trip.fromCityId.toString(), orElse: () => unknown);
-    final fromRegion = LocationData.regions.firstWhere(
-        (r) => r.id == trip.fromRegionId.toString(), orElse: () => unknown);
-
-    final toVillage = LocationData.villages.firstWhere(
-        (n) => n.id == trip.toVillageId.toString(), orElse: () => unknown);
-    final toCityModel = LocationData.cities.firstWhere(
-        (c) => c.id == trip.toCityId.toString(), orElse: () => unknown);
-    final toRegion = LocationData.regions.firstWhere(
-        (r) => r.id == trip.toRegionId.toString(), orElse: () => unknown);
-
-    from = "${fromVillage.text}, ${fromCityModel.text}, ${fromRegion.text}";
-    to = "${toVillage.text}, ${toCityModel.text}, ${toRegion.text}";
-  }
+  static const _months = <int, String>{
+    1: 'January',
+    2: 'February',
+    3: 'March',
+    4: 'April',
+    5: 'May',
+    6: 'June',
+    7: 'July',
+    8: 'August',
+    9: 'September',
+    10: 'October',
+    11: 'November',
+    12: 'December',
+  };
 
   @override
   Widget build(BuildContext context) {
-    initState(trip.startTime);
+    final time = trip.startTime;
+    final weekDay = _weekDays[time.weekday] ?? 'Sunday';
+    final month = _months[time.month] ?? 'December';
+    final m1 =
+        time.minute < 10 ? '0${time.minute}' : time.minute.toString();
+    final t1 = time.hour < 12 ? 'AM' : 'PM';
+    final hour12 = time.hour == 0
+        ? 12
+        : (time.hour > 12 ? time.hour - 12 : time.hour);
+    final h1 = hour12.toString();
+
+    final unknown = LocationModel(id: "0", text: "—", parentID: "0");
+    final fromVillage = LocationData.villages.firstWhere(
+        (n) => n.id == trip.fromVillageId.toString(),
+        orElse: () => unknown);
+    final fromCityModel = LocationData.cities.firstWhere(
+        (c) => c.id == trip.fromCityId.toString(),
+        orElse: () => unknown);
+    final fromRegion = LocationData.regions.firstWhere(
+        (r) => r.id == trip.fromRegionId.toString(),
+        orElse: () => unknown);
+    final toVillage = LocationData.villages.firstWhere(
+        (n) => n.id == trip.toVillageId.toString(),
+        orElse: () => unknown);
+    final toCityModel = LocationData.cities.firstWhere(
+        (c) => c.id == trip.toCityId.toString(),
+        orElse: () => unknown);
+    final toRegion = LocationData.regions.firstWhere(
+        (r) => r.id == trip.toRegionId.toString(),
+        orElse: () => unknown);
+
+    final from =
+        "${fromVillage.text}, ${fromCityModel.text}, ${fromRegion.text}";
+    final to = "${toVillage.text}, ${toCityModel.text}, ${toRegion.text}";
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -108,8 +96,8 @@ class DestinationsContainer extends StatelessWidget {
               Column(
                 children: [
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppTheme.light,
                       borderRadius: BorderRadius.circular(16),
@@ -182,7 +170,6 @@ class DestinationsContainer extends StatelessWidget {
             children: [
               Column(
                 children: [
-                  // "From" - Circular dot
                   Container(
                     width: 10,
                     height: 10,
@@ -192,7 +179,6 @@ class DestinationsContainer extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  // 3 Vertical Lines (Stacked)
                   Column(
                     children: List.generate(
                       3,
@@ -200,18 +186,16 @@ class DestinationsContainer extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 2),
                         child: Container(
                           width: 2,
-                          height: 8, // Adjust height for each line
+                          height: 8,
                           color: AppTheme.gray,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 2), // Spacing
-
-                  // "To" - SVG Map Pin
+                  const SizedBox(height: 2),
                   SvgPicture.asset(
                     "assets/icons/map_pin.svg",
-                    height: 24, // Adjust size as needed
+                    height: 24,
                     width: 24,
                     colorFilter: const ColorFilter.mode(
                       AppTheme.purple,

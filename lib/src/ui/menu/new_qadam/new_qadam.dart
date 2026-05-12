@@ -12,7 +12,6 @@ import 'package:qadam/src/ui/widgets/texts/text_16h_500w.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../model/api/driver_trips_list_model.dart';
-import '../../../resources/repository.dart';
 import '../../widgets/containers/destinations_container.dart';
 import '../../widgets/texts/text_14h_400w.dart';
 import 'add_docs_screen.dart';
@@ -29,8 +28,6 @@ class _NewQadamState extends State<NewQadam> {
   bool isDocsVerified = false;
 
   bool isLoading = false;
-
-  final Repository _repository = Repository();
 
   List<DriverTripModel> myTrips = [];
 
@@ -174,39 +171,41 @@ class _NewQadamState extends State<NewQadam> {
                                   return ListView(
                                     padding: const EdgeInsets.only(top: 88),
                                     children: [
-                                      Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        crossAxisAlignment: CrossAxisAlignment.center,
-                                        children: [
-                                          Lottie.asset(
-                                            "assets/lottie/empty.json",
-                                            width: 200,
-                                            height: 200,
-                                            fit: BoxFit.cover,
-                                          ),
-                                          const SizedBox(height: 24),
-                                          Text16h500w(title: translate("qadam.No_trip_found")),
-                                          const SizedBox(height: 8),
-                                          Row(
-                                            children: [
-                                              const SizedBox(width: 32),
-                                              Expanded(
-                                                child: Text(
-                                                  translate("qadam.No_trip_found_msg"),
-                                                  style: const TextStyle(
-                                                    fontSize: 14,
-                                                    color: AppTheme.gray,
-                                                    fontWeight: FontWeight.w500,
-                                                    fontFamily: AppTheme.fontFamily,
+                                      SizedBox(
+                                        height: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top - 250,
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          crossAxisAlignment: CrossAxisAlignment.center,
+                                          children: [
+                                            Lottie.asset(
+                                              "assets/lottie/empty.json",
+                                              width: 200,
+                                              height: 200,
+                                              fit: BoxFit.cover,
+                                            ),
+                                            const SizedBox(height: 24),
+                                            Text16h500w(title: translate("qadam.No_trip_found")),
+                                            const SizedBox(height: 8),
+                                            Row(
+                                              children: [
+                                                const SizedBox(width: 32),
+                                                Expanded(
+                                                  child: Text(
+                                                    translate("qadam.No_trip_found_msg"),
+                                                    style: const TextStyle(
+                                                      fontSize: 14,
+                                                      color: AppTheme.gray,
+                                                      fontWeight: FontWeight.w500,
+                                                      fontFamily: AppTheme.fontFamily,
+                                                    ),
+                                                    textAlign: TextAlign.center,
                                                   ),
-                                                  textAlign: TextAlign.center,
                                                 ),
-                                              ),
-                                              const SizedBox(width: 32),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 92),
-                                        ],
+                                                const SizedBox(width: 32),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ],
                                   );

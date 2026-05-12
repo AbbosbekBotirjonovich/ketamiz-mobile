@@ -7,7 +7,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../model/api/image_response_model.dart';
 import '../../../model/color_model.dart';
 import '../../../model/event_bus/http_result.dart';
 import '../../../model/vehicle_model.dart';
@@ -170,31 +169,23 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
 
       HttpResult response;
       if (type == 'tech_front') {
-        response = await _repository.fetchUploadCarImages(vehicleId, pickedFile.path, '', []);
+        response = await _repository.fetchUploadCarImages(
+            vehicleId, pickedFile.path, '', []);
       } else if (type == 'tech_back') {
-        response = await _repository.fetchUploadCarImages(vehicleId, '', pickedFile.path, []);
+        response = await _repository.fetchUploadCarImages(
+            vehicleId, '', pickedFile.path, []);
       } else {
-        response = await _repository.fetchPassportUpload(pickedFile.path);
+        response = await _repository.fetchUploadCarImages(
+            vehicleId, '', '', [pickedFile.path]);
       }
 
+      if (!mounted) return;
       setState(() => isLoading = false);
 
       if (response.isSuccess) {
-        // Different response models might require different handling,
-        // but ImageUploadResponseModel is generic enough for success status check usually.
-        // If fetchUploadCarImages returns the same structure, this is fine.
-        // Based on ApiProvider, it returns a generic map, so we check "status".
-
-        bool success = false;
-        if(type == 'tech_front' || type == 'tech_back') {
-          if(response.result is Map && (response.result['status'] == 'success' || response.result['status'] == 200)) {
-            success = true;
-          }
-        } else {
-          var result = ImageUploadResponseModel.fromJson(response.result);
-          if (result.status == "success") success = true;
-        }
-
+        final result = response.result;
+        final success = result is Map &&
+            (result['status'] == 'success' || result['status'] == 200);
         if (success) {
           onUpdate(pickedFile.path);
         } else {
@@ -291,7 +282,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
             children: [
               const Icon(Icons.people_outline, color: AppTheme.black),
               const SizedBox(width: 12),
-              Text16h500w(title: translate("profile.seats") ?? "Number of seats"),
+              Text16h500w(title: translate("profile.seats")),
             ],
           ),
           Row(

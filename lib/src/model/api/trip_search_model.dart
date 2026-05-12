@@ -15,10 +15,21 @@ class TripSearchModel {
     required this.returnTrips,
   });
 
-  factory TripSearchModel.fromJson(Map<String, dynamic> json) => TripSearchModel(
-    departureTrips: List<TripListModel>.from(json["departure_trips"].map((x) => TripListModel.fromJson(x))),
-    returnTrips: List<TripListModel>.from(json["return_trips"].map((x) => TripListModel.fromJson(x))),
-  );
+  factory TripSearchModel.fromJson(Map<String, dynamic> json) =>
+      TripSearchModel(
+        departureTrips: _parseTripList(json["departure_trips"]),
+        returnTrips: _parseTripList(json["return_trips"]),
+      );
+
+  static List<TripListModel> _parseTripList(dynamic raw) {
+    if (raw is List) {
+      return raw
+          .whereType<Map>()
+          .map((e) => TripListModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+    return <TripListModel>[];
+  }
 
   Map<String, dynamic> toJson() => {
     "departure_trips": List<dynamic>.from(departureTrips.map((x) => x.toJson())),

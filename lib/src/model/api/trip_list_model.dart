@@ -56,30 +56,56 @@ class TripListModel {
   });
 
   factory TripListModel.fromJson(Map<String, dynamic> json) => TripListModel(
-    id: json["id"]??0,
-    fromWhere: json["from_where"]??"",
-    toWhere: json["to_where"]??"",
-    fromRegionId: json["from_region_id"]??0,
-    toRegionId: json["to_region_id"]??0,
-    fromCityId: json["from_district_id"]??0,
-    toCityId: json["to_district_id"]??0,
-    fromVillageId: json["from_quarter_id"]??0,
-    toVillageId: json["to_quarter_id"]??0,
-    startTime: DateTime.parse(json["start_time"]),
-    endTime: DateTime.parse(json["end_time"]),
-    pricePerSeat: json["price_per_seat"]??"",
-    totalSeats: json["total_seats"]??0,
-    availableSeats: json["available_seats"]??0,
-    startLat: json["start_lat"]??"",
-    startLong: json["start_long"]??"",
-    endLat: json["end_lat"]??"",
-    endLong: json["end_long"]??"",
-    status: json["status"]??"",
-    createdAt: DateTime.parse(json["created_at"]),
-    updatedAt: DateTime.parse(json["updated_at"]),
-    driver: TripDriver.fromJson(json["driver"]),
-    vehicle: TripVehicle.fromJson(json["vehicle"]),
+    id: _asInt(json["id"]),
+    fromWhere: json["from_where"]?.toString() ?? "",
+    toWhere: json["to_where"]?.toString() ?? "",
+    fromRegionId: _asInt(json["from_region_id"]),
+    toRegionId: _asInt(json["to_region_id"]),
+    fromCityId: _asInt(json["from_district_id"]),
+    toCityId: _asInt(json["to_district_id"]),
+    fromVillageId: _asInt(json["from_quarter_id"]),
+    toVillageId: _asInt(json["to_quarter_id"]),
+    startTime: _parseDate(json["start_time"]),
+    endTime: _parseDate(json["end_time"]),
+    pricePerSeat: json["price_per_seat"]?.toString() ?? "",
+    totalSeats: _asInt(json["total_seats"]),
+    availableSeats: _asInt(json["available_seats"]),
+    startLat: json["start_lat"]?.toString() ?? "",
+    startLong: json["start_long"]?.toString() ?? "",
+    endLat: json["end_lat"]?.toString() ?? "",
+    endLong: json["end_long"]?.toString() ?? "",
+    status: json["status"]?.toString() ?? "",
+    createdAt: _parseDate(json["created_at"]),
+    updatedAt: _parseDate(json["updated_at"]),
+    driver: json["driver"] is Map<String, dynamic>
+        ? TripDriver.fromJson(json["driver"])
+        : TripDriver(id: 0, name: "", role: ""),
+    vehicle: json["vehicle"] is Map<String, dynamic>
+        ? TripVehicle.fromJson(json["vehicle"])
+        : TripVehicle(
+            id: 0,
+            model: "",
+            seats: 0,
+            carNumber: "",
+            color: CarColor(
+                id: 0, titleUz: "", titleRu: "", titleEn: "", code: ""),
+          ),
   );
+
+  static int _asInt(dynamic v) {
+    if (v == null) return 0;
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    if (v is String) return int.tryParse(v) ?? 0;
+    return 0;
+  }
+
+  static DateTime _parseDate(dynamic v) {
+    if (v is String && v.isNotEmpty) {
+      return DateTime.tryParse(v) ?? DateTime.now();
+    }
+    return DateTime.now();
+  }
 
   Map<String, dynamic> toJson() => {
     "id": id,
@@ -148,11 +174,13 @@ class TripVehicle {
   });
 
   factory TripVehicle.fromJson(Map<String, dynamic> json) => TripVehicle(
-    id: json["id"]??0,
-    model: json["model"]??"",
-    seats: json["seats"]??0,
-    carNumber: json["car_number"]??"",
-    color: CarColor.fromJson(json["color"]),
+    id: TripListModel._asInt(json["id"]),
+    model: json["model"]?.toString() ?? "",
+    seats: TripListModel._asInt(json["seats"]),
+    carNumber: json["car_number"]?.toString() ?? "",
+    color: json["color"] is Map<String, dynamic>
+        ? CarColor.fromJson(json["color"])
+        : CarColor(id: 0, titleUz: "", titleRu: "", titleEn: "", code: ""),
   );
 
   Map<String, dynamic> toJson() => {

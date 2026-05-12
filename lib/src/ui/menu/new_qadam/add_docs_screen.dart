@@ -12,7 +12,6 @@ import 'package:qadam/src/ui/widgets/buttons/primary_button.dart';
 import 'package:qadam/src/ui/widgets/textfield/main_textfield.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../model/api/apply_driver_response_model.dart';
-import '../../../model/api/image_response_model.dart';
 import '../../../model/color_model.dart';
 import '../../../model/event_bus/http_result.dart';
 import '../../../model/vehicle_model.dart';
@@ -359,6 +358,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
             _saveToPrefs("driving_front_image", path);
           },
           uploadType: 'front',
+          isSimpleUpload: true,
         ),
         const SizedBox(height: 16),
         _buildImageUpload(
@@ -371,6 +371,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
             _saveToPrefs("driving_back_image", path);
           },
           uploadType: 'back',
+          isSimpleUpload: true,
         ),
         const SizedBox(height: 16),
         _buildImageUpload(
@@ -383,6 +384,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
             _saveToPrefs("passport_image", path);
           },
           uploadType: 'passport',
+          isSimpleUpload: true,
         ),
       ],
     );
@@ -486,54 +488,71 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
     bool isSimpleUpload,
   ) async {
     final pickedFile = await picker.pickImage(source: source);
-    if (pickedFile != null) {
-      if (isSimpleUpload) {
-        // Just update local path, upload happens in batch later
+    if (pickedFile == null) return;
+
+    if (isSimpleUpload) {
+      // Just stash the local path; upload happens in batch on Step submit.
+      onUpdate(pickedFile.path);
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    HttpResult response;
+    if (type == 'tech_front') {
+      response = await _repository.fetchUploadCarImages(
+          vehicleId, pickedFile.path, '', []);
+    } else if (type == 'tech_back') {
+      response = await _repository.fetchUploadCarImages(
+          vehicleId, '', pickedFile.path, []);
+    } else {
+      response = await _repository.fetchUploadCarImages(
+          vehicleId, '', '', [pickedFile.path]);
+    }
+
+    if (!mounted) return;
+    setState(() => isLoading = false);
+
+    if (response.isSuccess) {
+      final result = response.result;
+      final success = result is Map &&
+          (result['status'] == 'success' || result['status'] == 200);
+      if (success) {
         onUpdate(pickedFile.path);
-        return;
-      }
-      
-      setState(() => isLoading = true);
-      
-      HttpResult response;
-      if (type == 'front') {
-        response = await _repository.fetchDrivingFrontUpload(pickedFile.path);
-      } else if (type == 'back') {
-        response = await _repository.fetchDrivingBackUpload(pickedFile.path);
-      }else if (type == 'tech_front') {
-        response = await _repository.fetchUploadCarImages(vehicleId, pickedFile.path, '', []);
-      } else if (type == 'tech_back') {
-         response = await _repository.fetchUploadCarImages(vehicleId, '', pickedFile.path, []);
       } else {
-        response = await _repository.fetchPassportUpload(pickedFile.path);
+        _showError(translate("qadam.upload_failed"));
       }
+    } else {
+      _showError(translate("auth.connection_failed"));
+    }
+  }
 
-      setState(() => isLoading = false);
+  /// Upload all 3 driver doc images in one multipart call (server requires it).
+  Future<void> _submitStep2() async {
+    setState(() => isLoading = true);
 
-      if (response.isSuccess) {
-        // Different response models might require different handling, 
-        // but ImageUploadResponseModel is generic enough for success status check usually.
-        // If fetchUploadCarImages returns the same structure, this is fine.
-        // Based on ApiProvider, it returns a generic map, so we check "status".
-        
-        bool success = false;
-        if(type == 'tech_front' || type == 'tech_back') {
-             if(response.result is Map && (response.result['status'] == 'success' || response.result['status'] == 200)) {
-                 success = true;
-             }
-        } else {
-             var result = ImageUploadResponseModel.fromJson(response.result);
-             if (result.status == "success") success = true;
-        }
+    final response = await _repository.fetchDriverDocsUpload(
+      drivingLicenceFrontPath: frontImage,
+      drivingLicenceBackPath: backImage,
+      passportPath: passportImage,
+    );
 
-        if (success) {
-          onUpdate(pickedFile.path);
-        } else {
-          _showError(translate("qadam.upload_failed"));
-        }
+    if (!mounted) return;
+    setState(() => isLoading = false);
+
+    if (response.isSuccess) {
+      final result = response.result;
+      final success = result is Map &&
+          (result['status'] == 'success' || result['status'] == 200);
+      if (success) {
+        setState(() => currentStep++);
       } else {
-        _showError(translate("auth.connection_failed"));
+        final message = (result is Map ? result['message']?.toString() : null) ??
+            translate("qadam.upload_failed");
+        _showError(message);
       }
+    } else {
+      _showError(translate("auth.connection_failed"));
     }
   }
 
@@ -623,7 +642,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
             children: [
               const Icon(Icons.people_outline, color: AppTheme.black),
               const SizedBox(width: 12),
-              Text16h500w(title: translate("profile.seats") ?? "Number of seats"),
+              Text16h500w(title: translate("profile.seats")),
             ],
           ),
           Row(
@@ -880,9 +899,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
         if (currentStep == 1) {
           _submitStep1();
         } else if (currentStep == 2) {
-           setState(() {
-            currentStep++;
-          });
+          _submitStep2();
         } else if (currentStep == 3) {
           _submitStep3();
         } else if (currentStep == 4) {

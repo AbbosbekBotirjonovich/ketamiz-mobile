@@ -40,7 +40,7 @@ class HistoryBloc {
           var dataList = BookListModel.fromJson(response.result);
           _infoBookingsFetcher.sink.add(dataList.data);
         } else {
-          _errorFetcher.sink.add(BlocErrors.unexpectedFormat);
+          _infoBookingsFetcher.sink.add([]);
         }
       } else if (response.status == -1) {
         _errorFetcher.sink.add(BlocErrors.noInternet);

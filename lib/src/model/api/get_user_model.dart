@@ -13,8 +13,10 @@ class GetUserModel {
   });
 
   factory GetUserModel.fromJson(Map<String, dynamic> json) => GetUserModel(
-    status: json["status"] ?? "",
-    user: User.fromJson(json["user"]),
+    status: json["status"]?.toString() ?? "",
+    user: json["user"] is Map<String, dynamic>
+        ? User.fromJson(json["user"])
+        : User.empty(),
   );
 
   Map<String, dynamic> toJson() => {
@@ -52,22 +54,51 @@ class User {
     required this.balance,
   });
 
+  factory User.empty() => User(
+        id: 0,
+        firstName: "",
+        lastName: "",
+        fatherName: "",
+        email: "",
+        phone: "",
+        role: "",
+        birthDate: null,
+        drivingVerificationStatus: "none",
+        createdAt: null,
+        image: "",
+        balance: Balance.empty(),
+      );
+
   factory User.fromJson(Map<String, dynamic> json) => User(
-    id: json["id"] ?? 0,
-    firstName: json["first_name"] ?? "",
-    lastName: json["last_name"] ?? "",
-    fatherName: json["father_name"] ?? "",
-    email: json["email"] ?? "",
-    phone: json["phone"] ?? "",
-    role: json["role"] ?? "",
-    birthDate: json["birth_date"] != null && json["birth_date"] != ""
-        ? DateTime.tryParse(json["birth_date"])
-        : DateTime(2000, 1,1,1,1),
-    drivingVerificationStatus: json["driving_verification_status"] ?? "none",
-    createdAt: DateTime.parse(json["created_at"]),
-    image: json["image"] ?? "",
-    balance: Balance.fromJson(json["balance"]),
-  );
+        id: _asInt(json["id"]),
+        firstName: json["first_name"]?.toString() ?? "",
+        lastName: json["last_name"]?.toString() ?? "",
+        fatherName: json["father_name"]?.toString() ?? "",
+        email: json["email"]?.toString() ?? "",
+        phone: json["phone"]?.toString() ?? "",
+        role: json["role"]?.toString() ?? "",
+        birthDate: _tryParseDate(json["birth_date"]),
+        drivingVerificationStatus:
+            json["driving_verification_status"]?.toString() ?? "none",
+        createdAt: _tryParseDate(json["created_at"]),
+        image: json["image"]?.toString() ?? "",
+        balance: json["balance"] is Map<String, dynamic>
+            ? Balance.fromJson(json["balance"])
+            : Balance.empty(),
+      );
+
+  static int _asInt(dynamic v) {
+    if (v == null) return 0;
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    if (v is String) return int.tryParse(v) ?? 0;
+    return 0;
+  }
+
+  static DateTime? _tryParseDate(dynamic v) {
+    if (v is String && v.isNotEmpty) return DateTime.tryParse(v);
+    return null;
+  }
 
   Map<String, dynamic> toJson() => {
     "id": id,
@@ -100,13 +131,20 @@ class Balance {
     required this.currency,
   });
 
+  factory Balance.empty() => Balance(
+      balance: "0",
+      afterTax: "0",
+      tax: "0",
+      lockedBalance: "0",
+      currency: "UZS");
+
   factory Balance.fromJson(Map<String, dynamic> json) => Balance(
-    balance: json["balance"] ?? "0",
-    afterTax: json["after_tax"]??"0",
-    tax: json["tax"] ?? "0",
-    lockedBalance: json["locked_balance"] ?? "0",
-    currency: json["currency"] ?? "UZS",
-  );
+        balance: json["balance"]?.toString() ?? "0",
+        afterTax: json["after_tax"]?.toString() ?? "0",
+        tax: json["tax"]?.toString() ?? "0",
+        lockedBalance: json["locked_balance"]?.toString() ?? "0",
+        currency: json["currency"]?.toString() ?? "UZS",
+      );
 
   Map<String, dynamic> toJson() => {
     "balance": balance,

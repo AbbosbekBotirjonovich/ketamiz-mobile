@@ -27,7 +27,6 @@ class MapRouteScreen extends StatefulWidget {
 }
 
 class _MapRouteScreenState extends State<MapRouteScreen> {
-  late GoogleMapController _mapController;
   final Set<Marker> _markers = {};
   final Set<Polyline> _polyLines = {};
   MapType _currentMapType = MapType.normal;
@@ -162,9 +161,7 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
             myLocationEnabled: false,
             mapType: _currentMapType,
             myLocationButtonEnabled: false,
-            onMapCreated: (GoogleMapController controller) {
-              _mapController = controller;
-            },
+            onMapCreated: (GoogleMapController controller) {},
           ),
           Column(
             mainAxisAlignment: MainAxisAlignment.start,

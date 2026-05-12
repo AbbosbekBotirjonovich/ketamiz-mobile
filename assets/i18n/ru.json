@@ -75,5 +75,19 @@
     "canceled": "Отменено",
     "price": "Цена",
     "no_trips": "Поездки не найдены"
+  },
+  "profile": {
+    "delete_vehicle": "Удалить Автомобиль",
+    "delete_vehicle_confirm": "Вы уверены, что хотите удалить этот автомобиль? Это действие нельзя отменить.",
+    "vehicle_deleted": "Автомобиль успешно удалён",
+    "delete_vehicle_failed": "Не удалось удалить автомобиль. Пожалуйста, попробуйте снова.",
+    "transactions": "История транзакций",
+    "no_transactions": "Транзакции не найдены",
+    "transaction_type_top_up": "Пополнение",
+    "transaction_type_credit": "Кредит",
+    "transaction_type_refund": "Возврат",
+    "transaction_type_debit": "Оплата",
+    "transaction_type_booking": "Бронирование поездки",
+    "transaction_type_withdrawal": "Вывод средств"
   }
 }

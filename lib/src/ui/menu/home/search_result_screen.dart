@@ -10,7 +10,6 @@ import 'package:qadam/src/ui/widgets/containers/destinations_container.dart';
 import 'package:qadam/src/ui/widgets/texts/text_12h_400w.dart';
 import 'package:qadam/src/utils/utils.dart';
 import 'package:shimmer/shimmer.dart';
-import '../../../defaults/defaults.dart';
 import '../../../lan_localization/load_places.dart';
 import '../../../model/api/trip_search_model.dart';
 import '../../../model/location_model.dart';
@@ -36,24 +35,26 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
 
   @override
   void initState() {
-    blocHome.fetchTripSearch(
-      widget.trip.fromVillageId.toString(),
-      widget.trip.toVillageId.toString(),
-      widget.trip.startTime,
-      widget.trip.endTime,
-      widget.isRoundTrip,
-    );
+    _search();
     super.initState();
   }
 
-  Future<void> _onRefresh() async {
+  void _search() {
     blocHome.fetchTripSearch(
+      widget.trip.fromRegionId.toString(),
+      widget.trip.toRegionId.toString(),
+      widget.trip.fromCityId.toString(),
+      widget.trip.toCityId.toString(),
       widget.trip.fromVillageId.toString(),
       widget.trip.toVillageId.toString(),
       widget.trip.startTime,
-      widget.trip.endTime,
+      widget.isRoundTrip ? widget.trip.endTime : null,
       widget.isRoundTrip,
     );
+  }
+
+  Future<void> _onRefresh() async {
+    _search();
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
@@ -107,24 +108,22 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
                     return ListView(
                       padding: const EdgeInsets.only(top: 282),
                       children: [
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Lottie.asset(
-                                  "assets/lottie/empty.json",
-                                  width: 200,
-                                  height: 200,
-                                  fit: BoxFit.cover,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
-                            Text16h500w(title: translate("qadam.No_trip_found")),
-                          ],
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top - 282,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Lottie.asset(
+                                "assets/lottie/empty.json",
+                                width: 200,
+                                height: 200,
+                                fit: BoxFit.cover,
+                              ),
+                              const SizedBox(height: 24),
+                              Text16h500w(title: translate("qadam.No_trip_found")),
+                            ],
+                          ),
                         ),
                       ],
                     );

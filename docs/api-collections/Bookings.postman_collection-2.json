@@ -1,0 +1,563 @@
+{
+  "info": {
+    "_postman_id": "f53001fe-567a-4efe-89ef-43891738dcf7",
+    "name": "Bookings",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "35381670",
+    "_collection_link": "https://go.postman.co/collection/19384339-f53001fe-567a-4efe-89ef-43891738dcf7?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "progress, canceled, completed",
+      "item": [
+        {
+          "name": "in_progress",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "en",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{qardam_base_url}}/api/v1/client/trips/get-inprogress-trips",
+              "host": [
+                "{{qardam_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "client",
+                "trips",
+                "get-inprogress-trips"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "canceled",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "en",
+                "description": "en,uz,ru",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{qardam_base_url}}/api/v1/client/trips/get-canceled-trips",
+              "host": [
+                "{{qardam_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "client",
+                "trips",
+                "get-canceled-trips"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "compeleted",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{api}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{qardam_base_url}}/api/v1/client/trips/get-completed-trips",
+              "host": [
+                "{{qardam_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "client",
+                "trips",
+                "get-completed-trips"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "get all my bookings",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/client/booking",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "client",
+            "booking"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get my one booking by booking_id",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/client/booking/12",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "client",
+            "booking",
+            "12"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "book a trip",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"trip_id\": 20,\n  \"passengers\": [\n    {\n      \"name\": \"new pagengers 1\",\n      \"phone\": \"+998901234569\",\n      \"longitude\" : \"52.206317\",\n      \"latitude\" : \"21.002879\"\n    }\n  ]\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/client/booking",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "client",
+            "booking"
+          ],
+          "query": [
+            {
+              "key": "",
+              "value": "1",
+              "type": "text",
+              "disabled": true
+            },
+            {
+              "key": "",
+              "value": "1",
+              "type": "text",
+              "disabled": true
+            },
+            {
+              "key": "",
+              "value": "3",
+              "type": "text",
+              "disabled": true
+            },
+            {
+              "key": "",
+              "value": "3000",
+              "type": "text",
+              "disabled": true
+            },
+            {
+              "key": "",
+              "value": null,
+              "type": "text",
+              "disabled": true
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "canacel booking ( BY BOOKING ID)",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "en",
+            "description": "en, ru, uz",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "name",
+              "value": "Ramziddin",
+              "type": "text",
+              "uuid": "381fa27d-e3b7-456c-8ec2-fefd00ec7517",
+              "disabled": true
+            },
+            {
+              "key": "phone",
+              "value": "+9989999999999",
+              "type": "text",
+              "uuid": "a13249d9-ef12-4dc3-8944-b70b13338bd2",
+              "disabled": true
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/client/booking/cancel/10",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "client",
+            "booking",
+            "cancel",
+            "10"
+          ],
+          "query": [
+            {
+              "key": "",
+              "value": "1",
+              "type": "text",
+              "disabled": true
+            },
+            {
+              "key": "",
+              "value": "1",
+              "type": "text",
+              "disabled": true
+            },
+            {
+              "key": "",
+              "value": "3",
+              "type": "text",
+              "disabled": true
+            },
+            {
+              "key": "",
+              "value": "3000",
+              "type": "text",
+              "disabled": true
+            },
+            {
+              "key": "",
+              "value": null,
+              "type": "text",
+              "disabled": true
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "add a passenger to booking",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "name",
+              "value": "Jonibek",
+              "type": "text",
+              "uuid": "97d87b93-83ec-408a-9abc-dc8500ccef4a"
+            },
+            {
+              "key": "phone",
+              "value": "+9989999999999",
+              "type": "text",
+              "uuid": "6a11a6e6-9906-45cc-9d78-404c544192db"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/client/booking/7/add-passenger",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "client",
+            "booking",
+            "7",
+            "add-passenger"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "remove a passenger from booking",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "",
+              "value": "",
+              "type": "text",
+              "uuid": "df6d8651-b10a-481c-9b5c-a611d3ac67f7",
+              "disabled": true
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/client/booking/7/remove-passenger/19",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "client",
+            "booking",
+            "7",
+            "remove-passenger",
+            "19"
+          ],
+          "query": [
+            {
+              "key": "",
+              "value": null,
+              "type": "text",
+              "disabled": true
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "give trip id and get your bookings belongs to  a trip",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": []
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/client/trips/booking/10",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "client",
+            "trips",
+            "booking",
+            "10"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

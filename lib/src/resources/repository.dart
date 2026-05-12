@@ -43,15 +43,23 @@ class Repository {
   Future<HttpResult> fetchTripList() => apiProvider.fetchTripList();
 
   Future<HttpResult> fetchTripSearch(
-    String fromVillageId,
-    String toVillageId,
+    String fromRegionId,
+    String toRegionId,
+    String fromDistrictId,
+    String toDistrictId,
+    String fromQuarterId,
+    String toQuarterId,
     DateTime departureDate,
     DateTime? returnDate,
     bool? isRoundTrip,
   ) =>
       apiProvider.fetchTripSearch(
-        fromVillageId,
-        toVillageId,
+        fromRegionId,
+        toRegionId,
+        fromDistrictId,
+        toDistrictId,
+        fromQuarterId,
+        toQuarterId,
         departureDate,
         returnDate,
         isRoundTrip,
@@ -72,14 +80,16 @@ class Repository {
   Future<HttpResult> fetchBookedTripsList() =>
       apiProvider.fetchBookedTripsList();
 
-  Future<HttpResult> fetchDrivingFrontUpload(String path) =>
-      apiProvider.fetchDrivingFrontUpload(path);
-
-  Future<HttpResult> fetchDrivingBackUpload(String path) =>
-      apiProvider.fetchDrivingBackUpload(path);
-
-  Future<HttpResult> fetchPassportUpload(String path) =>
-      apiProvider.fetchPassportUpload(path);
+  Future<HttpResult> fetchDriverDocsUpload({
+    required String drivingLicenceFrontPath,
+    required String drivingLicenceBackPath,
+    required String passportPath,
+  }) =>
+      apiProvider.fetchDriverDocsUpload(
+        drivingLicenceFrontPath: drivingLicenceFrontPath,
+        drivingLicenceBackPath: drivingLicenceBackPath,
+        passportPath: passportPath,
+      );
 
   Future<HttpResult> fetchApplyDriver(
     String drivingLicenceNumber,
@@ -205,6 +215,9 @@ class Repository {
       apiProvider.fetchTransactionList();
 
   Future<HttpResult> fetchVehiclesList() => apiProvider.fetchVehiclesList();
+
+  Future<HttpResult> fetchDeleteVehicle(int vehicleId) =>
+      apiProvider.fetchDeleteVehicle(vehicleId);
 
   Future<HttpResult> fetchDriverTripsList(String action) =>
       apiProvider.fetchDriverTripsList(action);

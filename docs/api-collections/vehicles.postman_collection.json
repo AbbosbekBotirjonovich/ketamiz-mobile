@@ -1,0 +1,286 @@
+{
+  "info": {
+    "_postman_id": "e2c8af78-3baa-43f7-adaa-868c49770039",
+    "name": "vehicles",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "35381670",
+    "_collection_link": "https://go.postman.co/collection/19384339-e2c8af78-3baa-43f7-adaa-868c49770039?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "get all",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": []
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/vehicles",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "vehicles"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "create new one",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "vehicle_number",
+              "value": "30T935XS",
+              "type": "text"
+            },
+            {
+              "key": "seats",
+              "value": "4",
+              "type": "text"
+            },
+            {
+              "key": "car_color_id",
+              "type": "text",
+              "uuid": "dd8eac42-b201-450b-8d23-f3bcf2e5d7f9",
+              "value": "3"
+            },
+            {
+              "key": "tech_passport_number",
+              "value": "AUB12344312",
+              "type": "text"
+            },
+            {
+              "key": "car_model",
+              "value": "Lasitti",
+              "type": "text",
+              "uuid": "464a8fbc-85e7-4356-9887-905d31559027"
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/v1/vehicles",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "v1",
+            "vehicles"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "delete one ( with images)",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{driver_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://127.0.0.1:8000/api/v1/vehicles/25",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "v1",
+            "vehicles",
+            "25"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get one",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://127.0.0.1:8000/api/v1/vehicles/1",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "v1",
+            "vehicles",
+            "1"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "upload-car-images",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "multipart/form-data",
+            "type": "text"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "en",
+            "description": "en,ru,uz",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "vehicle_id",
+              "value": "1",
+              "description": "required|exists:vehicles,id',",
+              "type": "text",
+              "uuid": "cb3aac8e-2b41-43ea-8c74-be6573139c86"
+            },
+            {
+              "key": "tech_passport_front",
+              "description": "'nullable|image|mimes:jpeg,png,jpg,gif|max:10240'",
+              "type": "file",
+              "uuid": "34564973-e569-47b0-91ac-ff234cc6e972",
+              "src": "postman-cloud:///1f0628a5-dfe9-4660-b742-47bc16816727"
+            },
+            {
+              "key": "tech_passport_back",
+              "description": "'nullable|image|mimes:jpeg,png,jpg,gif|max:10240'",
+              "type": "file",
+              "uuid": "32b94646-4d2f-4b22-993e-5f9d1543c7f3",
+              "src": "postman-cloud:///1ef81987-f3a8-4b50-8219-d183d7df64f4"
+            },
+            {
+              "key": "car_images[]",
+              "description": " 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',",
+              "type": "file",
+              "uuid": "990bc09c-cc47-4b1d-8748-ce2e58c904f1",
+              "src": "postman-cloud:///1ef8196b-bb67-4870-bea6-62c25bd60b49"
+            },
+            {
+              "key": "car_images[]",
+              "description": " 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',",
+              "type": "file",
+              "uuid": "a9dbc377-0a8d-44fe-a843-4932bb63e0c7",
+              "src": "postman-cloud:///1ef8196b-bb67-4870-bea6-62c25bd60b49"
+            },
+            {
+              "key": "car_images[]",
+              "description": "nullable'required|image|mimes:jpeg,png,jpg,gif|max:10240',",
+              "type": "file",
+              "uuid": "986e1db6-8825-410f-b06b-556f8f24cf67",
+              "src": "postman-cloud:///1f0628a5-dfe9-4660-b742-47bc16816727"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/auth/upload-car-images",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "upload-car-images"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

@@ -36,6 +36,7 @@ class TransactionModel {
   String amount;
   String balanceBefore;
   String balanceAfter;
+  DateTime? createdAt;
 
   TransactionModel({
     required this.id,
@@ -43,6 +44,7 @@ class TransactionModel {
     required this.amount,
     required this.balanceBefore,
     required this.balanceAfter,
+    this.createdAt,
   });
 
   factory TransactionModel.fromJson(Map<String, dynamic> json) => TransactionModel(
@@ -51,6 +53,9 @@ class TransactionModel {
     amount: json["amount"] ?? "",
     balanceBefore: json["balance_before"] ?? "",
     balanceAfter: json["balance_after"] ?? "",
+    createdAt: json["created_at"] != null
+        ? DateTime.tryParse(json["created_at"].toString())
+        : null,
   );
 
   Map<String, dynamic> toJson() => {
@@ -59,5 +64,6 @@ class TransactionModel {
     "amount": amount,
     "balance_before": balanceBefore,
     "balance_after": balanceAfter,
+    "created_at": createdAt?.toIso8601String(),
   };
 }

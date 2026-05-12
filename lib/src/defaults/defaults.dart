@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:qadam/src/model/color_model.dart';
 import 'package:qadam/src/model/vehicle_model.dart';
-import 'package:qadam/src/theme/app_theme.dart';
 
-import '../model/location_model.dart';
 import '../model/trip_model.dart';
 
 class Defaults {

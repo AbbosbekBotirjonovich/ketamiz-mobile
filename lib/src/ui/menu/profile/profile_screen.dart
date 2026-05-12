@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:qadam/src/ui/auth/login_screen.dart';
-import 'package:qadam/src/ui/menu/main_screen.dart';
 import 'package:qadam/src/ui/menu/profile/edit_profile_screen.dart';
 import 'package:qadam/src/ui/menu/profile/my_vehicles_screen.dart';
 import 'package:qadam/src/ui/menu/profile/top_up_screen.dart';
+import 'package:qadam/src/ui/menu/profile/transaction_history_screen.dart';
 import 'package:qadam/src/ui/widgets/texts/text_12h_400w.dart';
 import 'package:qadam/src/ui/widgets/texts/text_16h_500w.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -29,13 +29,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _myImage = '';
   String _myName = '';
   String _myPhone = '';
+  bool _isDriver = false;
 
   @override
   void initState() {
-    blocProfile.fetchMe();
-    getBalance();
-    _getInfo();
     super.initState();
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
+    await blocProfile.fetchMe();
+    await getBalance();
+    await _getInfo();
   }
 
   @override
@@ -45,7 +50,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: Text16h500w(title: translate("profile.my_profile")),
         centerTitle: true,
       ),
-      body: ListView(
+      body: RefreshIndicator(
+        color: AppTheme.purple,
+        onRefresh: _refresh,
+        child: ListView(
         padding: const EdgeInsets.only(
           top: 22,
           bottom: 92,
@@ -220,25 +228,66 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          Text16h500w(
-            title: translate("profile.settings"),
-          ),
+          const SizedBox(height: 12),
           GestureDetector(
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const MyVehiclesScreen(),
+                  builder: (context) => const TransactionHistoryScreen(),
                 ),
               );
             },
-            child: SettingsContainer(
-                settingsModel: SettingsModel(
-              icon: Icons.directions_car_outlined,
-              title: translate("profile.my_vehicles"),
-            )),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppTheme.border),
+                boxShadow: [
+                  BoxShadow(
+                    offset: const Offset(0, 4),
+                    blurRadius: 100,
+                    color: AppTheme.black.withOpacity(0.05),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.receipt_long_outlined,
+                      size: 22, color: AppTheme.purple),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text16h500w(
+                      title: translate("profile.transactions"),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right,
+                      size: 20, color: AppTheme.gray),
+                ],
+              ),
+            ),
           ),
+          const SizedBox(height: 24),
+          Text16h500w(
+            title: translate("profile.settings"),
+          ),
+          if (_isDriver)
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MyVehiclesScreen(),
+                  ),
+                );
+              },
+              child: SettingsContainer(
+                  settingsModel: SettingsModel(
+                icon: Icons.directions_car_outlined,
+                title: translate("profile.my_vehicles"),
+              )),
+            ),
           SettingsContainer(
               settingsModel: SettingsModel(
             icon: Icons.lock_clock,
@@ -305,6 +354,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             )),
           ),
         ],
+        ),
       ),
     );
   }
@@ -324,6 +374,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _myImage = prefs.getString('avatar') ?? '';
       _myName = '$firstName $lastName';
       _myPhone = prefs.getString('phone') ?? '';
+      _isDriver = prefs.getString('role') == 'driver';
     });
   }
 

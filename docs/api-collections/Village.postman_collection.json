@@ -1,0 +1,82 @@
+{
+  "info": {
+    "_postman_id": "e3a204ca-2b21-44d3-80de-349b90aa5fa0",
+    "name": "Village",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "35381670",
+    "_collection_link": "https://go.postman.co/collection/19384339-e3a204ca-2b21-44d3-80de-349b90aa5fa0?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "get all",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYXBpL3YxL2F1dGgvbG9naW4iLCJpYXQiOjE3NTA0NTE3MzcsImV4cCI6MTc1ODIyNzczNywibmJmIjoxNzUwNDUxNzM3LCJqdGkiOiJtb0FXRlZOTzJhMVF5cjh1Iiwic3ViIjoiMzUiLCJwcnYiOiIyM2JkNWM4OTQ5ZjYwMGFkYjM5ZTcwMWM0MDA4NzJkYjdhNTk3NmY3In0.j2EoXzY8KCKM4DlxLVSfThUyx6n62CSbwKtxO-kCNCY",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://127.0.0.1:8000/api/v1/quarters",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "v1",
+            "quarters"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get all villages by district id",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/quarters/districts/207",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "quarters",
+            "districts",
+            "207"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

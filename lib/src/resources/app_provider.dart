@@ -219,25 +219,42 @@ class ApiProvider {
 
   /// Get Trip Search
   Future<HttpResult> fetchTripSearch(
-    String fromVillageId,
-    String toVillageId,
+    String fromRegionId,
+    String toRegionId,
+    String fromDistrictId,
+    String toDistrictId,
+    String fromQuarterId,
+    String toQuarterId,
     DateTime departureDate,
     DateTime? returnDate,
     bool? isRoundTrip,
   ) async {
     isRoundTrip ??= false;
 
-    final queryParams = {
-      'start_quarter_id': fromVillageId,
-      'end_quarter_id': toVillageId,
-      'departure_date': departureDate.toIso8601String(),
-      'return_date': returnDate?.toIso8601String() ?? '',
-      'is_round_trip': isRoundTrip.toString(),
+    final queryParams = <String, String>{
+      'start_region_id': fromRegionId,
+      'end_region_id': toRegionId,
+      'start_district_id': fromDistrictId,
+      'end_district_id': toDistrictId,
+      'start_quarter_id': fromQuarterId,
+      'end_quarter_id': toQuarterId,
+      'departure_date': _formatBackendDateTime(departureDate),
     };
+    if (isRoundTrip && returnDate != null) {
+      queryParams['return_date'] = _formatBackendDateTime(returnDate);
+      queryParams['is_round_trip'] = 'true';
+    }
 
     final uri = Uri.parse('$baseUrl/public/trips/search/available-trips')
         .replace(queryParameters: queryParams);
     return await getRequest(uri.toString());
+  }
+
+  /// Format DateTime as `Y-m-d H:i:s` for the backend (Laravel `date_format:Y-m-d H:i:s`)
+  static String _formatBackendDateTime(DateTime dt) {
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${dt.year}-${two(dt.month)}-${two(dt.day)} '
+        '${two(dt.hour)}:${two(dt.minute)}:${two(dt.second)}';
   }
 
 
@@ -336,8 +353,12 @@ class ApiProvider {
     }
   }
 
-  ///Driving Licence Front Upload
-  Future<HttpResult> fetchDrivingFrontUpload(String path) async {
+  /// Driver Docs Upload (all 3 files in one multipart call as required by backend)
+  Future<HttpResult> fetchDriverDocsUpload({
+    required String drivingLicenceFrontPath,
+    required String drivingLicenceBackPath,
+    required String passportPath,
+  }) async {
     String url = '$baseUrl/auth/upload-driver-passport-driving-licence';
 
     final token = await SecureStorage.getToken();
@@ -347,18 +368,30 @@ class ApiProvider {
       if (token != null) "Authorization": "Bearer $token",
     };
 
-    final Map<String, dynamic> bodyMap = {};
-    File? tempFile;
-    if (path.isNotEmpty) {
-      final originalFile = File(path);
-      tempFile = await _resizeImage(originalFile, maxWidth: 480, quality: 80);
-      bodyMap["driving_licence_front"] = await MultipartFile.fromFile(
-        tempFile.path,
-        filename: basename(tempFile.path),
-      );
-    }
-
+    final List<File> tempFiles = [];
     try {
+      final front = await _resizeImage(File(drivingLicenceFrontPath));
+      tempFiles.add(front);
+      final back = await _resizeImage(File(drivingLicenceBackPath));
+      tempFiles.add(back);
+      final passport = await _resizeImage(File(passportPath));
+      tempFiles.add(passport);
+
+      final bodyMap = <String, dynamic>{
+        "driving_licence_front": await MultipartFile.fromFile(
+          front.path,
+          filename: basename(front.path),
+        ),
+        "driving_licence_back": await MultipartFile.fromFile(
+          back.path,
+          filename: basename(back.path),
+        ),
+        "driver_passport_image": await MultipartFile.fromFile(
+          passport.path,
+          filename: basename(passport.path),
+        ),
+      };
+
       Response response = await dio.post(
         url,
         data: FormData.fromMap(bodyMap),
@@ -370,83 +403,7 @@ class ApiProvider {
     } catch (e) {
       return _handleGenericError(e);
     } finally {
-      _deleteTempFile(tempFile);
-    }
-  }
-
-  ///Driving Licence Back Upload
-  Future<HttpResult> fetchDrivingBackUpload(String path) async {
-    String url = '$baseUrl/auth/upload-driver-passport-driving-licence';
-
-    final token = await SecureStorage.getToken();
-    Dio dio = Dio();
-    final headers = {
-      "Accept": "application/json",
-      if (token != null) "Authorization": "Bearer $token",
-    };
-
-    final Map<String, dynamic> bodyMap = {};
-    File? tempFile;
-    if (path.isNotEmpty) {
-      final originalFile = File(path);
-      tempFile = await _resizeImage(originalFile, maxWidth: 480, quality: 80);
-      bodyMap["driving_licence_back"] = await MultipartFile.fromFile(
-        tempFile.path,
-        filename: basename(tempFile.path),
-      );
-    }
-
-    try {
-      Response response = await dio.post(
-        url,
-        data: FormData.fromMap(bodyMap),
-        options: Options(headers: headers, validateStatus: (s) => true),
-      );
-      return _processResponse(response);
-    } on DioException catch (e) {
-      return _handleDioError(e);
-    } catch (e) {
-      return _handleGenericError(e);
-    } finally {
-      _deleteTempFile(tempFile);
-    }
-  }
-
-  ///Passport Upload
-  Future<HttpResult> fetchPassportUpload(String path) async {
-    String url = '$baseUrl/auth/upload-driver-passport-driving-licence';
-
-    final token = await SecureStorage.getToken();
-    Dio dio = Dio();
-    final headers = {
-      "Accept": "application/json",
-      if (token != null) "Authorization": "Bearer $token",
-    };
-
-    final Map<String, dynamic> bodyMap = {};
-    File? tempFile;
-    if (path.isNotEmpty) {
-      final originalFile = File(path);
-      tempFile = await _resizeImage(originalFile, maxWidth: 480, quality: 80);
-      bodyMap["driver_passport_image"] = await MultipartFile.fromFile(
-        tempFile.path,
-        filename: basename(tempFile.path),
-      );
-    }
-
-    try {
-      Response response = await dio.post(
-        url,
-        data: FormData.fromMap(bodyMap),
-        options: Options(headers: headers, validateStatus: (s) => true),
-      );
-      return _processResponse(response);
-    } on DioException catch (e) {
-      return _handleDioError(e);
-    } catch (e) {
-      return _handleGenericError(e);
-    } finally {
-      _deleteTempFile(tempFile);
+      _deleteTempFiles(tempFiles);
     }
   }
 
@@ -457,8 +414,12 @@ class ApiProvider {
     DateTime birthDate,
   ) async {
     String url = '$baseUrl/auth/become-a-driver';
-    String expiryDateStr = '${expiryDate.day},${expiryDate.month},${expiryDate.year}';
-    String birthDateStr = '${birthDate.day},${birthDate.month},${birthDate.year}';
+    String two(int v) => v.toString().padLeft(2, '0');
+    // Per API contract: license expiration is `dd,mm,yyyy`, birthday is `dd.mm.yyyy`.
+    String expiryDateStr =
+        '${two(expiryDate.day)},${two(expiryDate.month)},${expiryDate.year}';
+    String birthDateStr =
+        '${two(birthDate.day)}.${two(birthDate.month)}.${birthDate.year}';
     final data = {
       "driving_license_number": drivingLicenceNumber,
       "driving_license_expiration_date": expiryDateStr,
@@ -597,8 +558,8 @@ class ApiProvider {
     String url = '$baseUrl/driver/trips';
     final data = {
       "vehicle_id": vehicleId,
-      "start_time": startDate.toIso8601String(),
-      "end_time": endDate.toIso8601String(),
+      "start_time": _formatBackendDateTime(startDate),
+      "end_time": _formatBackendDateTime(endDate),
       "start_region_id": startRegionId,
       "start_district_id": startDistrictId,
       "start_quarter_id": startQuarterId,
@@ -623,8 +584,8 @@ class ApiProvider {
 
   /// Cancel Driver Trip
   Future<HttpResult> fetchCancelDriverTrip(String tripId) async {
-    String url = '$baseUrl/driver/trips/$tripId/cancel';
-    return await postRequest(url, {});
+    String url = '$baseUrl/driver/trips/cancel-trip/$tripId';
+    return await deleteRequest(url);
   }
 
   /// Get Card List
@@ -684,10 +645,38 @@ class ApiProvider {
     return await getRequest(url);
   }
 
+  /// GET Request using Dio (DELETE method)
+  static Future<HttpResult> deleteRequest(String url) async {
+    Dio dio = Dio();
+    final headers = await _getReqHeader();
+    try {
+      Response response = await dio.delete(
+        url,
+        options: Options(
+          headers: headers,
+          sendTimeout: durationTimeout,
+          receiveTimeout: durationTimeout,
+          validateStatus: (status) => true,
+        ),
+      );
+      return _processResponse(response);
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return _handleGenericError(e);
+    }
+  }
+
   /// Get My Vehicles
   Future<HttpResult> fetchVehiclesList() async {
     String url = '$baseUrl/vehicles';
     return await getRequest(url);
+  }
+
+  /// Delete Vehicle
+  Future<HttpResult> fetchDeleteVehicle(int vehicleId) async {
+    String url = '$baseUrl/vehicles/$vehicleId';
+    return await deleteRequest(url);
   }
 
   /// Get All Driver Trips

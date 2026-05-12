@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:qadam/src/bloc/home_bloc.dart';
-import 'package:qadam/src/lan_localization/load_places.dart';
 import 'package:qadam/src/model/api/trip_list_model.dart';
 import 'package:qadam/src/model/location_model.dart';
 import 'package:qadam/src/ui/dialogs/bottom_dialog.dart';
@@ -76,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int notificationNumber = 0;
 
-  bool _isReturnToggled = true;
+  bool _isReturnToggled = false;
 
   String _userName = '';
 

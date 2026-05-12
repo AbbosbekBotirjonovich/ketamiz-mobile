@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:lottie/lottie.dart';
 import 'package:qadam/src/ui/dialogs/bottom_dialog.dart';
 import 'package:qadam/src/ui/dialogs/center_dialog.dart';
 import 'package:qadam/src/ui/menu/home/map_single_screen.dart';
@@ -84,7 +83,6 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
       passengers = [
         PassengerModel(
           fullName: "${user.firstName} ${user.lastName}".trim(),
-          email: user.email,
           phoneNumber: user.phone,
         ),
       ];

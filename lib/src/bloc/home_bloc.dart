@@ -48,17 +48,25 @@ class HomeBloc {
     }
   }
 
-  fetchTripSearch(
-    String fromVillageId,
-    String toVillageId,
+  Future<void> fetchTripSearch(
+    String fromRegionId,
+    String toRegionId,
+    String fromDistrictId,
+    String toDistrictId,
+    String fromQuarterId,
+    String toQuarterId,
     DateTime departureDate,
     DateTime? returnDate,
     bool? isRoundTrip,
   ) async {
     try {
       var response = await _repository.fetchTripSearch(
-        fromVillageId,
-        toVillageId,
+        fromRegionId,
+        toRegionId,
+        fromDistrictId,
+        toDistrictId,
+        fromQuarterId,
+        toQuarterId,
         departureDate,
         returnDate,
         isRoundTrip,

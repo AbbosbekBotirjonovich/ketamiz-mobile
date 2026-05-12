@@ -76,5 +76,19 @@
     "canceled": "Bekor qilingan",
     "price": "Narx",
     "no_trips": "Sayohatlar topilmadi"
+  },
+  "profile": {
+    "delete_vehicle": "Avtomobilni O'chirish",
+    "delete_vehicle_confirm": "Ushbu avtomobilni o'chirishga ishonchingiz komilmi? Bu amalni bekor qilib bo'lmaydi.",
+    "vehicle_deleted": "Avtomobil muvaffaqiyatli o'chirildi",
+    "delete_vehicle_failed": "Avtomobilni o'chirib bo'lmadi. Iltimos, qaytadan urinib ko'ring.",
+    "transactions": "Tranzaksiyalar tarixi",
+    "no_transactions": "Tranzaksiyalar topilmadi",
+    "transaction_type_top_up": "Balansni to'ldirish",
+    "transaction_type_credit": "Kredit",
+    "transaction_type_refund": "Qaytarish",
+    "transaction_type_debit": "To'lov",
+    "transaction_type_booking": "Sayohat bron qilish",
+    "transaction_type_withdrawal": "Yechib olish"
   }
 }
