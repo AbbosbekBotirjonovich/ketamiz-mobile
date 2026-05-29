@@ -23,7 +23,7 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.qadam.qadam"
+    namespace "uz.ketamiz.app"
     compileSdk flutter.compileSdkVersion
     ndkVersion flutter.ndkVersion
 
@@ -42,7 +42,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId "com.qadam.qadam"
+        applicationId "uz.ketamiz.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdkVersion flutter.minSdkVersion
@@ -52,7 +52,9 @@ android {
 
         // Read Maps API key from local.properties (not committed to VCS)
         def mapsApiKey = localProperties.getProperty('MAPS_API_KEY') ?: ''
-        manifestPlaceholders = [mapsApiKey: mapsApiKey]
+        manifestPlaceholders += [
+            mapsApiKey: mapsApiKey
+        ]
     }
 
     buildTypes {

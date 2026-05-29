@@ -1,5 +1,5 @@
-import 'package:qadam/src/model/api/user_model.dart';
-import 'package:qadam/src/model/event_bus/http_result.dart';
+import 'package:ketamiz/src/model/api/user_model.dart';
+import 'package:ketamiz/src/model/event_bus/http_result.dart';
 
 import '../model/api/get_user_model.dart';
 import '../model/passenger_model.dart';

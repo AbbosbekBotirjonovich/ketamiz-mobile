@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:lottie/lottie.dart';
-import 'package:qadam/src/bloc/qadam_bloc.dart';
-import 'package:qadam/src/model/api/trip_list_model.dart';
-import 'package:qadam/src/theme/app_theme.dart';
-import 'package:qadam/src/ui/menu/home/trip_details_screen.dart';
-import 'package:qadam/src/ui/menu/new_qadam/create_new_qadam_screen.dart';
-import 'package:qadam/src/ui/widgets/buttons/secondary_button.dart';
-import 'package:qadam/src/ui/widgets/texts/text_16h_500w.dart';
+import 'package:ketamiz/src/bloc/ketamiz_bloc\.dart';
+import 'package:ketamiz/src/model/api/trip_list_model.dart';
+import 'package:ketamiz/src/theme/app_theme.dart';
+import 'package:ketamiz/src/ui/menu/home/trip_details_screen.dart';
+import 'package:ketamiz/src/ui/menu/new_ketamiz/create_new_ketamiz_screen\.dart';
+import 'package:ketamiz/src/ui/widgets/buttons/secondary_button.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../model/api/driver_trips_list_model.dart';
@@ -16,14 +16,14 @@ import '../../widgets/containers/destinations_container.dart';
 import '../../widgets/texts/text_14h_400w.dart';
 import 'add_docs_screen.dart';
 
-class NewQadam extends StatefulWidget {
-  const NewQadam({super.key});
+class NewKetamiz extends StatefulWidget {
+  const NewKetamiz({super.key});
 
   @override
-  State<NewQadam> createState() => _NewQadamState();
+  State<NewKetamiz> createState() => _NewKetamizState();
 }
 
-class _NewQadamState extends State<NewQadam> {
+class _NewKetamizState extends State<NewKetamiz> {
   bool isDocsAdded = false;
   bool isDocsVerified = false;
 
@@ -45,13 +45,13 @@ class _NewQadamState extends State<NewQadam> {
     });
 
     if (isDocsVerified) {
-      blocQadam.fetchDriverTripList("active");
+      blocKetamiz.fetchDriverTripList("active");
     }
   }
 
   Future<void> _onRefresh() async {
     final statuses = ["active", "completed", "canceled"];
-    blocQadam.fetchDriverTripList(statuses[selectedTabIndex]);
+    blocKetamiz.fetchDriverTripList(statuses[selectedTabIndex]);
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
@@ -80,14 +80,14 @@ class _NewQadamState extends State<NewQadam> {
                   fit: BoxFit.cover,
                 ),
                 const SizedBox(height: 24),
-                Text16h500w(title: translate("qadam.add_docs_title")),
+                Text16h500w(title: translate("ketamiz.add_docs_title")),
                 const SizedBox(height: 8),
                 Row(
                   children: [
                     const SizedBox(width: 32),
                     Expanded(
                       child: Text(
-                        translate("qadam.add_docs_msg"),
+                        translate("ketamiz.add_docs_msg"),
                         style: const TextStyle(
                           fontSize: 14,
                           color: AppTheme.gray,
@@ -104,7 +104,7 @@ class _NewQadamState extends State<NewQadam> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 32),
                   child: SecondaryButton(
-                    title: translate("qadam.add_docs_button"),
+                    title: translate("ketamiz.add_docs_button"),
                     onTap: () {
                       Navigator.push(
                         context,
@@ -133,14 +133,14 @@ class _NewQadamState extends State<NewQadam> {
                     ),
                     const SizedBox(height: 24),
                     Text16h500w(
-                        title: translate("qadam.verification_in_progress")),
+                        title: translate("ketamiz.verification_in_progress")),
                     const SizedBox(height: 8),
                     Row(
                       children: [
                         const SizedBox(width: 32),
                         Expanded(
                           child: Text(
-                            translate("qadam.verification_in_progress_msg"),
+                            translate("ketamiz.verification_in_progress_msg"),
                             style: const TextStyle(
                               fontSize: 14,
                               color: AppTheme.gray,
@@ -162,7 +162,7 @@ class _NewQadamState extends State<NewQadam> {
                           color: AppTheme.purple,
                           onRefresh: _onRefresh,
                           child: StreamBuilder<List<DriverTripModel>>(
-                            stream: blocQadam.getTrips,
+                            stream: blocKetamiz.getTrips,
                             builder: (context, snapshot) {
                               if(snapshot.hasData){
                                 final trips = snapshot.data ?? [];
@@ -184,14 +184,14 @@ class _NewQadamState extends State<NewQadam> {
                                               fit: BoxFit.cover,
                                             ),
                                             const SizedBox(height: 24),
-                                            Text16h500w(title: translate("qadam.No_trip_found")),
+                                            Text16h500w(title: translate("ketamiz.No_trip_found")),
                                             const SizedBox(height: 8),
                                             Row(
                                               children: [
                                                 const SizedBox(width: 32),
                                                 Expanded(
                                                   child: Text(
-                                                    translate("qadam.No_trip_found_msg"),
+                                                    translate("ketamiz.No_trip_found_msg"),
                                                     style: const TextStyle(
                                                       fontSize: 14,
                                                       color: AppTheme.gray,
@@ -440,7 +440,7 @@ class _NewQadamState extends State<NewQadam> {
                                         setState(() {
                                           selectedTabIndex = 0;
                                         });
-                                        blocQadam.fetchDriverTripList("active");
+                                        blocKetamiz.fetchDriverTripList("active");
                                       },
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(
@@ -469,7 +469,7 @@ class _NewQadamState extends State<NewQadam> {
                                         setState(() {
                                           selectedTabIndex = 1;
                                         });
-                                        blocQadam.fetchDriverTripList("completed");
+                                        blocKetamiz.fetchDriverTripList("completed");
                                       },
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(
@@ -497,7 +497,7 @@ class _NewQadamState extends State<NewQadam> {
                                         setState(() {
                                           selectedTabIndex = 2;
                                         });
-                                        blocQadam.fetchDriverTripList("canceled");
+                                        blocKetamiz.fetchDriverTripList("canceled");
                                       },
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(
@@ -533,13 +533,13 @@ class _NewQadamState extends State<NewQadam> {
                                 right: 16,
                               ),
                               child: SecondaryButton(
-                                title: translate("qadam.create_new_trip"),
+                                title: translate("ketamiz.create_new_trip"),
                                 onTap: () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) =>
-                                          CreateNewQadamScreen(
+                                          CreateNewKetamizScreen(
                                         driverTrip: myDefaultTrip,
                                       ),
                                     ),

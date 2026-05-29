@@ -102,7 +102,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
               children: [
                 const Icon(Icons.cloud_upload_outlined, size: 48, color: AppTheme.purple),
                 const SizedBox(height: 8),
-                Text14h400w(title: translate("qadam.tap_to_upload")),
+                Text14h400w(title: translate("ketamiz.tap_to_upload")),
               ],
             )
                 : Stack(
@@ -189,7 +189,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
         if (success) {
           onUpdate(pickedFile.path);
         } else {
-          _showError(translate("qadam.upload_failed"));
+          _showError(translate("ketamiz.upload_failed"));
         }
       } else {
         _showError(translate("auth.connection_failed"));
@@ -401,7 +401,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     return Column(
       children: [
         _buildImageUpload(
-          title: translate("qadam.tech_passport_front"),
+          title: translate("ketamiz.tech_passport_front"),
           imagePath: techPassportFront,
           onUpload: (path) {
             setState(() {
@@ -413,7 +413,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
         ),
         const SizedBox(height: 16),
         _buildImageUpload(
-          title: translate("qadam.tech_passport_back"),
+          title: translate("ketamiz.tech_passport_back"),
           imagePath: techPassportBack,
           onUpload: (path) {
             setState(() {
@@ -518,7 +518,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
               carImages.add(image);
             });
           } else {
-            _showError(translate("qadam.upload_failed"));
+            _showError(translate("ketamiz.upload_failed"));
           }
         } else {
           _showError(translate("auth.connection_failed"));
@@ -531,7 +531,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   }
 
   void _showError(String message) {
-    CenterDialog.showActionFailed(context, translate("qadam.error"), message);
+    CenterDialog.showActionFailed(context, translate("ketamiz.error"), message);
   }
 
   @override
@@ -664,8 +664,8 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   }
 
   String _getAppBarTitle() {
-    if (currentStep == 1) return translate("qadam.vehicle_details");
-    return translate("qadam.vehicle_photos");
+    if (currentStep == 1) return translate("ketamiz.vehicle_details");
+    return translate("ketamiz.vehicle_photos");
   }
 
   Widget _buildStepIndicator(int step) {
@@ -695,7 +695,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
       },
       child: PrimaryButton(
         title: currentStep == totalSteps
-            ? translate("qadam.submit")
+            ? translate("ketamiz.submit")
             : translate("next"),
       ),
     );
@@ -706,17 +706,17 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
       if (carModelController.text.isEmpty ||
           carNumberController.text.isEmpty ||
           techPassportController.text.isEmpty) {
-        _showError(translate("qadam.missing_docs"));
+        _showError(translate("ketamiz.missing_docs"));
         return false;
       }
       if (selectedColor.id == 0) {
-        _showError(translate("qadam.select_color"));
+        _showError(translate("ketamiz.select_color"));
         return false;
       }
     }
     if (currentStep == 2) {
       if (techPassportFront.isEmpty || techPassportBack.isEmpty || carImages.isEmpty) {
-        _showError(translate("qadam.upload_all_docs"));
+        _showError(translate("ketamiz.upload_all_docs"));
         return false;
       }
     }
@@ -750,10 +750,10 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
             currentStep++;
           });
         } else {
-          _showError(translate("qadam.vehicle_id_missing"));
+          _showError(translate("ketamiz.vehicle_id_missing"));
         }
       } else {
-        final errorMessage = (response.result is Map ? response.result['message']?.toString() : null) ?? translate("qadam.error");
+        final errorMessage = (response.result is Map ? response.result['message']?.toString() : null) ?? translate("ketamiz.error");
         _showError(errorMessage);
       }
     } else {
@@ -764,7 +764,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   // Step 2 Submit: Vehicle Images (Final)
   Future<void> _submitStep2() async {
     if (vehicleId.isEmpty) {
-      _showError(translate("qadam.vehicle_id_missing"));
+      _showError(translate("ketamiz.vehicle_id_missing"));
       return;
     }
 
@@ -772,7 +772,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     // If we wanted to be stricter, we'd verify with the backend, but local check is fine for now.
 
     // Finalize / Navigate
-    CustomSnackBar().showSnackBar(context, translate("qadam.documents_uploaded"), 1);
+    CustomSnackBar().showSnackBar(context, translate("ketamiz.documents_uploaded"), 1);
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setBool('isDocsAdded', true);

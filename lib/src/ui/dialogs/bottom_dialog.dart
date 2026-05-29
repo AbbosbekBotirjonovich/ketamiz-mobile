@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
-import 'package:qadam/src/defaults/defaults.dart';
-import 'package:qadam/src/model/location_model.dart';
-import 'package:qadam/src/ui/widgets/texts/text_14h_500w.dart';
-import 'package:qadam/src/ui/widgets/texts/text_16h_500w.dart';
-import 'package:qadam/src/ui/widgets/texts/text_18h_500w.dart';
+import 'package:ketamiz/src/defaults/defaults.dart';
+import 'package:ketamiz/src/model/location_model.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_14h_500w.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_18h_500w.dart';
 
 import '../../lan_localization/load_places.dart';
 import '../../model/color_model.dart';

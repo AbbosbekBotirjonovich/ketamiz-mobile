@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_translate/flutter_translate.dart';
-import 'package:qadam/src/lan_localization/load_places.dart';
-import 'package:qadam/src/ui/auth/login_screen.dart';
+import 'package:ketamiz/src/lan_localization/load_places.dart';
+import 'package:ketamiz/src/ui/auth/login_screen.dart';
+import 'package:ketamiz/src/ui/language/language_selection_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../menu/main_screen.dart';
@@ -21,6 +22,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void initState() {
+    super.initState();
     _setLanguage();
     LocationData.loadPlaces(context);
     _nextScreen();
@@ -37,8 +39,8 @@ class _SplashScreenState extends State<SplashScreen>
         curve: Curves.easeInOut,
       ),
     );
-    super.initState();
   }
+
   @override
   void dispose() {
     controller.dispose();
@@ -51,19 +53,6 @@ class _SplashScreenState extends State<SplashScreen>
       backgroundColor: AppTheme.purple,
       body: Stack(
         children: [
-          // Column(
-          //   children: [
-          //     SvgPicture.asset(
-          //       'assets/icons/splash_up.svg',
-          //       color: AppTheme.light.withOpacity(0.7),
-          //     ),
-          //     const Spacer(),
-          //     SvgPicture.asset(
-          //       'assets/icons/splash_down.svg',
-          //       color: AppTheme.light.withOpacity(0.7),
-          //     ),
-          //   ],
-          // ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -103,7 +92,7 @@ class _SplashScreenState extends State<SplashScreen>
                     fontSize: 36,
                     fontWeight: FontWeight.bold,
                     height: 1.5,
-                    color: AppTheme.purple,
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -116,26 +105,33 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _setLanguage() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    var lan = prefs.getString('language') ?? "en";
-    var localizationDelegate = LocalizedApp.of(context).delegate;
-    localizationDelegate.changeLocale(Locale(lan));
+    final savedLang = prefs.getString('language');
+    if (savedLang != null && mounted) {
+      final localizationDelegate = LocalizedApp.of(context).delegate;
+      await localizationDelegate.changeLocale(Locale(savedLang));
+    }
   }
 
-  _nextScreen() async {
+  Future<void> _nextScreen() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool isFirst = prefs.getBool('isFirst') ?? true;
+    final hasLanguage = prefs.getString('language') != null;
+    final isLoggedIn = !(prefs.getBool('isFirst') ?? true);
 
     Timer(
       const Duration(milliseconds: 2270),
-          () {
+      () {
         if (!mounted) return;
+        Widget destination;
+        if (!hasLanguage) {
+          destination = const LanguageSelectionScreen();
+        } else if (isLoggedIn) {
+          destination = const MainScreen();
+        } else {
+          destination = const LoginScreen();
+        }
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) {
-              return isFirst ? const LoginScreen() : const MainScreen();
-            },
-          ),
+          MaterialPageRoute(builder: (_) => destination),
         );
       },
     );

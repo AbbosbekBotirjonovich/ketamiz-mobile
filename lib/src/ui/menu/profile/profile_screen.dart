@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_translate/flutter_translate.dart';
-import 'package:qadam/src/ui/auth/login_screen.dart';
-import 'package:qadam/src/ui/menu/profile/edit_profile_screen.dart';
-import 'package:qadam/src/ui/menu/profile/my_vehicles_screen.dart';
-import 'package:qadam/src/ui/menu/profile/top_up_screen.dart';
-import 'package:qadam/src/ui/menu/profile/transaction_history_screen.dart';
-import 'package:qadam/src/ui/widgets/texts/text_12h_400w.dart';
-import 'package:qadam/src/ui/widgets/texts/text_16h_500w.dart';
+import 'package:ketamiz/src/ui/auth/login_screen.dart';
+import 'package:ketamiz/src/ui/menu/profile/edit_profile_screen.dart';
+import 'package:ketamiz/src/ui/menu/profile/my_vehicles_screen.dart';
+import 'package:ketamiz/src/ui/menu/profile/top_up_screen.dart';
+import 'package:ketamiz/src/ui/menu/profile/transaction_history_screen.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_12h_400w.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../bloc/profile_bloc.dart';
@@ -16,6 +16,12 @@ import '../../../utils/utils.dart';
 import '../../widgets/containers/settings_container.dart';
 import '../../widgets/texts/text_14h_400w.dart';
 import '../../widgets/texts/text_18h_500w.dart';
+
+const _kLanguages = [
+  {'code': 'uz', 'name': "O'zbek", 'flag': '🇺🇿'},
+  {'code': 'ru', 'name': 'Русский', 'flag': '🇷🇺'},
+  {'code': 'en', 'name': 'English', 'flag': '🇬🇧'},
+];
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -293,11 +299,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: Icons.lock_clock,
             title: translate("profile.change_password"),
           )),
-          SettingsContainer(
-              settingsModel: SettingsModel(
-            icon: Icons.language,
-            title: translate("profile.language"),
-          )),
+          GestureDetector(
+            onTap: () => _showLanguagePicker(),
+            child: SettingsContainer(
+                settingsModel: SettingsModel(
+              icon: Icons.language,
+              title: translate("profile.language"),
+            )),
+          ),
           SettingsContainer(
               settingsModel: SettingsModel(
             icon: Icons.notifications,
@@ -359,6 +368,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _showLanguagePicker() async {
+    final prefs = await SharedPreferences.getInstance();
+    final current = prefs.getString('language') ?? 'uz';
+
+    if (!mounted) return;
+    await showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _LanguagePickerSheet(currentCode: current),
+    );
+
+    // Rebuild so the locale change is reflected immediately in this screen
+    if (mounted) setState(() {});
+  }
+
   Future<void> getBalance() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -381,5 +407,118 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> wipeSharedPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
+  }
+}
+
+class _LanguagePickerSheet extends StatefulWidget {
+  const _LanguagePickerSheet({required this.currentCode});
+  final String currentCode;
+
+  @override
+  State<_LanguagePickerSheet> createState() => _LanguagePickerSheetState();
+}
+
+class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
+  late String _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = widget.currentCode;
+  }
+
+  Future<void> _apply() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('language', _selected);
+    if (!mounted) return;
+    final delegate = LocalizedApp.of(context).delegate;
+    await delegate.changeLocale(Locale(_selected));
+    if (!mounted) return;
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text16h500w(title: translate("profile.language")),
+          const SizedBox(height: 20),
+          ..._kLanguages.map((lang) => GestureDetector(
+                onTap: () => setState(() => _selected = lang['code']!),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: _selected == lang['code']
+                        ? AppTheme.purple.withOpacity(0.08)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _selected == lang['code']
+                          ? AppTheme.purple
+                          : AppTheme.border,
+                      width: _selected == lang['code'] ? 2 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        lang['flag']!,
+                        style: const TextStyle(fontSize: 24),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          lang['name']!,
+                          style: TextStyle(
+                            fontFamily: AppTheme.fontFamily,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: _selected == lang['code']
+                                ? AppTheme.purple
+                                : AppTheme.black,
+                          ),
+                        ),
+                      ),
+                      if (_selected == lang['code'])
+                        const Icon(Icons.check_circle,
+                            color: AppTheme.purple, size: 20),
+                    ],
+                  ),
+                ),
+              )),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _apply,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.purple,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              child: Text(
+                translate("home.save"),
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:qadam/src/ui/widgets/texts/text_14h_500w.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_14h_500w.dart';
 
 import '../../../model/credit_card_model.dart';
 import '../../../theme/app_theme.dart';

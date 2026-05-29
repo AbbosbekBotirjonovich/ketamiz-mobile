@@ -5,11 +5,11 @@ import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:qadam/src/ui/dialogs/bottom_dialog.dart';
-import 'package:qadam/src/ui/dialogs/center_dialog.dart';
-import 'package:qadam/src/ui/menu/main_screen.dart';
-import 'package:qadam/src/ui/widgets/buttons/primary_button.dart';
-import 'package:qadam/src/ui/widgets/textfield/main_textfield.dart';
+import 'package:ketamiz/src/ui/dialogs/bottom_dialog.dart';
+import 'package:ketamiz/src/ui/dialogs/center_dialog.dart';
+import 'package:ketamiz/src/ui/menu/main_screen.dart';
+import 'package:ketamiz/src/ui/widgets/buttons/primary_button.dart';
+import 'package:ketamiz/src/ui/widgets/textfield/main_textfield.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../model/api/apply_driver_response_model.dart';
 import '../../../model/color_model.dart';
@@ -209,10 +209,10 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
   }
 
   String _getAppBarTitle() {
-    if (currentStep == 1) return translate("qadam.driver_license_details");
-    if (currentStep == 2) return translate("qadam.document_upload");
-    if (currentStep == 3) return translate("qadam.vehicle_details");
-    return translate("qadam.vehicle_photos"); // Needs translation key
+    if (currentStep == 1) return translate("ketamiz.driver_license_details");
+    if (currentStep == 2) return translate("ketamiz.document_upload");
+    if (currentStep == 3) return translate("ketamiz.vehicle_details");
+    return translate("ketamiz.vehicle_photos"); // Needs translation key
   }
   
   Widget _buildStepIndicator(int step) {
@@ -233,14 +233,14 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
     return Column(
       children: [
         MainTextField(
-          hintText: translate("qadam.driver_license_number"),
+          hintText: translate("ketamiz.driver_license_number"),
           icon: Icons.numbers_outlined,
           controller: licenseNumController,
         ),
         const SizedBox(height: 16),
         _buildDateField(
           controller: licenseExpiryDateController,
-          label: translate("qadam.driver_license_expiry_date"),
+          label: translate("ketamiz.driver_license_expiry_date"),
           onTap: () {
             BottomDialog.showBirthDate(
               context,
@@ -253,7 +253,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
               },
               licenseExpiryDate,
               false,
-              translate("qadam.driver_license_expiry_date"),
+              translate("ketamiz.driver_license_expiry_date"),
             );
           },
         ),
@@ -349,7 +349,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
     return Column(
       children: [
         _buildImageUpload(
-          title: translate("qadam.upload_driving_licence_front"), // "License Front"
+          title: translate("ketamiz.upload_driving_licence_front"), // "License Front"
           imagePath: frontImage,
           onUpload: (path) {
             setState(() {
@@ -362,7 +362,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
         ),
         const SizedBox(height: 16),
         _buildImageUpload(
-          title: translate("qadam.upload_driving_licence_back"), // "License Back"
+          title: translate("ketamiz.upload_driving_licence_back"), // "License Back"
           imagePath: backImage,
           onUpload: (path) {
             setState(() {
@@ -375,7 +375,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
         ),
         const SizedBox(height: 16),
         _buildImageUpload(
-          title: translate("qadam.upload_passport"), // "Passport"
+          title: translate("ketamiz.upload_passport"), // "Passport"
           imagePath: passportImage,
           onUpload: (path) {
             setState(() {
@@ -425,7 +425,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
               children: [
                 const Icon(Icons.cloud_upload_outlined, size: 48, color: AppTheme.purple),
                 const SizedBox(height: 8),
-                Text14h400w(title: translate("qadam.tap_to_upload")),
+                Text14h400w(title: translate("ketamiz.tap_to_upload")),
               ],
             )
                 : Stack(
@@ -520,7 +520,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
       if (success) {
         onUpdate(pickedFile.path);
       } else {
-        _showError(translate("qadam.upload_failed"));
+        _showError(translate("ketamiz.upload_failed"));
       }
     } else {
       _showError(translate("auth.connection_failed"));
@@ -548,7 +548,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
         setState(() => currentStep++);
       } else {
         final message = (result is Map ? result['message']?.toString() : null) ??
-            translate("qadam.upload_failed");
+            translate("ketamiz.upload_failed");
         _showError(message);
       }
     } else {
@@ -878,7 +878,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
                     carImages.add(image);
                   });
              } else {
-                 _showError(translate("qadam.upload_failed"));
+                 _showError(translate("ketamiz.upload_failed"));
              }
         } else {
             _showError(translate("auth.connection_failed"));
@@ -908,7 +908,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
       },
       child: PrimaryButton(
         title: currentStep == 4 
-            ? translate("qadam.submit") 
+            ? translate("ketamiz.submit") 
             : translate("next"),
       ),
     );
@@ -923,13 +923,13 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
         return false;
       }
       if (licenseExpiryDate.isBefore(DateTime.now())) {
-        _showError(translate("qadam.license_expired"));
+        _showError(translate("ketamiz.license_expired"));
         return false;
       }
     }
     if (currentStep == 2) {
       if (frontImage.isEmpty || backImage.isEmpty || passportImage.isEmpty) {
-        _showError(translate("qadam.upload_all_docs"));
+        _showError(translate("ketamiz.upload_all_docs"));
         return false;
       }
     }
@@ -937,17 +937,17 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
       if (carModelController.text.isEmpty ||
           carNumberController.text.isEmpty ||
           techPassportController.text.isEmpty) {
-        _showError(translate("qadam.missing_docs"));
+        _showError(translate("ketamiz.missing_docs"));
         return false;
       }
       if (selectedColor.id == 0) {
-        _showError(translate("qadam.select_color"));
+        _showError(translate("ketamiz.select_color"));
         return false;
       }
     }
     if (currentStep == 4) {
       if (techPassportFront.isEmpty || techPassportBack.isEmpty || carImages.isEmpty) {
-        _showError(translate("qadam.upload_all_docs"));
+        _showError(translate("ketamiz.upload_all_docs"));
         return false;
       }
     }
@@ -955,7 +955,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
   }
 
   void _showError(String message) {
-    CenterDialog.showActionFailed(context, translate("qadam.error"), message);
+    CenterDialog.showActionFailed(context, translate("ketamiz.error"), message);
   }
 
   // Step 1 Submit: Apply Driver
@@ -1012,10 +1012,10 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
             currentStep++;
           });
         } else {
-          _showError(translate("qadam.vehicle_id_missing"));
+          _showError(translate("ketamiz.vehicle_id_missing"));
         }
       } else {
-        final errorMessage = (response.result is Map ? response.result['message']?.toString() : null) ?? translate("qadam.error");
+        final errorMessage = (response.result is Map ? response.result['message']?.toString() : null) ?? translate("ketamiz.error");
         _showError(errorMessage);
       }
     } else {
@@ -1026,7 +1026,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
   // Step 4 Submit: Vehicle Images (Final)
   Future<void> _submitStep4() async {
     if (vehicleId.isEmpty) {
-       _showError(translate("qadam.vehicle_id_missing"));
+       _showError(translate("ketamiz.vehicle_id_missing"));
        return;
     }
 
@@ -1034,7 +1034,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
     // If we wanted to be stricter, we'd verify with the backend, but local check is fine for now.
     
     // Finalize / Navigate
-    CustomSnackBar().showSnackBar(context, translate("qadam.documents_uploaded"), 1);
+    CustomSnackBar().showSnackBar(context, translate("ketamiz.documents_uploaded"), 1);
     
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setBool('isDocsAdded', true);

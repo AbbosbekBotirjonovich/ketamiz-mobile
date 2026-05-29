@@ -1,5 +1,5 @@
-import 'package:qadam/src/model/api/created_trip_model.dart';
-import 'package:qadam/src/model/api/trip_search_model.dart';
+import 'package:ketamiz/src/model/api/created_trip_model.dart';
+import 'package:ketamiz/src/model/api/trip_search_model.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../model/api/trip_list_model.dart';

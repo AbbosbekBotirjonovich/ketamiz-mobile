@@ -1,5 +1,5 @@
-import 'package:qadam/src/model/api/book_list_model.dart';
-import 'package:qadam/src/model/api/book_model.dart';
+import 'package:ketamiz/src/model/api/book_list_model.dart';
+import 'package:ketamiz/src/model/api/book_model.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../model/event_bus/http_result.dart';

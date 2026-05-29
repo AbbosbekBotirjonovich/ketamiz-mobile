@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:qadam/src/model/color_model.dart';
-import 'package:qadam/src/model/vehicle_model.dart';
+import 'package:ketamiz/src/model/color_model.dart';
+import 'package:ketamiz/src/model/vehicle_model.dart';
 
 import '../model/trip_model.dart';
 

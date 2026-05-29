@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_translate/flutter_translate.dart';
-import 'package:qadam/src/ui/auth/verification_screen.dart';
-import 'package:qadam/src/ui/widgets/texts/text_16h_500w.dart';
+import 'package:ketamiz/src/ui/auth/verification_screen.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../model/api/login_model.dart';

@@ -46,7 +46,7 @@
   },
   "home": {
     "home": "Home",
-    "title": "Qadam",
+    "title": "Ketamiz",
     "from": "From",
     "to": "To",
     "departure_date": "Departure date",
@@ -146,7 +146,7 @@
     "good_evening": "Good Evening",
     "where_going": "Where Are You Going Today?"
   },
-  "qadam": {
+  "ketamiz": {
     "add_docs_title": "Missing Driver License",
     "add_docs_msg": "Please add your driver license to continue",
     "add_docs_button": "Add Document",

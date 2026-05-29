@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:qadam/src/theme/app_theme.dart';
-import 'package:qadam/src/ui/widgets/buttons/primary_button.dart';
-import 'package:qadam/src/ui/widgets/containers/leading_back.dart';
-import 'package:qadam/src/ui/widgets/texts/text_16h_500w.dart';
+import 'package:ketamiz/src/theme/app_theme.dart';
+import 'package:ketamiz/src/ui/widgets/buttons/primary_button.dart';
+import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
 
 class MapSelectScreen extends StatefulWidget {
   final String place;

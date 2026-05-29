@@ -118,9 +118,9 @@ class _MainTextFieldState extends State<MainTextField> {
             color: AppTheme.dark.withOpacity(0.6),
           ),
           prefixIcon: Icon(widget.icon),
-          prefixIconColor: MaterialStateColor.resolveWith(
-                (Set<MaterialState> states) {
-              if (states.contains(MaterialState.focused)) {
+          prefixIconColor: WidgetStateColor.resolveWith(
+                (Set<WidgetState> states) {
+              if (states.contains(WidgetState.focused)) {
                 return AppTheme.black;
               }
               return AppTheme.dark;
@@ -138,7 +138,7 @@ class _MainTextFieldState extends State<MainTextField> {
           ): const SizedBox(),
           suffixIconColor: WidgetStateColor.resolveWith(
                 (Set<WidgetState> states) {
-              if (states.contains(MaterialState.focused)) {
+              if (states.contains(WidgetState.focused)) {
                 return AppTheme.black;
               }
               return AppTheme.dark;

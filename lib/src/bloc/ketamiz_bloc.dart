@@ -1,10 +1,10 @@
-import 'package:qadam/src/model/api/driver_trips_list_model.dart';
+import 'package:ketamiz/src/model/api/driver_trips_list_model.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../resources/repository.dart';
 import 'bloc_errors.dart';
 
-class QadamBloc {
+class KetamizBloc {
   final Repository _repository = Repository();
 
   final _infoTripsFetcher = BehaviorSubject<List<DriverTripModel>>();
@@ -40,10 +40,10 @@ class QadamBloc {
   }
 }
 
-QadamBloc _blocQadam = QadamBloc();
-QadamBloc get blocQadam => _blocQadam;
+KetamizBloc _blocKetamiz = KetamizBloc();
+KetamizBloc get blocKetamiz => _blocKetamiz;
 
-void resetQadamBloc() {
-  _blocQadam.dispose();
-  _blocQadam = QadamBloc();
+void resetKetamizBloc() {
+  _blocKetamiz.dispose();
+  _blocKetamiz = KetamizBloc();
 }

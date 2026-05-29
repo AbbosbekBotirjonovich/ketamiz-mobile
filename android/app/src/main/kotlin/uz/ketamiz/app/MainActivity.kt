@@ -1,4 +1,4 @@
-package com.qadam.qadam
+package uz.ketamiz.app
 
 import io.flutter.embedding.android.FlutterActivity
 

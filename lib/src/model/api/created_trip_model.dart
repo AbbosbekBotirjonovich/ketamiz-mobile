@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:qadam/src/model/api/trip_list_model.dart' as trip_list;
+import 'package:ketamiz/src/model/api/trip_list_model.dart' as trip_list;
 
 CreatedTripResponseModel createdTripResponseModelFromJson(String str) => CreatedTripResponseModel.fromJson(json.decode(str));
 

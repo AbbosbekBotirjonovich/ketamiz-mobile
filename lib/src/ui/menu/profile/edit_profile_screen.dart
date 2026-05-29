@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:qadam/src/theme/app_theme.dart';
-import 'package:qadam/src/ui/dialogs/bottom_dialog.dart';
-import 'package:qadam/src/ui/widgets/buttons/secondary_button.dart';
-import 'package:qadam/src/ui/widgets/containers/leading_back.dart';
-import 'package:qadam/src/ui/widgets/textfield/main_textfield.dart';
-import 'package:qadam/src/ui/widgets/texts/text_16h_500w.dart';
-import 'package:qadam/src/ui/widgets/texts/text_18h_500w.dart';
+import 'package:ketamiz/src/theme/app_theme.dart';
+import 'package:ketamiz/src/ui/dialogs/bottom_dialog.dart';
+import 'package:ketamiz/src/ui/widgets/buttons/secondary_button.dart';
+import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
+import 'package:ketamiz/src/ui/widgets/textfield/main_textfield.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_18h_500w.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});

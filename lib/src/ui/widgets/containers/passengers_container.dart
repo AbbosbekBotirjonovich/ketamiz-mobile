@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:qadam/src/model/passenger_model.dart';
-import 'package:qadam/src/theme/app_theme.dart';
-import 'package:qadam/src/ui/dialogs/bottom_dialog.dart';
-import 'package:qadam/src/ui/widgets/texts/text_14h_400w.dart';
+import 'package:ketamiz/src/model/passenger_model.dart';
+import 'package:ketamiz/src/theme/app_theme.dart';
+import 'package:ketamiz/src/ui/dialogs/bottom_dialog.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_14h_400w.dart';
 
 class PassengersContainer extends StatefulWidget {
   const PassengersContainer({

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_translate/flutter_translate.dart';
-import 'package:qadam/src/bloc/history_bloc.dart';
-import 'package:qadam/src/model/api/book_model.dart';
-import 'package:qadam/src/theme/app_theme.dart';
-import 'package:qadam/src/ui/widgets/containers/history_container.dart';
-import 'package:qadam/src/ui/widgets/texts/text_14h_400w.dart';
-import 'package:qadam/src/ui/widgets/texts/text_16h_500w.dart';
+import 'package:ketamiz/src/bloc/history_bloc.dart';
+import 'package:ketamiz/src/model/api/book_model.dart';
+import 'package:ketamiz/src/theme/app_theme.dart';
+import 'package:ketamiz/src/ui/widgets/containers/history_container.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_14h_400w.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
 
 class History extends StatefulWidget {
   const History({super.key});

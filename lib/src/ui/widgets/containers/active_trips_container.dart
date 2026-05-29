@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:qadam/src/model/trip_model.dart';
+import 'package:ketamiz/src/model/trip_model.dart';
 
 import '../../../defaults/defaults.dart';
 import '../../../lan_localization/load_places.dart';

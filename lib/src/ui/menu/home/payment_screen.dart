@@ -4,14 +4,14 @@ import 'package:dotted_line/dotted_line.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
-import 'package:qadam/src/model/api/book_model.dart';
-import 'package:qadam/src/model/passenger_model.dart';
-import 'package:qadam/src/ui/dialogs/center_dialog.dart';
-import 'package:qadam/src/ui/menu/main_screen.dart';
-import 'package:qadam/src/ui/menu/profile/top_up_screen.dart';
-import 'package:qadam/src/ui/widgets/buttons/primary_button.dart';
-import 'package:qadam/src/ui/widgets/texts/text_14h_400w.dart';
-import 'package:qadam/src/ui/widgets/texts/text_18h_500w.dart';
+import 'package:ketamiz/src/model/api/book_model.dart';
+import 'package:ketamiz/src/model/passenger_model.dart';
+import 'package:ketamiz/src/ui/dialogs/center_dialog.dart';
+import 'package:ketamiz/src/ui/menu/main_screen.dart';
+import 'package:ketamiz/src/ui/menu/profile/top_up_screen.dart';
+import 'package:ketamiz/src/ui/widgets/buttons/primary_button.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_14h_400w.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_18h_500w.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../lan_localization/load_places.dart';
 import '../../../model/api/trip_list_model.dart';
@@ -644,7 +644,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             if (result.status == "confirmed") {
                               CustomSnackBar().showSnackBar(
                                 context,
-                                translate("qadam.booking_success"),
+                                translate("ketamiz.booking_success"),
                                 1,
                               );
                               SharedPreferences prefs =
@@ -666,8 +666,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             } else {
                               CenterDialog.showActionFailed(
                                 context,
-                                translate("qadam.booking_failed"),
-                                translate("qadam.booking_failed_msg"),
+                                translate("ketamiz.booking_failed"),
+                                translate("ketamiz.booking_failed_msg"),
                               );
                             }
                           } else {
@@ -698,15 +698,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       } else {
                         CenterDialog.showActionFailed(
                           context,
-                          translate("qadam.not_enough_balance"),
-                          translate("qadam.not_enough_balance_msg"),
+                          translate("ketamiz.not_enough_balance"),
+                          translate("ketamiz.not_enough_balance_msg"),
                         );
                       }
                     } else {
                       CenterDialog.showActionFailed(
                         context,
-                        translate("qadam.time_is_up"),
-                        translate("qadam.time_is_up_msg"),
+                        translate("ketamiz.time_is_up"),
+                        translate("ketamiz.time_is_up_msg"),
                       );
                     }
                   },

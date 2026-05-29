@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:qadam/src/model/api/user_model.dart';
+import 'package:ketamiz/src/model/api/user_model.dart';
 
 LoginModel loginModelFromJson(String str) => LoginModel.fromJson(json.decode(str));
 

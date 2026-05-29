@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:qadam/src/model/api/driver_trips_list_model.dart';
-import 'package:qadam/src/model/passenger_info_model.dart';
-import 'package:qadam/src/ui/menu/home/map_single_screen.dart';
-import 'package:qadam/src/ui/widgets/buttons/secondary_button.dart';
-import 'package:qadam/src/ui/widgets/containers/leading_back.dart';
-import 'package:qadam/src/ui/widgets/texts/text_14h_400w.dart';
-import 'package:qadam/src/ui/widgets/texts/text_16h_500w.dart';
-import 'package:qadam/src/utils/utils.dart';
+import 'package:ketamiz/src/model/api/driver_trips_list_model.dart';
+import 'package:ketamiz/src/model/passenger_info_model.dart';
+import 'package:ketamiz/src/ui/menu/home/map_single_screen.dart';
+import 'package:ketamiz/src/ui/widgets/buttons/secondary_button.dart';
+import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_14h_400w.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
+import 'package:ketamiz/src/utils/utils.dart';
 import '../../../lan_localization/load_places.dart';
 import '../../../theme/app_theme.dart';
 import '../../widgets/texts/text_12h_400w.dart';
@@ -694,7 +694,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
                 ),
                 const SizedBox(height: 16),
                 SecondaryButton(
-                  title: translate("qadam.edit_trip"),
+                  title: translate("ketamiz.edit_trip"),
                   onTap: () {},
                 ),
               ],

@@ -11,7 +11,7 @@ import '../utils/secure_storage.dart';
 
 class ApiProvider {
   static Duration durationTimeout = const Duration(seconds: 30);
-  static String baseUrl = "https://qadam.services/api/v1";
+  static String baseUrl = "https://ketamiz.services/api/v1";
   static const String mapsApiKey = String.fromEnvironment(
     'MAPS_API_KEY',
     defaultValue: 'AIzaSyAtf7hud1ntObeLKiYCNrM967iMDtWkMag',

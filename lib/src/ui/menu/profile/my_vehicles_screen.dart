@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:lottie/lottie.dart';
-import 'package:qadam/src/ui/menu/profile/add_vehicle_screen.dart';
-import 'package:qadam/src/ui/widgets/containers/car_container.dart';
-import 'package:qadam/src/ui/widgets/containers/leading_back.dart';
-import 'package:qadam/src/ui/widgets/texts/text_16h_500w.dart';
+import 'package:ketamiz/src/ui/menu/profile/add_vehicle_screen.dart';
+import 'package:ketamiz/src/ui/widgets/containers/car_container.dart';
+import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../model/api/vehicles_list_model.dart';
@@ -110,7 +110,7 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
         } else {
           CenterDialog.showActionFailed(
             context,
-            translate("qadam.error"),
+            translate("ketamiz.error"),
             translate("profile.delete_vehicle_failed"),
           );
         }
@@ -247,7 +247,7 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
                       ),
                     );
                   }else{
-                    CenterDialog.showActionFailed(context, translate("qadam.error"), translate("profile.docs_not_verified"));
+                    CenterDialog.showActionFailed(context, translate("ketamiz.error"), translate("profile.docs_not_verified"));
                   }
                 },
               ),

@@ -1,4 +1,4 @@
-import 'package:qadam/src/model/api/get_user_model.dart';
+import 'package:ketamiz/src/model/api/get_user_model.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../resources/repository.dart';

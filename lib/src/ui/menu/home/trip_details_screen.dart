@@ -3,18 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:qadam/src/ui/dialogs/bottom_dialog.dart';
-import 'package:qadam/src/ui/dialogs/center_dialog.dart';
-import 'package:qadam/src/ui/menu/home/map_single_screen.dart';
-import 'package:qadam/src/ui/menu/home/payment_screen.dart';
-import 'package:qadam/src/ui/menu/main_screen.dart';
-import 'package:qadam/src/ui/widgets/buttons/secondary_button.dart';
+import 'package:ketamiz/src/ui/dialogs/bottom_dialog.dart';
+import 'package:ketamiz/src/ui/dialogs/center_dialog.dart';
+import 'package:ketamiz/src/ui/menu/home/map_single_screen.dart';
+import 'package:ketamiz/src/ui/menu/home/payment_screen.dart';
+import 'package:ketamiz/src/ui/menu/main_screen.dart';
+import 'package:ketamiz/src/ui/widgets/buttons/secondary_button.dart';
 import '../../dialogs/snack_bar.dart';
-import 'package:qadam/src/ui/widgets/containers/leading_back.dart';
-import 'package:qadam/src/ui/widgets/containers/passengers_container.dart';
-import 'package:qadam/src/ui/widgets/texts/text_14h_400w.dart';
-import 'package:qadam/src/ui/widgets/texts/text_16h_500w.dart';
-import 'package:qadam/src/utils/utils.dart';
+import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
+import 'package:ketamiz/src/ui/widgets/containers/passengers_container.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_14h_400w.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
+import 'package:ketamiz/src/utils/utils.dart';
 import '../../../lan_localization/load_places.dart';
 import '../../../model/api/trip_list_model.dart';
 import '../../../model/location_model.dart';
@@ -815,7 +815,7 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                     ),
                   )
                 : Text(
-                    translate("qadam.cancel_trip"),
+                    translate("ketamiz.cancel_trip"),
                     style: const TextStyle(
                       color: AppTheme.red,
                       fontSize: 16,
@@ -832,8 +832,8 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
   Future<void> _cancelTrip() async {
     CenterDialog.showConfirmation(
       context,
-      translate("qadam.cancel_trip"),
-      translate("qadam.cancel_trip_confirm"),
+      translate("ketamiz.cancel_trip"),
+      translate("ketamiz.cancel_trip_confirm"),
       onConfirm: () async {
         Navigator.pop(context); // close dialog
         setState(() => _isCancelling = true);
@@ -848,7 +848,7 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
         if (response.isSuccess) {
           CustomSnackBar().showSnackBar(
             context,
-            translate("qadam.trip_cancelled"),
+            translate("ketamiz.trip_cancelled"),
             1,
           );
           Navigator.of(context).popUntil((route) => route.isFirst);
@@ -859,7 +859,7 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
         } else {
           CenterDialog.showActionFailed(
             context,
-            translate("qadam.error"),
+            translate("ketamiz.error"),
             translate("auth.something_went_wrong"),
           );
         }

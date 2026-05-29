@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_translate/flutter_translate.dart';
-import 'package:qadam/src/model/api/my_registered_cards_model.dart' as model;
-import 'package:qadam/src/theme/app_theme.dart';
-import 'package:qadam/src/ui/dialogs/snack_bar.dart';
-import 'package:qadam/src/ui/dialogs/verify_card_dialog.dart';
+import 'package:ketamiz/src/model/api/my_registered_cards_model.dart' as model;
+import 'package:ketamiz/src/theme/app_theme.dart';
+import 'package:ketamiz/src/ui/dialogs/snack_bar.dart';
+import 'package:ketamiz/src/ui/dialogs/verify_card_dialog.dart';
 
 import '../../../model/credit_card_model.dart';
 import '../../../resources/repository.dart';

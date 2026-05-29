@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:qadam/src/ui/menu/history/history.dart';
-import 'package:qadam/src/ui/menu/new_qadam/new_qadam.dart';
-import 'package:qadam/src/ui/menu/profile/profile_screen.dart';
+import 'package:ketamiz/src/ui/menu/history/history.dart';
+import 'package:ketamiz/src/ui/menu/new_ketamiz/new_ketamiz\.dart';
+import 'package:ketamiz/src/ui/menu/profile/profile_screen.dart';
 import 'package:flutter/cupertino.dart';
 import '../../bloc/home_bloc.dart';
 import '../../bloc/profile_bloc.dart';
-import '../../bloc/qadam_bloc.dart';
+import '../../bloc/ketamiz_bloc\.dart';
 import '../../theme/app_theme.dart';
 import 'home/home_screen.dart';
 
@@ -22,7 +22,7 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _menus = const [
     HomeScreen(),
-    NewQadam(),
+    NewKetamiz(),
     History(),
     ProfileScreen(),
   ];
@@ -33,7 +33,7 @@ class _MainScreenState extends State<MainScreen> {
     // Reset BLoCs so streams are fresh (prevents stale data from previous session)
     resetHomeBloc();
     resetProfileBloc();
-    resetQadamBloc();
+    resetKetamizBloc();
   }
 
   @override

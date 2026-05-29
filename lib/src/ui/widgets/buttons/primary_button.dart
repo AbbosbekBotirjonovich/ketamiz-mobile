@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:qadam/src/ui/widgets/texts/text_16h_500w.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
 
 import '../../../theme/app_theme.dart';
 

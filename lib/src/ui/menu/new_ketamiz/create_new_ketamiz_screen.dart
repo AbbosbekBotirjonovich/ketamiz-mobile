@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
-import 'package:qadam/src/model/api/created_trip_model.dart';
-import 'package:qadam/src/model/api/driver_trips_list_model.dart';
-import 'package:qadam/src/ui/widgets/buttons/primary_button.dart';
-import 'package:qadam/src/ui/widgets/containers/leading_back.dart';
+import 'package:ketamiz/src/model/api/created_trip_model.dart';
+import 'package:ketamiz/src/model/api/driver_trips_list_model.dart';
+import 'package:ketamiz/src/ui/widgets/buttons/primary_button.dart';
+import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../lan_localization/load_places.dart';
 import '../../../model/api/vehicles_list_model.dart';
@@ -25,8 +25,8 @@ import '../../widgets/texts/text_14h_400w.dart';
 import '../../widgets/texts/text_16h_500w.dart';
 import 'map_select_screen.dart';
 
-class CreateNewQadamScreen extends StatefulWidget {
-  const CreateNewQadamScreen({
+class CreateNewKetamizScreen extends StatefulWidget {
+  const CreateNewKetamizScreen({
     super.key,
     required this.driverTrip,
   });
@@ -34,10 +34,10 @@ class CreateNewQadamScreen extends StatefulWidget {
   final DriverTripModel driverTrip;
 
   @override
-  State<CreateNewQadamScreen> createState() => _CreateNewQadamScreenState();
+  State<CreateNewKetamizScreen> createState() => _CreateNewKetamizScreenState();
 }
 
-class _CreateNewQadamScreenState extends State<CreateNewQadamScreen> {
+class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
   TextEditingController fromController = TextEditingController();
   TextEditingController toController = TextEditingController();
   TextEditingController departureController = TextEditingController();
@@ -198,7 +198,7 @@ class _CreateNewQadamScreenState extends State<CreateNewQadamScreen> {
         priceController.text.isEmpty) {
       CustomSnackBar().showSnackBar(
         context,
-        translate("qadam.fill_all_fields"),
+        translate("ketamiz.fill_all_fields"),
         2,
       );
       return;
@@ -210,7 +210,7 @@ class _CreateNewQadamScreenState extends State<CreateNewQadamScreen> {
         endLong.isEmpty) {
       CustomSnackBar().showSnackBar(
         context,
-        translate("qadam.select_location_on_map"),
+        translate("ketamiz.select_location_on_map"),
         2,
       );
       return;
@@ -219,7 +219,7 @@ class _CreateNewQadamScreenState extends State<CreateNewQadamScreen> {
     if (endDate.isBefore(departureDate) || endDate.isAtSameMomentAs(departureDate)) {
       CustomSnackBar().showSnackBar(
         context,
-        translate("qadam.end_date_after_departure"),
+        translate("ketamiz.end_date_after_departure"),
         2,
       );
       return;
@@ -229,7 +229,7 @@ class _CreateNewQadamScreenState extends State<CreateNewQadamScreen> {
     if (price <= 0) {
       CustomSnackBar().showSnackBar(
         context,
-        translate("qadam.price_must_be_positive"),
+        translate("ketamiz.price_must_be_positive"),
         2,
       );
       return;
@@ -273,13 +273,13 @@ class _CreateNewQadamScreenState extends State<CreateNewQadamScreen> {
           if (mounted) {
             CustomSnackBar().showSnackBar(
               context,
-              translate("qadam.trip_created"),
+              translate("ketamiz.trip_created"),
               1,
             );
             Navigator.pop(context);
           }
         } else {
-          _showError(translate("qadam.trip_creation_failed_msg"));
+          _showError(translate("ketamiz.trip_creation_failed_msg"));
         }
       } else {
         if (response.status == -1) {
@@ -435,7 +435,7 @@ class _CreateNewQadamScreenState extends State<CreateNewQadamScreen> {
                                 } else {
                                   CustomSnackBar().showSnackBar(
                                       context,
-                                      translate("qadam.select_location_first"),
+                                      translate("ketamiz.select_location_first"),
                                       2);
                                 }
                               },
@@ -553,7 +553,7 @@ class _CreateNewQadamScreenState extends State<CreateNewQadamScreen> {
                                 } else {
                                   CustomSnackBar().showSnackBar(
                                       context,
-                                      translate("qadam.select_location_first"),
+                                      translate("ketamiz.select_location_first"),
                                       2);
                                 }
                               },
@@ -742,7 +742,7 @@ class _CreateNewQadamScreenState extends State<CreateNewQadamScreen> {
                     );
                   },
                   decoration: InputDecoration(
-                    labelText: translate("qadam.end_date"),
+                    labelText: translate("ketamiz.end_date"),
                     labelStyle: const TextStyle(
                       color: AppTheme.text,
                       fontFamily: AppTheme.fontFamily,
@@ -767,7 +767,7 @@ class _CreateNewQadamScreenState extends State<CreateNewQadamScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              Text16h500w(title: translate("qadam.select_car_title")),
+              Text16h500w(title: translate("ketamiz.select_car_title")),
               const SizedBox(height: 16),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
@@ -792,7 +792,7 @@ class _CreateNewQadamScreenState extends State<CreateNewQadamScreen> {
                       children: [
                         selectedVehicle.vehicleName.isEmpty
                             ? Text14h400w(
-                                title: translate("qadam.select_car"),
+                                title: translate("ketamiz.select_car"),
                                 color: AppTheme.gray,
                               )
                             : Text16h500w(
@@ -891,8 +891,8 @@ class _CreateNewQadamScreenState extends State<CreateNewQadamScreen> {
                         } else {
                           CenterDialog.showActionFailed(
                             context,
-                            translate("qadam.min_passengers_reached"),
-                            translate("qadam.min_passengers_reached_msg"),
+                            translate("ketamiz.min_passengers_reached"),
+                            translate("ketamiz.min_passengers_reached_msg"),
                           );
                         }
                       },
@@ -921,8 +921,8 @@ class _CreateNewQadamScreenState extends State<CreateNewQadamScreen> {
                         } else {
                           CenterDialog.showActionFailed(
                             context,
-                            translate("qadam.max_passengers_reached"),
-                            translate("qadam.max_passengers_reached_msg"),
+                            translate("ketamiz.max_passengers_reached"),
+                            translate("ketamiz.max_passengers_reached_msg"),
                           );
                         }
                       },
@@ -944,7 +944,7 @@ class _CreateNewQadamScreenState extends State<CreateNewQadamScreen> {
               ),
               const SizedBox(height: 24),
               MainTextField(
-                hintText: translate("qadam.price_per_seat"),
+                hintText: translate("ketamiz.price_per_seat"),
                 icon: Icons.currency_exchange_outlined,
                 controller: priceController,
                 phone: true,
@@ -965,7 +965,7 @@ class _CreateNewQadamScreenState extends State<CreateNewQadamScreen> {
                   bottom: 32,
                 ),
                 child: PrimaryButton(
-                  title: translate("qadam.create_trip"),
+                  title: translate("ketamiz.create_trip"),
                   isLoading: isLoading,
                   onTap: _onCreateTrip,
                 ),

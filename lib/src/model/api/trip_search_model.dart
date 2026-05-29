@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:qadam/src/model/api/trip_list_model.dart';
+import 'package:ketamiz/src/model/api/trip_list_model.dart';
 
 TripSearchModel tripSearchModelFromJson(String str) => TripSearchModel.fromJson(json.decode(str));
 

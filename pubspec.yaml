@@ -1,4 +1,4 @@
-name: qadam
+name: ketamiz
 description: "Mobile Transportation Application"
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -10,6 +10,8 @@ environment:
 
 dependencies:
   flutter:
+    sdk: flutter
+  flutter_localizations:
     sdk: flutter
 
 
@@ -25,7 +27,7 @@ dependencies:
   dio: ^5.7.0
   flutter_secure_storage: ^9.2.4
   localization: ^2.1.1
-  flutter_translate: ^4.1.0
+  flutter_translate: any
 
   google_maps_flutter: ^2.10.0
   geolocator: ^14.0.2

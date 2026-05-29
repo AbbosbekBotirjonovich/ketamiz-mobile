@@ -1,4 +1,4 @@
-import 'package:qadam/src/model/api/user_model.dart';
+import 'package:ketamiz/src/model/api/user_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../model/api/get_user_model.dart';

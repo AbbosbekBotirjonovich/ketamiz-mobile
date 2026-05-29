@@ -2,14 +2,14 @@ import 'package:dotted_line/dotted_line.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
-import 'package:qadam/src/model/credit_card_model.dart';
-import 'package:qadam/src/model/trip_model.dart';
-import 'package:qadam/src/theme/app_theme.dart';
-import 'package:qadam/src/ui/widgets/buttons/primary_button.dart';
-import 'package:qadam/src/ui/widgets/texts/text_12h_400w.dart';
-import 'package:qadam/src/ui/widgets/texts/text_14h_500w.dart';
-import 'package:qadam/src/ui/widgets/texts/text_18h_500w.dart';
-import 'package:qadam/src/utils/utils.dart';
+import 'package:ketamiz/src/model/credit_card_model.dart';
+import 'package:ketamiz/src/model/trip_model.dart';
+import 'package:ketamiz/src/theme/app_theme.dart';
+import 'package:ketamiz/src/ui/widgets/buttons/primary_button.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_12h_400w.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_14h_500w.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_18h_500w.dart';
+import 'package:ketamiz/src/utils/utils.dart';
 
 import '../../widgets/texts/text_14h_400w.dart';
 import '../../widgets/texts/text_16h_500w.dart';
@@ -163,7 +163,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text16h500w(title: "Qadam"),
+                                    Text16h500w(title: \"Ketamiz\"),
                                     SizedBox(height: 4),
                                     Text12h400w(
                                       title: "Mobile Transportation Service",

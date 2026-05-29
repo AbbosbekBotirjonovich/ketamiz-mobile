@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:qadam/src/model/settings_model.dart';
-import 'package:qadam/src/theme/app_theme.dart';
-import 'package:qadam/src/ui/widgets/texts/text_14h_500w.dart';
+import 'package:ketamiz/src/model/settings_model.dart';
+import 'package:ketamiz/src/theme/app_theme.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_14h_500w.dart';
 
 class SettingsContainer extends StatelessWidget {
   const SettingsContainer({super.key, required this.settingsModel});

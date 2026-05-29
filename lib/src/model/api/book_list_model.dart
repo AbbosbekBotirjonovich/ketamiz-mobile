@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:qadam/src/model/api/book_model.dart';
+import 'package:ketamiz/src/model/api/book_model.dart';
 
 BookListModel bookListModelFromJson(String str) =>
     BookListModel.fromJson(json.decode(str));

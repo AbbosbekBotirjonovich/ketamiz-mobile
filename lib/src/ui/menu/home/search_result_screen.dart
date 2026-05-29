@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:lottie/lottie.dart';
-import 'package:qadam/src/bloc/home_bloc.dart';
-import 'package:qadam/src/model/api/trip_list_model.dart';
-import 'package:qadam/src/ui/menu/home/trip_details_screen.dart';
-import 'package:qadam/src/ui/widgets/containers/destinations_container.dart';
-import 'package:qadam/src/ui/widgets/texts/text_12h_400w.dart';
-import 'package:qadam/src/utils/utils.dart';
+import 'package:ketamiz/src/bloc/home_bloc.dart';
+import 'package:ketamiz/src/model/api/trip_list_model.dart';
+import 'package:ketamiz/src/ui/menu/home/trip_details_screen.dart';
+import 'package:ketamiz/src/ui/widgets/containers/destinations_container.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_12h_400w.dart';
+import 'package:ketamiz/src/utils/utils.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../lan_localization/load_places.dart';
 import '../../../model/api/trip_search_model.dart';
@@ -121,7 +121,7 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
                                 fit: BoxFit.cover,
                               ),
                               const SizedBox(height: 24),
-                              Text16h500w(title: translate("qadam.No_trip_found")),
+                              Text16h500w(title: translate("ketamiz.No_trip_found")),
                             ],
                           ),
                         ),

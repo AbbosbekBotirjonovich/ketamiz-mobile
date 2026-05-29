@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_translate/flutter_translate.dart';
-import 'package:qadam/src/model/vehicle_model.dart';
-import 'package:qadam/src/theme/app_theme.dart';
-import 'package:qadam/src/ui/widgets/texts/text_12h_400w.dart';
-import 'package:qadam/src/ui/widgets/texts/text_14h_400w.dart';
-import 'package:qadam/src/ui/widgets/texts/text_14h_500w.dart';
+import 'package:ketamiz/src/model/vehicle_model.dart';
+import 'package:ketamiz/src/theme/app_theme.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_12h_400w.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_14h_400w.dart';
+import 'package:ketamiz/src/ui/widgets/texts/text_14h_500w.dart';
 
 class CarContainer extends StatelessWidget {
   const CarContainer({
@@ -43,12 +43,12 @@ class CarContainer extends StatelessWidget {
                 Row(
                   children: [
                     Text12h400w(
-                      title: "${translate("qadam.vehicle_capacity")}:  ",
+                      title: "${translate("ketamiz.vehicle_capacity")}:  ",
                       color: AppTheme.gray,
                     ),
                     Text14h400w(
                         title:
-                            "${car.capacity} ${translate("qadam.passengers")}"),
+                            "${car.capacity} ${translate("ketamiz.passengers")}"),
                   ],
                 ),
                 const SizedBox(height: 2),
