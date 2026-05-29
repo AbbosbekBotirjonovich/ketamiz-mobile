@@ -2,6 +2,13 @@
 
 Mobile Transportation Application
 
+## Download
+
+The latest release APK can be found in the [GitHub Releases](https://github.com/Botirjon777/ketamiz-mobile/releases) section of this repository.
+
+Alternatively, after building the project locally, the APK is located at:
+`build/app/outputs/flutter-apk/app-release.apk`
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.
