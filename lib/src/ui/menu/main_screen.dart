@@ -137,7 +137,7 @@ class _MainScreenState extends State<MainScreen> {
                                 ),
                           const SizedBox(height: 4),
                           Text(
-                            "New Qadam",
+                            "New Ketamiz",
                             style: TextStyle(
                               fontSize: 12,
                               color: _selectedIndex == 1

@@ -86,7 +86,7 @@ class _SplashScreenState extends State<SplashScreen>
               child: const SizedBox(
                 height: 60,
                 child: Text(
-                  'Qadam',
+                  'Ketamiz',
                   style: TextStyle(
                     fontFamily: AppTheme.fontFamily,
                     fontSize: 36,
