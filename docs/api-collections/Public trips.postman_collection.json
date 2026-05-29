@@ -30,7 +30,7 @@
           }
         ],
         "url": {
-          "raw": "https://ketamiz.services/api/v1/public/trips/view/8",
+          "raw": "https://qadam.services/api/v1/public/trips/view/8",
           "protocol": "https",
           "host": [
             "ketamiz",
@@ -64,7 +64,7 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "https://ketamiz.services/api/v1/public/trips/search/available-trips?start_region_id=2&end_region_id=1&start_district_id=25&end_district_id=44&start_quarter_id=1355&end_quarter_id=233&departure_date=2025-12-06 11:40:00",
+          "raw": "https://qadam.services/api/v1/public/trips/search/available-trips?start_region_id=2&end_region_id=1&start_district_id=25&end_district_id=44&start_quarter_id=1355&end_quarter_id=233&departure_date=2025-12-06 11:40:00",
           "protocol": "https",
           "host": [
             "ketamiz",
@@ -143,7 +143,7 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "https://ketamiz.services/api/v1/public/trips/view",
+          "raw": "https://qadam.services/api/v1/public/trips/view",
           "protocol": "https",
           "host": [
             "ketamiz",
@@ -238,7 +238,7 @@
           }
         ],
         "url": {
-          "raw": "https://ketamiz.services/api/v1/public/trips",
+          "raw": "https://qadam.services/api/v1/public/trips",
           "protocol": "https",
           "host": [
             "ketamiz",
