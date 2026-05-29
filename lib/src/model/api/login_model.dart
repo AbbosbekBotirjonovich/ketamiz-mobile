@@ -22,8 +22,14 @@ class LoginModel {
   factory LoginModel.fromJson(Map<String, dynamic> json) => LoginModel(
     status: json["status"]??"error",
     message: json["message"]??"",
-    user: UserModel.fromJson(json["user"]),
-    authorisation: Authorisation.fromJson(json["authorisation"]),
+    user: json["user"] != null ? UserModel.fromJson(json["user"]) : UserModel(
+      id: 0, firstName: "", lastName: "", fatherName: "", email: "", phone: "",
+      password: "", image: "", role: "", isVerified: 0, verificationCode: "",
+      drivingVerificationStatus: "", createdAt: DateTime.now(), updatedAt: DateTime.now(),
+    ),
+    authorisation: json["authorisation"] != null 
+        ? Authorisation.fromJson(json["authorisation"]) 
+        : Authorisation(token: "", type: ""),
   );
 
   Map<String, dynamic> toJson() => {

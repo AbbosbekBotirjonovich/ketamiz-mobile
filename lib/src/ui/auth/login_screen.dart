@@ -30,6 +30,39 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Repository _repository = Repository();
 
+  String _getErrorMessage(dynamic result) {
+    if (result == null) return translate("auth.failed_msg");
+
+    String message = "";
+    if (result is Map) {
+      message = (result['message'] ?? result['error'] ?? "").toString();
+    } else {
+      message = result.toString();
+    }
+
+    final lowerMsg = message.toLowerCase();
+
+    if (lowerMsg.contains("selected phone is invalid")) {
+      return translate("auth.invalid_phone");
+    }
+    if (lowerMsg.contains("tasdiqlang") || lowerMsg.contains("verify")) {
+      return translate("auth.verify_account");
+    }
+    if (lowerMsg.contains("phone") && (lowerMsg.contains("taken") || lowerMsg.contains("already registered") || lowerMsg.contains("already been taken"))) {
+      return translate("auth.phone_taken");
+    }
+    if (lowerMsg.contains("password") && (lowerMsg.contains("incorrect") || lowerMsg.contains("invalid") || lowerMsg.contains("not match") || lowerMsg.contains("wrong"))) {
+      return translate("auth.incorrect_password");
+    }
+
+    // If it's a long stack trace or HTML, don't show it raw
+    if (message.contains("Illuminate\\") || message.contains("<!DOCTYPE html>")) {
+      return translate("auth.failed_msg");
+    }
+
+    return message.isNotEmpty ? message : translate("auth.failed_msg");
+  }
+
   /// Login
   TextEditingController phoneController = TextEditingController();
   TextEditingController passController = TextEditingController();
@@ -489,6 +522,34 @@ class _LoginScreenState extends State<LoginScreen> {
                           setState(() {
                             isLoading = false;
                           });
+                          if (response.status == 403) {
+                            final serverMsg = response.result['message'] ?? "";
+                            if (serverMsg.toString().toLowerCase().contains("tasdiqlang") ||
+                                serverMsg.toString().toLowerCase().contains("verify")) {
+                              String phone = phoneController.text;
+                              phone = phone.replaceAll(' ', '');
+                              phone = phone.replaceAll('-', '');
+                              if (!phone.contains("+")) {
+                                phone = "+$phone";
+                              }
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => VerificationScreen(
+                                    phone: phone,
+                                    code: "", // Code will be sent or requested again
+                                  ),
+                                ),
+                              );
+                              showResponsePopup(
+                                context,
+                                status: 'error',
+                                message: serverMsg.toString(),
+                              );
+                              return;
+                            }
+                          }
+
                           if (response.status == -1) {
                             showResponsePopup(
                               context,
@@ -499,24 +560,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             showResponsePopup(
                               context,
                               status: 'error',
-                              message: translate("auth.failed_msg"),
+                              message: _getErrorMessage(response.result),
                             );
                           }
                         }
                       } else {
                         String phone = phoneRegController.text;
 
-                        setState(() {
-                          phone = phone.replaceAll(' ', '');
-                          phone = phone.replaceAll('-', '');
-                          if (phone.contains("+") == false) {
-                            phone = "+$phone";
-                          }
-                        });
-
                         if (firstNameController.text.isNotEmpty &&
                             lastNameController.text.isNotEmpty &&
-                            fatherNameController.text.isNotEmpty &&
                             emailController.text.isNotEmpty &&
                             phoneRegController.text.isNotEmpty &&
                             passRegController.text.isNotEmpty &&
@@ -583,13 +635,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               showResponsePopup(
                                 context,
                                 status: 'error',
-                                message: translate("auth.failed_msg"),
+                                message: _getErrorMessage(response.result),
                               );
                             }
                           }
                         } else if (firstNameController.text.isEmpty ||
                             lastNameController.text.isEmpty ||
-                            fatherNameController.text.isEmpty ||
                             emailController.text.isEmpty ||
                             phoneRegController.text.isEmpty ||
                             passRegController.text.isEmpty ||

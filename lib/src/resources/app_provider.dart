@@ -158,6 +158,11 @@ class ApiProvider {
   ) async {
     String url = '$baseUrl/auth/register';
 
+    phone = phone.replaceAll(' ', '').replaceAll('-', '').replaceAll('(', '').replaceAll(')', '');
+    if (!phone.startsWith('+')) {
+      phone = '+$phone';
+    }
+
     final data = {
       "first_name": firstName,
       "last_name": lastName,
@@ -174,6 +179,11 @@ class ApiProvider {
   Future<HttpResult> fetchVerificationResend(String phone) async {
     String url = '$baseUrl/auth/resend-code';
 
+    phone = phone.replaceAll(' ', '').replaceAll('-', '').replaceAll('(', '').replaceAll(')', '');
+    if (!phone.startsWith('+')) {
+      phone = '+$phone';
+    }
+
     final data = {
       "phone": phone,
     };
@@ -183,6 +193,11 @@ class ApiProvider {
   /// Verify Code Post
   Future<HttpResult> fetchVerifyCode(String phone, String code) async {
     String url = '$baseUrl/auth/verify-code';
+
+    phone = phone.replaceAll(' ', '').replaceAll('-', '').replaceAll('(', '').replaceAll(')', '');
+    if (!phone.startsWith('+')) {
+      phone = '+$phone';
+    }
 
     final data = {
       "phone": phone,
@@ -194,8 +209,10 @@ class ApiProvider {
   /// Login Post
   Future<HttpResult> fetchLogin(String phone, String password) async {
     String url = '$baseUrl/auth/login';
-    if(phone.contains("+") == false){
-      phone = "+$phone";
+
+    phone = phone.replaceAll(' ', '').replaceAll('-', '').replaceAll('(', '').replaceAll(')', '');
+    if (!phone.startsWith('+')) {
+      phone = '+$phone';
     }
 
     final data = {

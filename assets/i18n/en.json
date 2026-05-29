@@ -33,7 +33,7 @@
     "email": "Email",
     "first_name": "First Name",
     "last_name": "Last Name",
-    "father_name": "Father's Name",
+    "father_name": "Father's Name (optional)",
     "register_failed": "Register Failed",
     "failed_msg": "Please try again later",
     "connection_failed": "Connection Failed",
@@ -42,7 +42,11 @@
     "resend_failed": "Resend Failed",
     "enter_pin_text": "Enter the Verification Code Sent to Your Phone Number to complete the Registration process",
     "error": "Error",
-    "fill_login_fields": "Please enter your phone number and password"
+    "fill_login_fields": "Please enter your phone number and password",
+    "invalid_phone": "The selected phone number is not registered",
+    "incorrect_password": "The password you entered is incorrect",
+    "phone_taken": "This phone number is already registered",
+    "verify_account": "Please verify your account to continue"
   },
   "home": {
     "home": "Home",
@@ -246,7 +250,7 @@
     "your_image": "Your Image",
     "first_name": "First Name",
     "last_name": "Last Name",
-    "father_name": "Father's Name",
+    "father_name": "Father's Name (optional)",
     "email_address": "Email Address",
     "gender": "Gender",
     "phone_number": "Phone Number",

@@ -236,7 +236,40 @@ class _VerificationScreenState extends State<VerificationScreen> {
     );
   }
 
-  void _showApiError(int status) {
+  String _getErrorMessage(dynamic result) {
+    if (result == null) return translate("auth.failed_msg");
+
+    String message = "";
+    if (result is Map) {
+      message = (result['message'] ?? result['error'] ?? "").toString();
+    } else {
+      message = result.toString();
+    }
+
+    final lowerMsg = message.toLowerCase();
+
+    if (lowerMsg.contains("selected phone is invalid")) {
+      return translate("auth.invalid_phone");
+    }
+    if (lowerMsg.contains("tasdiqlang") || lowerMsg.contains("verify")) {
+      return translate("auth.verify_account");
+    }
+    if (lowerMsg.contains("phone") && (lowerMsg.contains("taken") || lowerMsg.contains("already registered") || lowerMsg.contains("already been taken"))) {
+      return translate("auth.phone_taken");
+    }
+    if (lowerMsg.contains("password") && (lowerMsg.contains("incorrect") || lowerMsg.contains("invalid") || lowerMsg.contains("not match") || lowerMsg.contains("wrong"))) {
+      return translate("auth.incorrect_password");
+    }
+
+    // If it's a long stack trace or HTML, don't show it raw
+    if (message.contains("Illuminate\\") || message.contains("<!DOCTYPE html>")) {
+      return translate("auth.failed_msg");
+    }
+
+    return message.isNotEmpty ? message : translate("auth.failed_msg");
+  }
+
+  void _showApiError(dynamic result, int status) {
     if (status == -1) {
       CenterDialog.showActionFailed(
         context,
@@ -246,8 +279,8 @@ class _VerificationScreenState extends State<VerificationScreen> {
     } else {
       CenterDialog.showActionFailed(
         context,
-        translate("auth.something_went_wrong"),
-        translate("auth.failed_msg"),
+        translate("auth.error"),
+        _getErrorMessage(result),
       );
     }
   }
@@ -277,14 +310,14 @@ class _VerificationScreenState extends State<VerificationScreen> {
         CenterDialog.showActionFailed(
           context,
           translate("auth.resend_failed"),
-          result.message,
+          _getErrorMessage(response.result),
         );
       }
     } else {
       setState(() {
         _isLoading = false;
       });
-      _showApiError(response.status);
+      _showApiError(response.result, response.status);
     }
   }
 
@@ -338,15 +371,15 @@ class _VerificationScreenState extends State<VerificationScreen> {
       } else {
         CenterDialog.showActionFailed(
           context,
-          translate("auth.resend_failed"),
-          result.message,
+          translate("auth.error"),
+          _getErrorMessage(response.result),
         );
       }
     } else {
       setState(() {
         _isLoading = false;
       });
-      _showApiError(response.status);
+      _showApiError(response.result, response.status);
     }
   }
 }

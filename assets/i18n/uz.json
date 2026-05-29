@@ -33,7 +33,7 @@
     "email": "Email",
     "first_name": "Ism",
     "last_name": "Familiya",
-    "father_name": "Otasining ismi",
+    "father_name": "Otasining ismi (ixtiyoriy)",
     "register_failed": "Ro'yxatdan o'tish muvaffaqiyatsiz tugadi",
     "failed_msg": "Iltimos keyinroq qayta urinib ko'ring",
     "connection_failed": "Ulanish muvaffaqiyatsiz tugadi",
@@ -42,7 +42,11 @@
     "resend_failed": "Qayta yuborish muvaffaqiyatsiz tugadi",
     "enter_pin_text": "Ro'yxatdan o'tish jarayonini yakunlash uchun telefon raqamingizga yuborilgan tasdiqlash kodini kiriting",
     "error": "Xato",
-    "fill_login_fields": "Iltimos telefon raqamingiz va parolingizni kiriting"
+    "fill_login_fields": "Iltimos telefon raqamingiz va parolingizni kiriting",
+    "invalid_phone": "Ushbu telefon raqami ro'yxatdan o'tmagan",
+    "incorrect_password": "Siz kiritgan parol noto'g'ri",
+    "phone_taken": "Ushbu telefon raqami allaqachon ro'yxatdan o'tgan",
+    "verify_account": "Davom etish uchun hisobingizni tasdiqlang"
   },
   "home": {
     "home": "Bosh sahifa",
@@ -246,7 +250,7 @@
     "your_image": "Rasmingiz",
     "first_name": "Ism",
     "last_name": "Familiya",
-    "father_name": "Otasining ismi",
+    "father_name": "Otasining ismi (ixtiyoriy)",
     "email_address": "Email manzil",
     "gender": "Jinsi",
     "phone_number": "Telefon raqami",
