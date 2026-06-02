@@ -54,6 +54,7 @@ flutter:
     - assets/i18n/
     - assets/fonts/
     - assets/lottie/
+    - assets/logos/
     - assets/places.json
     - AssetManifest.json
 
