@@ -15,8 +15,6 @@ import 'package:shimmer/shimmer.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../../bloc/profile_bloc.dart';
-import '../../../defaults/defaults.dart';
-import '../../../model/trip_model.dart';
 import '../../../theme/app_theme.dart';
 import '../../widgets/containers/destinations_container.dart';
 
@@ -59,8 +57,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  List<TripModel> myTrips = [];
-
   LocationModel fromRegion = LocationModel(id: "0", text: "", parentID: '');
   LocationModel fromCity = LocationModel(id: "0", text: "", parentID: '');
   LocationModel fromNeighborhood =
@@ -98,12 +94,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     _loadUserName();
     getActiveTripsId();
-    if (activeTripId != "0") {
-      blocHome.fetchOneDriverTrip(activeTripId);
-    }
-    if (activeBookedId != "0") {
-      blocHome.fetchOneBookedTrip(activeBookedId);
-    }
     getDriverStatus();
     blocHome.fetchTripList();
     blocProfile.fetchMe();
@@ -799,13 +789,18 @@ class _HomeScreenState extends State<HomeScreen> {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
-                            child: GestureDetector(
-                              onTap: () {},
-                              child: ActiveTripsContainer(
-                                  trip: Defaults().trips[0]),
-                            ),
+                          StreamBuilder<TripListModel>(
+                            stream: blocHome.getOneBookedTrip,
+                            builder: (context, AsyncSnapshot<TripListModel> snapshot) {
+                              if (!snapshot.hasData) return const SizedBox();
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 24),
+                                child: GestureDetector(
+                                  onTap: () {},
+                                  child: ActiveTripsContainer(trip: snapshot.data!),
+                                ),
+                              );
+                            },
                           ),
                           const SizedBox(height: 24),
                         ],
@@ -1211,6 +1206,12 @@ class _HomeScreenState extends State<HomeScreen> {
       activeTripId = prefs.getString('active_trip_id') ?? "0";
       activeBookedId = prefs.getString('active_booked_id') ?? "0";
     });
+    if (activeTripId != "0") {
+      blocHome.fetchOneDriverTrip(activeTripId);
+    }
+    if (activeBookedId != "0") {
+      blocHome.fetchOneBookedTrip(activeBookedId);
+    }
   }
 
   Future<void> getUserId() async {

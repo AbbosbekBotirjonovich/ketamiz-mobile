@@ -16,6 +16,25 @@
   "help": "Help",
   "delete": "Delete",
   "currency": "UZS",
+  "monday": "Monday",
+  "tuesday": "Tuesday",
+  "wednesday": "Wednesday",
+  "thursday": "Thursday",
+  "friday": "Friday",
+  "saturday": "Saturday",
+  "sunday": "Sunday",
+  "january": "January",
+  "february": "February",
+  "march": "March",
+  "april": "April",
+  "may": "May",
+  "june": "June",
+  "july": "July",
+  "august": "August",
+  "september": "September",
+  "october": "October",
+  "november": "November",
+  "december": "December",
   "auth": {
     "login": "Log in",
     "hello": "Hello",
@@ -46,7 +65,13 @@
     "invalid_phone": "The selected phone number is not registered",
     "incorrect_password": "The password you entered is incorrect",
     "phone_taken": "This phone number is already registered",
-    "verify_account": "Please verify your account to continue"
+    "verify_account": "Please verify your account to continue",
+    "fill_signup_fields": "Please fill in all fields to sign up",
+    "invalid_phone_format": "Please enter a valid phone number",
+    "invalid_email": "Please enter a valid email address",
+    "password_error": "Password Error",
+    "password_requirements": "Your password must contain at least one:\n- Uppercase letter\n- Special character\n- Number (0,...,9)",
+    "password_mismatch": "Passwords do not match"
   },
   "home": {
     "home": "Home",
@@ -151,6 +176,7 @@
     "where_going": "Where Are You Going Today?"
   },
   "ketamiz": {
+    "title": "New Ketamiz",
     "add_docs_title": "Missing Driver License",
     "add_docs_msg": "Please add your driver license to continue",
     "add_docs_button": "Add Document",

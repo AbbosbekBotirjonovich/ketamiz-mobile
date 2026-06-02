@@ -647,45 +647,45 @@ class _LoginScreenState extends State<LoginScreen> {
                             passAgainController.text.isEmpty) {
                           CenterDialog.showActionFailed(
                             context,
-                            'Error',
-                            'Please fill the forms to sign up',
+                            translate('auth.error'),
+                            translate('auth.fill_signup_fields'),
                           );
                         } else if (Validators.phoneNumberValidator(
                                 phoneRegController.text) ==
                             false) {
                           CenterDialog.showActionFailed(
                             context,
-                            'Error',
-                            'Please enter valid phone number',
+                            translate('auth.error'),
+                            translate('auth.invalid_phone_format'),
                           );
                         } else if (!Validators.emailValidator(
                                 emailController.text)) {
                           CenterDialog.showActionFailed(
                             context,
-                            'Error',
-                            'Please enter a valid email address',
+                            translate('auth.error'),
+                            translate('auth.invalid_email'),
                           );
                         } else if (Validators.passwordValidator(
                                 passRegController.text) ==
                             false) {
                           CenterDialog.showActionFailed(
                             context,
-                            'Password Error',
-                            'Your password must contain at least one:\n- Uppercase letter\n- Special character\n- Number (0,...,9)',
+                            translate('auth.password_error'),
+                            translate('auth.password_requirements'),
                           );
                         } else if (passAgainController.text !=
                             passRegController.text) {
                           CenterDialog.showActionFailed(
                             context,
-                            'Password Error',
-                            'Confirming password must be the same as previously entered password',
+                            translate('auth.password_error'),
+                            translate('auth.password_mismatch'),
                           );
                         } else {
                           resetValues();
                           CenterDialog.showActionFailed(
                             context,
-                            'Error',
-                            'Something went wrong\nPlease try again',
+                            translate('auth.error'),
+                            translate('auth.something_went_wrong'),
                           );
                         }
                       }

@@ -16,6 +16,25 @@
   "help": "Yordam",
   "delete": "O'chirish",
   "currency": "UZS",
+  "monday": "Dushanba",
+  "tuesday": "Seshanba",
+  "wednesday": "Chorshanba",
+  "thursday": "Payshanba",
+  "friday": "Juma",
+  "saturday": "Shanba",
+  "sunday": "Yakshanba",
+  "january": "Yanvar",
+  "february": "Fevral",
+  "march": "Mart",
+  "april": "Aprel",
+  "may": "May",
+  "june": "Iyun",
+  "july": "Iyul",
+  "august": "Avgust",
+  "september": "Sentabr",
+  "october": "Oktabr",
+  "november": "Noyabr",
+  "december": "Dekabr",
   "auth": {
     "login": "Kirish",
     "hello": "Salom",
@@ -46,7 +65,13 @@
     "invalid_phone": "Ushbu telefon raqami ro'yxatdan o'tmagan",
     "incorrect_password": "Siz kiritgan parol noto'g'ri",
     "phone_taken": "Ushbu telefon raqami allaqachon ro'yxatdan o'tgan",
-    "verify_account": "Davom etish uchun hisobingizni tasdiqlang"
+    "verify_account": "Davom etish uchun hisobingizni tasdiqlang",
+    "fill_signup_fields": "Ro'yxatdan o'tish uchun barcha maydonlarni to'ldiring",
+    "invalid_phone_format": "Iltimos to'g'ri telefon raqami kiriting",
+    "invalid_email": "Iltimos to'g'ri email manzil kiriting",
+    "password_error": "Parol xatosi",
+    "password_requirements": "Parolingizda kamida bitta bo'lishi kerak:\n- Katta harf\n- Maxsus belgi\n- Raqam (0,...,9)",
+    "password_mismatch": "Parollar mos kelmayapti"
   },
   "home": {
     "home": "Bosh sahifa",
@@ -151,6 +176,7 @@
     "where_going": "Bugun qayerga borasiz?"
   },
   "ketamiz": {
+    "title": "Yangi Ketamiz",
     "add_docs_title": "Haydovchilik guvohnomasi yo'q",
     "add_docs_msg": "Davom etish uchun haydovchilik guvohnomangizni qo'shing",
     "add_docs_button": "Hujjat qo'shish",

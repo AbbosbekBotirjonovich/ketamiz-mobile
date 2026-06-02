@@ -65,7 +65,7 @@ class _NewKetamizState extends State<NewKetamiz> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text16h500w(title: "New Qadam"),
+        title: Text16h500w(title: translate("ketamiz.title")),
         centerTitle: true,
       ),
       body: isDocsAdded == false
