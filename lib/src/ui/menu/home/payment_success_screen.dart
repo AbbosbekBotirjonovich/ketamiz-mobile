@@ -163,7 +163,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text16h500w(title: \"Ketamiz\"),
+                                    Text16h500w(title: "Ketamiz"),
                                     SizedBox(height: 4),
                                     Text12h400w(
                                       title: "Mobile Transportation Service",

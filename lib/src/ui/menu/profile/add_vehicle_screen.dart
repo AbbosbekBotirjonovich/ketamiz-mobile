@@ -12,6 +12,7 @@ import '../../../model/event_bus/http_result.dart';
 import '../../../model/vehicle_model.dart';
 import '../../../resources/repository.dart';
 import '../../../theme/app_theme.dart';
+import '../../../utils/image_helper.dart';
 import '../../dialogs/bottom_dialog.dart';
 import '../../dialogs/center_dialog.dart';
 import '../../dialogs/snack_bar.dart';
@@ -29,7 +30,6 @@ class AddVehicleScreen extends StatefulWidget {
 }
 
 class _AddVehicleScreenState extends State<AddVehicleScreen> {
-  final picker = ImagePicker();
   final Repository _repository = Repository();
 
   bool isLoading = false;
@@ -157,7 +157,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
       String type,
       bool isSimpleUpload,
       ) async {
-    final pickedFile = await picker.pickImage(source: source);
+    final pickedFile = await ImageHelper.pick(source);
     if (pickedFile != null) {
       if (isSimpleUpload) {
         // Just update local path, upload happens in batch later
@@ -502,7 +502,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
 
   Future<void> _pickCarImage(ImageSource source) async {
     try {
-      final XFile? image = await picker.pickImage(source: source);
+      final XFile? image = await ImageHelper.pick(source);
       if (image != null) {
         setState(() => isLoading = true);
 

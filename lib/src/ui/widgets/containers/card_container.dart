@@ -5,10 +5,16 @@ import '../../../model/credit_card_model.dart';
 import '../../../theme/app_theme.dart';
 
 class CardContainer extends StatefulWidget {
-  const CardContainer({super.key, required this.card, required this.onTapped});
+  const CardContainer({
+    super.key,
+    required this.card,
+    required this.onTapped,
+    this.onDelete,
+  });
 
   final CreditCardModel card;
   final Function() onTapped;
+  final Function()? onDelete;
 
   @override
   State<CardContainer> createState() => _CardContainerState();
@@ -30,6 +36,18 @@ class _CardContainerState extends State<CardContainer> {
               ),
             ),
             const SizedBox(width: 12),
+            if (widget.onDelete != null)
+              GestureDetector(
+                onTap: widget.onDelete,
+                child: const Padding(
+                  padding: EdgeInsets.only(right: 12),
+                  child: Icon(
+                    Icons.delete_outline,
+                    color: AppTheme.red,
+                    size: 22,
+                  ),
+                ),
+              ),
             Container(
               height: 24,
               width: 24,

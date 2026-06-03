@@ -17,6 +17,7 @@ import '../../../model/event_bus/http_result.dart';
 import '../../../model/vehicle_model.dart';
 import '../../../resources/repository.dart';
 import '../../../theme/app_theme.dart';
+import '../../../utils/image_helper.dart';
 import '../../dialogs/snack_bar.dart';
 import '../../widgets/texts/text_14h_400w.dart';
 import '../../widgets/texts/text_16h_500w.dart';
@@ -29,7 +30,6 @@ class AddDocsScreen extends StatefulWidget {
 }
 
 class _AddDocsScreenState extends State<AddDocsScreen> {
-  final picker = ImagePicker();
   final Repository _repository = Repository();
   
   bool isLoading = false;
@@ -487,7 +487,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
     String type,
     bool isSimpleUpload,
   ) async {
-    final pickedFile = await picker.pickImage(source: source);
+    final pickedFile = await ImageHelper.pick(source);
     if (pickedFile == null) return;
 
     if (isSimpleUpload) {
@@ -862,7 +862,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
 
   Future<void> _pickCarImage(ImageSource source) async {
     try {
-      final XFile? image = await picker.pickImage(source: source);
+      final XFile? image = await ImageHelper.pick(source);
       if (image != null) {
         setState(() => isLoading = true);
         

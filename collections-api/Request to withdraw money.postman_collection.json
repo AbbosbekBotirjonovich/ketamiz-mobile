@@ -1,0 +1,118 @@
+{
+  "info": {
+    "_postman_id": "0f1fa6dd-acdb-41dc-8202-366f7fb5af46",
+    "name": "Request to withdraw money",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "19384339",
+    "_collection_link": "https://go.postman.co/collection/19384339-0f1fa6dd-acdb-41dc-8202-366f7fb5af46?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "get my requests",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "start_region_id",
+              "value": "8",
+              "type": "text",
+              "uuid": "1e003d1e-83ff-4f40-ac68-0e9f3fbfc840"
+            },
+            {
+              "key": "end_region_id",
+              "value": "1",
+              "type": "text",
+              "uuid": "06176a2e-f83d-464d-8f92-76fd5c96f181"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/withdraw",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "withdraw"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "create new request to withdraw",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "start_region_id",
+              "value": "8",
+              "type": "text",
+              "uuid": "1e003d1e-83ff-4f40-ac68-0e9f3fbfc840"
+            },
+            {
+              "key": "end_region_id",
+              "value": "1",
+              "type": "text",
+              "uuid": "06176a2e-f83d-464d-8f92-76fd5c96f181"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/withdraw",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "withdraw"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

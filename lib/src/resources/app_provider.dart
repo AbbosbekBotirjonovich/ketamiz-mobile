@@ -11,10 +11,23 @@ import '../utils/secure_storage.dart';
 
 class ApiProvider {
   static Duration durationTimeout = const Duration(seconds: 30);
-  static String baseUrl = "https://qadam.services/api/v1";
+  static String get baseUrl => kIsWeb
+      ? "http://localhost:8081/api/v1"
+      : "https://qadam.services/api/v1";
   static const String mapsApiKey = String.fromEnvironment(
     'MAPS_API_KEY',
     defaultValue: 'AIzaSyAtf7hud1ntObeLKiYCNrM967iMDtWkMag',
+  );
+
+  /// Shared HTTP client. Reused across all requests so the underlying
+  /// connection is kept alive/pooled instead of opening a new socket each
+  /// call. Per-request Options still override timeouts/headers as needed.
+  static final Dio _dio = Dio(
+    BaseOptions(
+      connectTimeout: durationTimeout,
+      sendTimeout: durationTimeout,
+      receiveTimeout: durationTimeout,
+    ),
   );
 
   // --- Helpers ---
@@ -95,7 +108,7 @@ class ApiProvider {
 
   /// GET Request using Dio
   static Future<HttpResult> getRequest(String url) async {
-    Dio dio = Dio();
+    final dio = _dio;
     final headers = await _getReqHeader();
 
     try {
@@ -119,7 +132,7 @@ class ApiProvider {
 
   /// POST Request (JSON)
   static Future<HttpResult> postRequest(String url, Map<String, dynamic> body) async {
-    Dio dio = Dio();
+    final dio = _dio;
     final headers = await _getReqHeader();
 
     try {
@@ -228,6 +241,53 @@ class ApiProvider {
     return await getRequest(url);
   }
 
+  /// Update Profile Post
+  Future<HttpResult> fetchUpdateProfile(
+    String firstName,
+    String lastName,
+    String fatherName,
+    String email,
+  ) async {
+    String url = '$baseUrl/auth/update-profile';
+    final data = {
+      "first_name": firstName,
+      "last_name": lastName,
+      "father_name": fatherName,
+      "email": email,
+    };
+    return await postRequest(url, data);
+  }
+
+  /// Logout Post
+  Future<HttpResult> fetchLogout() async {
+    String url = '$baseUrl/auth/logout';
+    return await postRequest(url, {});
+  }
+
+  /// Update User Language Post
+  Future<HttpResult> fetchUpdateLanguage(String language) async {
+    String url = '$baseUrl/auth/update-user-language';
+    final data = {
+      "language": language,
+    };
+    return await postRequest(url, data);
+  }
+
+  /// Support / Contact Us Post
+  Future<HttpResult> fetchSupport(
+    String name,
+    String email,
+    String message,
+  ) async {
+    String url = '$baseUrl/support';
+    final data = {
+      "name": name,
+      "email": email,
+      "message": message,
+    };
+    return await postRequest(url, data);
+  }
+
   /// Get Trip List
   Future<HttpResult> fetchTripList() async {
     String url = '$baseUrl/public/trips/view';
@@ -251,12 +311,14 @@ class ApiProvider {
     final queryParams = <String, String>{
       'start_region_id': fromRegionId,
       'end_region_id': toRegionId,
-      'start_district_id': fromDistrictId,
-      'end_district_id': toDistrictId,
-      'start_quarter_id': fromQuarterId,
-      'end_quarter_id': toQuarterId,
       'departure_date': _formatBackendDateTime(departureDate),
     };
+    // District/quarter are optional — only narrow the search when provided.
+    // This lets region-to-region searches (district/quarter = "0") work.
+    if (fromDistrictId != "0") queryParams['start_district_id'] = fromDistrictId;
+    if (toDistrictId != "0") queryParams['end_district_id'] = toDistrictId;
+    if (fromQuarterId != "0") queryParams['start_quarter_id'] = fromQuarterId;
+    if (toQuarterId != "0") queryParams['end_quarter_id'] = toQuarterId;
     if (isRoundTrip && returnDate != null) {
       queryParams['return_date'] = _formatBackendDateTime(returnDate);
       queryParams['is_round_trip'] = 'true';
@@ -333,7 +395,7 @@ class ApiProvider {
   }
 
   Future<File> _resizeImage(File file,
-      {int maxWidth = 480, int quality = 80}) async {
+      {int maxWidth = 1280, int quality = 75}) async {
     final bytes = await file.readAsBytes();
     img.Image? image =
         img.decodeImage(bytes); // return original if decoding fails
@@ -379,7 +441,7 @@ class ApiProvider {
     String url = '$baseUrl/auth/upload-driver-passport-driving-licence';
 
     final token = await SecureStorage.getToken();
-    Dio dio = Dio();
+    final dio = _dio;
     final headers = {
       "Accept": "application/json",
       if (token != null) "Authorization": "Bearer $token",
@@ -484,7 +546,7 @@ class ApiProvider {
     String url = '$baseUrl/auth/upload-car-images';
 
     final token = await SecureStorage.getToken();
-    Dio dio = Dio();
+    final dio = _dio;
     final dynamic headers = {
       "Accept": "application/json",
       if (token != null) "Authorization": "Bearer $token",
@@ -635,6 +697,21 @@ class ApiProvider {
     };
     return await postRequest(url, data);
   }
+
+  /// Delete Card
+  Future<HttpResult> fetchDeleteCard(int cardId) async {
+    String url = '$baseUrl/bank/delete-card/$cardId';
+    return await deleteRequest(url);
+  }
+
+  /// Resend Payment SMS
+  Future<HttpResult> fetchResendPaymentSms(String payId) async {
+    String url = '$baseUrl/bank/resend-sms';
+    final data = {
+      "pay_id": payId,
+    };
+    return await postRequest(url, data);
+  }
   
   /// Create Payment (Fill Balance)
   Future<HttpResult> fetchCreatePayment(String amount, {String? cardId}) async {
@@ -664,7 +741,7 @@ class ApiProvider {
 
   /// GET Request using Dio (DELETE method)
   static Future<HttpResult> deleteRequest(String url) async {
-    Dio dio = Dio();
+    final dio = _dio;
     final headers = await _getReqHeader();
     try {
       Response response = await dio.delete(

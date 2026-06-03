@@ -40,6 +40,26 @@ class Repository {
 
   Future<HttpResult> fetchMe() => apiProvider.fetchMe();
 
+  Future<HttpResult> fetchUpdateProfile(
+    String firstName,
+    String lastName,
+    String fatherName,
+    String email,
+  ) =>
+      apiProvider.fetchUpdateProfile(firstName, lastName, fatherName, email);
+
+  Future<HttpResult> fetchLogout() => apiProvider.fetchLogout();
+
+  Future<HttpResult> fetchUpdateLanguage(String language) =>
+      apiProvider.fetchUpdateLanguage(language);
+
+  Future<HttpResult> fetchSupport(
+    String name,
+    String email,
+    String message,
+  ) =>
+      apiProvider.fetchSupport(name, email, message);
+
   Future<HttpResult> fetchTripList() => apiProvider.fetchTripList();
 
   Future<HttpResult> fetchTripSearch(
@@ -205,6 +225,12 @@ class Repository {
           int id, String cardKey, String confirmCode) =>
       apiProvider.fetchVerifyCard(id, cardKey, confirmCode);
 
+  Future<HttpResult> fetchDeleteCard(int cardId) =>
+      apiProvider.fetchDeleteCard(cardId);
+
+  Future<HttpResult> fetchResendPaymentSms(String payId) =>
+      apiProvider.fetchResendPaymentSms(payId);
+
   Future<HttpResult> fetchCreatePayment(String amount, {String? cardId}) =>
       apiProvider.fetchCreatePayment(amount, cardId: cardId);
 
@@ -227,4 +253,11 @@ class Repository {
   Future<void> cacheSetMe(User user) => appCache.saveUser(user);
 
   Future<User> cacheGetMe() => appCache.cacheGetMe();
+
+  // ── Generic cache-first list cache ─────────────────────────────────────
+  Future<void> cacheRawList(String key, List<dynamic> data) =>
+      appCache.cacheRawList(key, data);
+
+  Future<List<dynamic>> getCachedList(String key) =>
+      appCache.getCachedList(key);
 }

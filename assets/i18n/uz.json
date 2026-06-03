@@ -71,7 +71,11 @@
     "invalid_email": "Iltimos to'g'ri email manzil kiriting",
     "password_error": "Parol xatosi",
     "password_requirements": "Parolingizda kamida bitta bo'lishi kerak:\n- Katta harf\n- Maxsus belgi\n- Raqam (0,...,9)",
-    "password_mismatch": "Parollar mos kelmayapti"
+    "password_mismatch": "Parollar mos kelmayapti",
+    "enter_code": "Kodni kiriting",
+    "verify": "Tasdiqlash",
+    "sending": "Yuborilmoqda...",
+    "code_resent": "Kod qayta yuborildi"
   },
   "home": {
     "home": "Bosh sahifa",
@@ -173,7 +177,8 @@
     "good_morning": "Xayrli tong",
     "good_afternoon": "Xayrli kun",
     "good_evening": "Xayrli kech",
-    "where_going": "Bugun qayerga borasiz?"
+    "where_going": "Bugun qayerga borasiz?",
+    "popular_directions": "Mashhur yo'nalishlar"
   },
   "ketamiz": {
     "title": "Yangi Ketamiz",
@@ -317,7 +322,22 @@
     "transaction_type_refund": "Qaytarish",
     "transaction_type_debit": "To'lov",
     "transaction_type_booking": "Sayohat bron qilish",
-    "transaction_type_withdrawal": "Yechib olish"
+    "transaction_type_withdrawal": "Yechib olish",
+    "wallet": "Hamyon",
+    "locked": "Bloklangan",
+    "enter_amount_error": "Iltimos miqdorni kiriting",
+    "become_driver": "Haydovchi bo'lish",
+    "become_driver_subtitle": "Sayohat taklif qilib pul ishlang",
+    "verification_pending": "Tekshirish jarayonida",
+    "verification_pending_msg": "Hujjatlaringiz ko'rib chiqilmoqda. Tez orada xabar beramiz.",
+    "verification_rejected": "Hujjatlar rad etildi",
+    "resubmit_docs": "Hujjatlarni qayta yuborish uchun bosing",
+    "driver_section": "Haydovchi",
+    "profile_updated": "Profil muvaffaqiyatli yangilandi",
+    "delete_card": "Kartani o'chirish",
+    "delete_card_confirm": "Haqiqatan ham bu kartani o'chirmoqchimisiz?",
+    "card_deleted": "Karta muvaffaqiyatli o'chirildi",
+    "terms": "Foydalanish shartlari"
   },
   "history": {
     "history": "Tarix",
@@ -326,5 +346,25 @@
     "canceled": "Bekor qilingan",
     "price": "Narx",
     "no_trips": "Sayohatlar topilmadi"
+  },
+  "nav": {
+    "home": "Asosiy",
+    "bookings": "Buyurtmalar",
+    "wallet": "Hamyon",
+    "profile": "Profil",
+    "my_trips": "Sayohatlarim",
+    "create": "Yaratish"
+  },
+  "support": {
+    "title": "Sizga qanday yordam bera olamiz?",
+    "subtitle": "Bizning jamoamiz sizga yordam berishga doim tayyor",
+    "formTitle": "Bizga xabar qoldiring",
+    "name": "Ismingiz",
+    "email": "Elektron pochta",
+    "message": "Xabaringiz",
+    "send": "Xabarni yuborish",
+    "success": "Xabaringiz muvaffaqiyatli yuborildi!",
+    "contactInfo": "Aloqa ma'lumotlari",
+    "address": "Manzil"
   }
 }

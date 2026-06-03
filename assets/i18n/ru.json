@@ -71,7 +71,11 @@
     "invalid_email": "Пожалуйста, введите корректный адрес электронной почты",
     "password_error": "Ошибка пароля",
     "password_requirements": "Ваш пароль должен содержать хотя бы:\n- Заглавную букву\n- Специальный символ\n- Цифру (0,...,9)",
-    "password_mismatch": "Пароли не совпадают"
+    "password_mismatch": "Пароли не совпадают",
+    "enter_code": "Введите код",
+    "verify": "Подтвердить",
+    "sending": "Отправка...",
+    "code_resent": "Код отправлен повторно"
   },
   "home": {
     "home": "Главная",
@@ -173,7 +177,8 @@
     "good_morning": "Доброе утро",
     "good_afternoon": "Добрый день",
     "good_evening": "Добрый вечер",
-    "where_going": "Куда вы едете сегодня?"
+    "where_going": "Куда вы едете сегодня?",
+    "popular_directions": "Популярные направления"
   },
   "ketamiz": {
     "title": "Новый Кетамиз",
@@ -317,7 +322,22 @@
     "transaction_type_refund": "Возврат",
     "transaction_type_debit": "Оплата",
     "transaction_type_booking": "Бронирование поездки",
-    "transaction_type_withdrawal": "Вывод средств"
+    "transaction_type_withdrawal": "Вывод средств",
+    "wallet": "Кошелёк",
+    "locked": "Заблокировано",
+    "enter_amount_error": "Пожалуйста, введите сумму",
+    "become_driver": "Стать водителем",
+    "become_driver_subtitle": "Зарабатывайте деньги, предлагая поездки",
+    "verification_pending": "Проверка в процессе",
+    "verification_pending_msg": "Ваши документы проверяются. Мы скоро уведомим вас.",
+    "verification_rejected": "Документы отклонены",
+    "resubmit_docs": "Нажмите для повторной отправки документов",
+    "driver_section": "Водитель",
+    "profile_updated": "Профиль успешно обновлён",
+    "delete_card": "Удалить карту",
+    "delete_card_confirm": "Вы уверены, что хотите удалить эту карту?",
+    "card_deleted": "Карта успешно удалена",
+    "terms": "Условия использования"
   },
   "history": {
     "history": "История",
@@ -326,5 +346,25 @@
     "canceled": "Отменено",
     "price": "Цена",
     "no_trips": "Поездки не найдены"
+  },
+  "nav": {
+    "home": "Главная",
+    "bookings": "Брони",
+    "wallet": "Кошелёк",
+    "profile": "Профиль",
+    "my_trips": "Поездки",
+    "create": "Создать"
+  },
+  "support": {
+    "title": "Как мы можем вам помочь?",
+    "subtitle": "Наша команда всегда готова помочь вам",
+    "formTitle": "Оставьте нам сообщение",
+    "name": "Ваше имя",
+    "email": "Электронная почта",
+    "message": "Ваше сообщение",
+    "send": "Отправить сообщение",
+    "success": "Ваше сообщение успешно отправлено!",
+    "contactInfo": "Контактная информация",
+    "address": "Адрес"
   }
 }

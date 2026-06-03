@@ -17,6 +17,7 @@ class AppTheme {
   static const Color bg = Color(0xFFFFFFFF);           // card bg
   static const Color light = Color(0xFFF8FAFC);        // light bg
   static const Color navbarBg = Color(0xFFF5F9F1);     // navbar bg
+  static const Color cream = Color(0xFFF6F7F1);         // logo bg (splash)
 
   /// Text & border colors
   static const Color black = Color(0xFF0F172A);        // dark text

@@ -1,9 +1,35 @@
+import 'dart:convert';
+
 import 'package:ketamiz/src/model/api/user_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../model/api/get_user_model.dart';
 
 class AppCache {
+  /// Stores a raw JSON-encodable list under [key] for cache-first display.
+  Future<void> cacheRawList(String key, List<dynamic> data) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(key, jsonEncode(data));
+    } catch (_) {
+      // Caching is best-effort; never let it break the flow.
+    }
+  }
+
+  /// Reads a cached list previously stored with [cacheRawList].
+  /// Returns an empty list if nothing is cached or it can't be decoded.
+  Future<List<dynamic>> getCachedList(String key) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final str = prefs.getString(key);
+      if (str == null || str.isEmpty) return [];
+      final decoded = jsonDecode(str);
+      return decoded is List ? decoded : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
   Future<void> saveLoginUser(UserModel user) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setInt("id", user.id);

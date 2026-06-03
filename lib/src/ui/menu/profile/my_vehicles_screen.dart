@@ -25,6 +25,8 @@ class MyVehiclesScreen extends StatefulWidget {
 }
 
 class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
+  static const String _vehiclesCacheKey = 'cache_vehicles';
+
   final Repository _repository = Repository();
   List<VehicleModel> myVehicles = [];
   bool isLoading = false;
@@ -47,11 +49,40 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
     getDriverStatus();
   }
 
+  List<VehicleModel> _mapVehicles(List<dynamic> data) {
+    return data.map((e) {
+      MyVehiclesModel m = MyVehiclesModel.fromJson(e);
+      return VehicleModel(
+        id: m.id,
+        vehicleName: m.model,
+        color: ColorModel(
+          id: 0,
+          titleEn: m.color.titleEn,
+          titleRu: m.color.titleRu,
+          titleUz: m.color.titleUz,
+          colorCode: _parseColorCode(m.color.code),
+        ),
+        capacity: m.seats,
+      );
+    }).toList();
+  }
+
   Future<void> getVehicles() async {
-    setState(() {
-      isLoading = true;
-    });
-    var response = await _repository.fetchVehiclesList();
+    // Cache-first: render the last known list instantly, no spinner flash.
+    final cached = await _repository.getCachedList(_vehiclesCacheKey);
+    if (!mounted) return;
+    if (cached.isNotEmpty) {
+      setState(() {
+        myVehicles = _mapVehicles(cached);
+        isLoading = false;
+      });
+    } else {
+      setState(() => isLoading = true);
+    }
+
+    // Always revalidate from the network.
+    final response = await _repository.fetchVehiclesList();
+    if (!mounted) return;
     if (response.isSuccess) {
       List<dynamic> data = [];
       if (response.result is List) {
@@ -60,28 +91,10 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
           response.result.containsKey('data')) {
         data = response.result['data'];
       }
-
-      setState(() {
-        myVehicles = data.map((e) {
-          MyVehiclesModel m = MyVehiclesModel.fromJson(e);
-          return VehicleModel(
-            id: m.id,
-            vehicleName: m.model,
-            color: ColorModel(
-              id: 0,
-              titleEn: m.color.titleEn,
-              titleRu: m.color.titleRu,
-              titleUz: m.color.titleUz,
-              colorCode: _parseColorCode(m.color.code),
-            ),
-            capacity: m.seats,
-          );
-        }).toList();
-      });
+      _repository.cacheRawList(_vehiclesCacheKey, data);
+      setState(() => myVehicles = _mapVehicles(data));
     }
-    setState(() {
-      isLoading = false;
-    });
+    setState(() => isLoading = false);
   }
 
   Color _parseColorCode(String code) {
