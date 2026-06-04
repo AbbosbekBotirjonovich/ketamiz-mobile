@@ -3,13 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ketamiz/src/theme/app_theme.dart';
 import 'package:ketamiz/src/ui/dialogs/bottom_dialog.dart';
+import 'package:ketamiz/src/ui/dialogs/center_dialog.dart';
+import 'package:ketamiz/src/ui/dialogs/snack_bar.dart';
 import 'package:ketamiz/src/ui/widgets/buttons/secondary_button.dart';
 import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
 import 'package:ketamiz/src/ui/widgets/textfield/main_textfield.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_18h_500w.dart';
+import '../../../bloc/profile_bloc.dart';
+import '../../../resources/repository.dart';
+import '../../../utils/image_helper.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -19,7 +25,9 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
+  final Repository _repository = Repository();
   bool isLoadingImage = false;
+  bool isSaving = false;
   XFile avatar = XFile("");
 
   TextEditingController firstNameController = TextEditingController();
@@ -28,6 +36,84 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   TextEditingController phoneController = TextEditingController();
   TextEditingController fatherController = TextEditingController();
   TextEditingController birthDateController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentInfo();
+  }
+
+  Future<void> _loadCurrentInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      firstNameController.text = prefs.getString('first_name') ?? '';
+      lastNameController.text = prefs.getString('last_name') ?? '';
+      fatherController.text = prefs.getString('father_name') ?? '';
+      emailController.text = prefs.getString('email') ?? '';
+      phoneController.text = prefs.getString('phone') ?? '';
+    });
+  }
+
+  Future<void> _saveChanges() async {
+    if (firstNameController.text.trim().isEmpty ||
+        lastNameController.text.trim().isEmpty) {
+      CenterDialog.showActionFailed(
+        context,
+        translate("ketamiz.error"),
+        translate("home.fill_all_fields"),
+      );
+      return;
+    }
+
+    setState(() => isSaving = true);
+
+    final response = await _repository.fetchUpdateProfile(
+      firstNameController.text.trim(),
+      lastNameController.text.trim(),
+      fatherController.text.trim(),
+      emailController.text.trim(),
+    );
+
+    if (!mounted) return;
+    setState(() => isSaving = false);
+
+    if (response.isSuccess) {
+      final result = response.result;
+      final ok = result is Map &&
+          (result['status'] == 'success' || result['status'] == 200);
+      if (ok) {
+        // Update local prefs immediately so the UI reflects changes instantly,
+        // then sync /auth/me from the server (best-effort).
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('first_name', firstNameController.text.trim());
+        await prefs.setString('last_name', lastNameController.text.trim());
+        await prefs.setString('father_name', fatherController.text.trim());
+        await prefs.setString('email', emailController.text.trim());
+        blocProfile.fetchMe();
+        if (!mounted) return;
+        CustomSnackBar().showSnackBar(
+          context,
+          translate("profile.profile_updated"),
+          1,
+        );
+        Navigator.pop(context, true);
+      } else {
+        final msg = (result is Map ? result['message']?.toString() : null) ??
+            translate("auth.something_went_wrong");
+        CenterDialog.showActionFailed(
+            context, translate("ketamiz.error"), msg);
+      }
+    } else {
+      CenterDialog.showActionFailed(
+        context,
+        translate("ketamiz.error"),
+        response.result is Map && response.result['message'] != null
+            ? response.result['message']
+            : translate("auth.connection_failed"),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -376,10 +462,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         controller: emailController,
                       ),
                       const SizedBox(height: 16),
-                      MainTextField(
-                        hintText: translate("profile.phone_number"),
-                        icon: Icons.phone,
-                        controller: phoneController,
+                      AbsorbPointer(
+                        child: Opacity(
+                          opacity: 0.6,
+                          child: MainTextField(
+                            hintText: translate("profile.phone_number"),
+                            icon: Icons.phone,
+                            controller: phoneController,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -395,9 +486,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     Expanded(
                       child: SecondaryButton(
                         title: translate("profile.save_changes"),
-                        onTap: () {
-                          Navigator.pop(context);
-                        },
+                        onTap: isSaving ? () {} : _saveChanges,
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -406,6 +495,26 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 const SizedBox(height: 32),
               ],
             ),
+            if (isSaving)
+              Container(
+                color: AppTheme.black.withOpacity(0.45),
+                child: Center(
+                  child: Container(
+                    height: 96,
+                    width: 96,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(AppTheme.purple),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -413,9 +522,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final ImagePicker picker = ImagePicker();
     try {
-      final XFile? image = await picker.pickImage(source: source).timeout(
+      final XFile? image = await ImageHelper.pick(source).timeout(
         const Duration(seconds: 30),
         onTimeout: () {
           if (mounted) {

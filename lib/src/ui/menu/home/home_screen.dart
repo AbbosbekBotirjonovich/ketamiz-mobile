@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:ketamiz/src/bloc/home_bloc.dart';
+import 'package:ketamiz/src/lan_localization/load_places.dart';
 import 'package:ketamiz/src/model/api/trip_list_model.dart';
 import 'package:ketamiz/src/model/location_model.dart';
 import 'package:ketamiz/src/ui/dialogs/bottom_dialog.dart';
@@ -71,9 +74,32 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int notificationNumber = 0;
 
-  bool _isReturnToggled = false;
-
   String _userName = '';
+
+  // Popular region-to-region directions for the auto-swiping carousel.
+  // Each entry is [fromRegionId, toRegionId] (see assets/places.json).
+  static const List<List<String>> _popularDirections = [
+    ["12", "2"], // Fergana → Andijan
+    ["2", "11"], // Andijan → Tashkent region
+    ["14", "8"], // Tashkent city → Samarkand
+    ["7", "12"], // Namangan → Fergana
+    ["8", "14"], // Samarkand → Tashkent city
+    ["11", "2"], // Tashkent region → Andijan
+  ];
+
+  // Fallback localized names if places.json isn't loaded yet.
+  static const Map<String, String> _regionFallback = {
+    "2": "Andijan",
+    "7": "Namangan",
+    "8": "Samarkand",
+    "11": "Tashkent region",
+    "12": "Fergana",
+    "14": "Tashkent city",
+  };
+
+  final PageController _directionsController =
+      PageController(viewportFraction: 0.82);
+  Timer? _directionsTimer;
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -97,7 +123,130 @@ class _HomeScreenState extends State<HomeScreen> {
     getDriverStatus();
     blocHome.fetchTripList();
     blocProfile.fetchMe();
+    _startDirectionsAutoSwipe();
     super.initState();
+  }
+
+  void _startDirectionsAutoSwipe() {
+    _directionsTimer =
+        Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!_directionsController.hasClients) return;
+      final current = _directionsController.page?.round() ?? 0;
+      final next =
+          current + 1 >= _popularDirections.length ? 0 : current + 1;
+      _directionsController.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  String _regionName(String id) {
+    final match = LocationData.regions.where((r) => r.id == id);
+    if (match.isNotEmpty && match.first.text.isNotEmpty) {
+      return match.first.text;
+    }
+    return _regionFallback[id] ?? '';
+  }
+
+  void _searchDirection(String fromRegionId, String toRegionId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SearchResultScreen(
+          trip: TripListModel(
+            id: 1,
+            fromWhere: "",
+            toWhere: "",
+            fromRegionId: int.parse(fromRegionId),
+            toRegionId: int.parse(toRegionId),
+            fromCityId: 0,
+            toCityId: 0,
+            fromVillageId: 0,
+            toVillageId: 0,
+            startTime: DateTime.now(),
+            endTime: DateTime.now(),
+            pricePerSeat: "",
+            totalSeats: 0,
+            availableSeats: 0,
+            startLat: "",
+            startLong: "",
+            endLat: "",
+            endLong: "",
+            status: "",
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            driver: TripDriver(id: 0, name: "", role: "driver"),
+            vehicle: TripVehicle(
+              id: 0,
+              model: "",
+              seats: 0,
+              carNumber: "",
+              color: CarColor(
+                id: 0,
+                titleUz: "",
+                titleRu: "",
+                titleEn: "",
+                code: "",
+              ),
+            ),
+          ),
+          isRoundTrip: false,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDirectionChip(String fromId, String toId) {
+    return GestureDetector(
+      onTap: () => _searchDirection(fromId, toId),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: AppTheme.purple.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.purple.withOpacity(0.25)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.location_on_outlined,
+                size: 18, color: AppTheme.purple),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                _regionName(fromId),
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: AppTheme.fontFamily,
+                  color: AppTheme.black,
+                ),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6),
+              child: Icon(Icons.arrow_forward,
+                  size: 16, color: AppTheme.purple),
+            ),
+            Flexible(
+              child: Text(
+                _regionName(toId),
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: AppTheme.fontFamily,
+                  color: AppTheme.black,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _onRefresh() async {
@@ -109,6 +258,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _directionsTimer?.cancel();
+    _directionsController.dispose();
     scrollController.dispose();
     fromController.dispose();
     toController.dispose();
@@ -437,233 +588,37 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ],
                                 ),
                               ),
-                              const SizedBox(height: 12),
-                              // Departure and Return fields
-                              SizedBox(
-                                height: 66,
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Container(
-                                        height: 66,
-                                        decoration: BoxDecoration(
-                                          boxShadow: [
-                                            BoxShadow(
-                                              offset: const Offset(0, 4),
-                                              blurRadius: 100,
-                                              spreadRadius: 0,
-                                              color: AppTheme.black
-                                                  .withOpacity(0.05),
-                                            ),
-                                          ],
-                                        ),
-                                        child: TextField(
-                                          controller: departureController,
-                                          readOnly: true,
-                                          cursorColor: AppTheme.purple,
-                                          style: const TextStyle(
-                                            color: AppTheme.black,
-                                            fontFamily: AppTheme.fontFamily,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500,
-                                            letterSpacing: 1,
-                                            height: 1.5,
-                                          ),
-                                          onTap: () {
-                                            BottomDialog.showTripDateTime(
-                                              context,
-                                              (date) {
-                                                setState(() {
-                                                  departureDate = date;
-                                                  departureController.text =
-                                                      Utils.tripDateFormat(
-                                                          departureDate);
-                                                });
-                                              },
-                                              departureDate,
-                                            );
-                                          },
-                                          decoration: InputDecoration(
-                                            labelText: translate(
-                                                "home.departure_date"),
-                                            labelStyle: const TextStyle(
-                                              color: AppTheme.text,
-                                              fontFamily: AppTheme.fontFamily,
-                                            ),
-                                            contentPadding:
-                                                const EdgeInsets.symmetric(
-                                              vertical: 20,
-                                              horizontal: 16,
-                                            ),
-                                            filled: true,
-                                            border: const OutlineInputBorder(),
-                                            enabledBorder: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(16),
-                                              borderSide: const BorderSide(
-                                                  color: AppTheme.border),
-                                            ),
-                                            focusedBorder: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(16),
-                                              borderSide: const BorderSide(
-                                                color: AppTheme.purple,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    SizedBox(
-                                      height: 66,
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.end,
-                                        children: [
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            translate("home.return"),
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              color: AppTheme.text,
-                                              fontFamily: AppTheme.fontFamily,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          GestureDetector(
-                                            onTap: () {
-                                              setState(() {
-                                                _isReturnToggled =
-                                                    !_isReturnToggled;
-                                              });
-                                            },
-                                            child: SizedBox(
-                                              height: 32,
-                                              width: 64,
-                                              child: Stack(
-                                                children: [
-                                                  Container(
-                                                    width: 64,
-                                                    height: 32,
-                                                    decoration: BoxDecoration(
-                                                      color: AppTheme.purple
-                                                          .withOpacity(0.1),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              16),
-                                                    ),
-                                                  ),
-                                                  AnimatedPositioned(
-                                                    duration: const Duration(
-                                                        milliseconds: 270),
-                                                    curve: Curves.easeInOut,
-                                                    left: _isReturnToggled
-                                                        ? 32
-                                                        : 4,
-                                                    top: 2,
-                                                    bottom: 2,
-                                                    child: Container(
-                                                      width: 28,
-                                                      height: 28,
-                                                      decoration: BoxDecoration(
-                                                        color: _isReturnToggled
-                                                            ? AppTheme.purple
-                                                            : Colors.white,
-                                                        shape: BoxShape.circle,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
+                              const SizedBox(height: 16),
+                              // Popular directions — auto-swiping carousel
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                    left: 4, bottom: 8),
+                                child: Text(
+                                  translate("home.popular_directions"),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppTheme.text,
+                                    fontFamily: AppTheme.fontFamily,
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 12),
-                              // Return date field
-                              _isReturnToggled
-                                  ? Column(
-                                      children: [
-                                        Container(
-                                          height: 66,
-                                          decoration: BoxDecoration(
-                                            boxShadow: [
-                                              BoxShadow(
-                                                offset: const Offset(0, 4),
-                                                blurRadius: 100,
-                                                spreadRadius: 0,
-                                                color: AppTheme.black
-                                                    .withOpacity(0.05),
-                                              ),
-                                            ],
-                                          ),
-                                          child: TextField(
-                                            controller: returnController,
-                                            cursorColor: AppTheme.purple,
-                                            style: const TextStyle(
-                                              color: AppTheme.black,
-                                              fontFamily: AppTheme.fontFamily,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w500,
-                                              letterSpacing: 1,
-                                              height: 1.5,
-                                            ),
-                                            onTap: () {
-                                              BottomDialog.showTripDateTime(
-                                                context,
-                                                (date) {
-                                                  setState(() {
-                                                    returnDateTime = date;
-                                                    returnController.text =
-                                                        Utils.tripDateFormat(
-                                                            returnDateTime);
-                                                  });
-                                                },
-                                                returnDateTime,
-                                              );
-                                            },
-                                            decoration: InputDecoration(
-                                              labelText:
-                                                  translate("home.return_date"),
-                                              labelStyle: const TextStyle(
-                                                color: AppTheme.text,
-                                                fontFamily: AppTheme.fontFamily,
-                                              ),
-                                              filled: true,
-                                              contentPadding:
-                                                  const EdgeInsets.symmetric(
-                                                vertical: 20,
-                                                horizontal: 16,
-                                              ),
-                                              border:
-                                                  const OutlineInputBorder(),
-                                              enabledBorder: OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(16),
-                                                borderSide: const BorderSide(
-                                                    color: AppTheme.border),
-                                              ),
-                                              focusedBorder: OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(16),
-                                                borderSide: const BorderSide(
-                                                  color: AppTheme.purple,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 16),
-                                      ],
-                                    )
-                                  : Container(),
+                              SizedBox(
+                                height: 56,
+                                child: PageView.builder(
+                                  controller: _directionsController,
+                                  itemCount: _popularDirections.length,
+                                  itemBuilder: (context, index) {
+                                    final dir = _popularDirections[index];
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 4),
+                                      child: _buildDirectionChip(
+                                          dir[0], dir[1]),
+                                    );
+                                  },
+                                ),
+                              ),
+                              const SizedBox(height: 16),
                               // Find Transportation button
                               SizedBox(
                                 height: 56,
@@ -726,7 +681,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 ),
                                               ),
                                             ),
-                                            isRoundTrip: _isReturnToggled,
+                                            isRoundTrip: false,
                                           ),
                                         ),
                                       );
@@ -844,7 +799,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              translate("explore.nothing_found"),
+                              translate("ketamiz.No_trip_found"),
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontFamily: AppTheme.fontFamily,

@@ -1,0 +1,254 @@
+{
+  "info": {
+    "_postman_id": "e33b70af-1cf1-4ed8-9e4a-53c4b4eeae4b",
+    "name": "Public trips",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "19384339",
+    "_collection_link": "https://go.postman.co/collection/19384339-e33b70af-1cf1-4ed8-9e4a-53c4b4eeae4b?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "get a trip",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "en",
+            "description": "en, ru, uz",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/public/trips/view/1",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "public",
+            "trips",
+            "view",
+            "1"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "search trip with params",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://qadam.services/api/v1/public/trips/search/available-trips?start_region_id=2&end_region_id=1&start_district_id=25&end_district_id=44&start_quarter_id=1355&end_quarter_id=233&departure_date=2025-12-06 11:40:00",
+          "protocol": "https",
+          "host": [
+            "qadam",
+            "services"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "public",
+            "trips",
+            "search",
+            "available-trips"
+          ],
+          "query": [
+            {
+              "key": "start_region_id",
+              "value": "2"
+            },
+            {
+              "key": "end_region_id",
+              "value": "1"
+            },
+            {
+              "key": "start_district_id",
+              "value": "25"
+            },
+            {
+              "key": "end_district_id",
+              "value": "44"
+            },
+            {
+              "key": "start_quarter_id",
+              "value": "1355",
+              "description": "required"
+            },
+            {
+              "key": "end_quarter_id",
+              "value": "233",
+              "description": "required"
+            },
+            {
+              "key": "departure_date",
+              "value": "2025-12-06 11:40:00",
+              "description": "required| 2025-12-05T11:40:00+05:00\n"
+            },
+            {
+              "key": "return_date",
+              "value": "2025-05-24 20:49:12",
+              "description": "optional| 2025-12-05T11:40:00+05:00\n",
+              "disabled": true
+            },
+            {
+              "key": "is_round_trip",
+              "value": "true",
+              "description": "boolean",
+              "disabled": true
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "all trips",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/public/trips/view",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "public",
+            "trips",
+            "view"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "search by region to region",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "start_region_id",
+              "value": "8",
+              "type": "text",
+              "uuid": "1e003d1e-83ff-4f40-ac68-0e9f3fbfc840"
+            },
+            {
+              "key": "end_region_id",
+              "value": "1",
+              "type": "text",
+              "uuid": "06176a2e-f83d-464d-8f92-76fd5c96f181"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/public/trips/search/trip-by-region-to-region",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "public",
+            "trips",
+            "search",
+            "trip-by-region-to-region"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "all trips for less info",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "en",
+            "description": "en, ru ,uz ",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "https://qadam.services/api/v1/public/trips",
+          "protocol": "https",
+          "host": [
+            "qadam",
+            "services"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "public",
+            "trips"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

@@ -1,0 +1,872 @@
+{
+  "info": {
+    "_postman_id": "2740a6c7-6ade-435d-a9d9-bd519418d3ff",
+    "name": "API-Auth",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "19384339",
+    "_collection_link": "https://go.postman.co/collection/19384339-2740a6c7-6ade-435d-a9d9-bd519418d3ff?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Apply your docs to become a driver",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var template = `",
+              "<style type=\"text/css\">",
+              "    .tftable {font-size:14px;color:#333333;width:100%;border-width: 1px;border-color: #87ceeb;border-collapse: collapse;}",
+              "    .tftable th {font-size:18px;background-color:#87ceeb;border-width: 1px;padding: 8px;border-style: solid;border-color: #87ceeb;text-align:left;}",
+              "    .tftable tr {background-color:#ffffff;}",
+              "    .tftable td {font-size:14px;border-width: 1px;padding: 8px;border-style: solid;border-color: #87ceeb;}",
+              "    .tftable tr:hover {background-color:#e0ffff;}",
+              "</style>",
+              "",
+              "<table class=\"tftable\" border=\"1\">",
+              "    <tr>",
+              "        <th>Driving License Number</th>",
+              "        <th>Driving License Expiration Date</th>",
+              "        <th>Birthday</th>",
+              "        <th>Region ID</th>",
+              "        <th>District ID</th>",
+              "        <th>Quarter ID</th>",
+              "        <th>Home Address</th>",
+              "        <th>Vehicle Number</th>",
+              "        <th>Car Model</th>",
+              "        <th>Car Color ID</th>",
+              "        <th>Tech Passport Number</th>",
+              "        <th>Seats</th>",
+              "    </tr>",
+              "    <tr>",
+              "        <td>{{response.driving_license_number}}</td>",
+              "        <td>{{response.driving_license_expiration_date}}</td>",
+              "        <td>{{response.birthday}}</td>",
+              "        <td>{{response.region_id}}</td>",
+              "        <td>{{response.district_id}}</td>",
+              "        <td>{{response.quarter_id}}</td>",
+              "        <td>{{response.home_address}}</td>",
+              "        <td>{{response.vehicle_number}}</td>",
+              "        <td>{{response.car_model}}</td>",
+              "        <td>{{response.car_color_id}}</td>",
+              "        <td>{{response.tech_passport_number}}</td>",
+              "        <td>{{response.seats}}</td>",
+              "    </tr>",
+              "</table>",
+              "`;",
+              "",
+              "function constructVisualizerPayload() {",
+              "    return { response: pm.response.json() };",
+              "}",
+              "",
+              "pm.visualizer.set(template, constructVisualizerPayload());"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "multipart/form-data",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "driving_license_number",
+              "value": "AB6042435",
+              "description": "'required|string',",
+              "type": "text",
+              "uuid": "54690bb6-c0e8-4b3e-a101-9099b82b2bba"
+            },
+            {
+              "key": "driving_license_expiration_date",
+              "value": "22,03,2029",
+              "description": "'required|string',",
+              "type": "text",
+              "uuid": "e6541528-2f34-4942-93af-52f3a374ba34"
+            },
+            {
+              "key": "birthday",
+              "value": "07.05.1999",
+              "description": "'required|string',",
+              "type": "text",
+              "uuid": "8b9a0a92-a208-4f83-9450-6834040ebce4"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/auth/become-a-driver",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "become-a-driver"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "register",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "phone",
+              "value": "+998997713910",
+              "type": "text",
+              "uuid": "802f7559-26ac-4cc3-89c7-ed09435e87e8"
+            },
+            {
+              "key": "password",
+              "value": "12345aaSSdd",
+              "type": "text",
+              "uuid": "ac05af9d-33ac-43b8-838a-7d1d0084cf38"
+            },
+            {
+              "key": "password_confirmation",
+              "value": "12345aaSSdd",
+              "type": "text",
+              "uuid": "ba6950d0-1da6-4081-b38a-bf1c5e055a3d"
+            },
+            {
+              "key": "first_name",
+              "value": "Client",
+              "type": "text",
+              "uuid": "feb30e19-d2c5-44e4-9829-eb12338409da"
+            },
+            {
+              "key": "last_name",
+              "value": "Client",
+              "type": "text",
+              "uuid": "23aa5d90-3ec2-4ab7-af22-9d53b7f1db46"
+            },
+            {
+              "key": "email",
+              "value": "client@gmail.com",
+              "type": "text",
+              "uuid": "02eaeb73-13d4-41bc-a3f1-deaa0cbbfe48"
+            },
+            {
+              "key": "father_name",
+              "value": "Client ug`li",
+              "type": "text",
+              "uuid": "b5d8f51f-4d85-4069-9d52-3cf5b8f4baba"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/auth/register",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "register"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "verify_code",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "code",
+              "value": "980137",
+              "type": "text",
+              "uuid": "802f7559-26ac-4cc3-89c7-ed09435e87e8"
+            },
+            {
+              "key": "phone",
+              "value": "+998997713912",
+              "type": "text",
+              "uuid": "9b9b7c50-69c6-4bc7-8e12-1616e3458690"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/auth/verify-code",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "verify-code"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "resend-code",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "phone",
+              "value": "+48732786925",
+              "type": "text",
+              "uuid": "802f7559-26ac-4cc3-89c7-ed09435e87e8"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/auth/resend-code",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "resend-code"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "login",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "phone",
+              "value": "+998702246871",
+              "type": "text",
+              "uuid": "802f7559-26ac-4cc3-89c7-ed09435e87e8"
+            },
+            {
+              "key": "password",
+              "value": "xujamovutkir",
+              "type": "text",
+              "uuid": "effff498-1535-4a2f-8d20-5c391bbef11f",
+              "description": "driver: "
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/auth/login",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "send-reset-code (1)",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "phone",
+              "value": "+998886808058",
+              "type": "text",
+              "uuid": "802f7559-26ac-4cc3-89c7-ed09435e87e8"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/auth/send-reset-code",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "send-reset-code"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "reset password (2)",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "verification_code",
+              "value": "755557",
+              "type": "text",
+              "uuid": "802f7559-26ac-4cc3-89c7-ed09435e87e8"
+            },
+            {
+              "key": "password",
+              "value": "12345678",
+              "description": "reset password",
+              "type": "text",
+              "uuid": "340e89b4-9d96-4f92-b278-7c080b4c21fb"
+            },
+            {
+              "key": "password_confirmation",
+              "value": "12345678",
+              "description": "confirm",
+              "type": "text",
+              "uuid": "78712067-d55a-48b3-b58b-f403a8d86b16"
+            },
+            {
+              "key": "phone",
+              "value": "+998886808058",
+              "description": "used phone number",
+              "type": "text",
+              "uuid": "982ba44c-fc52-4033-b4d8-c6fb04b39ace"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/auth/reset-password",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "reset-password"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "logout",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYXBpL3YxL2F1dGgvbG9naW4iLCJpYXQiOjE3NTAzNzE0MzksImV4cCI6MTc1MDM3NTAzOSwibmJmIjoxNzUwMzcxNDM5LCJqdGkiOiJHdnFEQXNpR2s1enJhMTUyIiwic3ViIjoiMiIsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjcifQ.7dGZIZgA1VfW4v5VtjrgRhc4tvA1LIbVT-dvHHmzwaQ",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "phone",
+              "value": "+48732786924",
+              "type": "text",
+              "uuid": "802f7559-26ac-4cc3-89c7-ed09435e87e8"
+            },
+            {
+              "key": "password",
+              "value": "jonibek77",
+              "type": "text",
+              "uuid": "effff498-1535-4a2f-8d20-5c391bbef11f"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/auth/logout",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "logout"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "refresh token",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYXBpL3YxL2F1dGgvbG9naW4iLCJpYXQiOjE3NTAzNzE2NDksImV4cCI6MTc1MDM3NTI0OSwibmJmIjoxNzUwMzcxNjQ5LCJqdGkiOiJ0Y1N6blpTQTlHSHNMMmx3Iiwic3ViIjoiMiIsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjcifQ.yKdq4I8IIf8uWfMvd3RQLQM_Fbr3cYI40WWhhs6Disc",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "phone",
+              "value": "+48732786924",
+              "type": "text",
+              "uuid": "802f7559-26ac-4cc3-89c7-ed09435e87e8"
+            },
+            {
+              "key": "password",
+              "value": "jonibek77",
+              "type": "text",
+              "uuid": "effff498-1535-4a2f-8d20-5c391bbef11f"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/auth/refresh",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "refresh"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "update my data",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "first_name",
+              "value": "Ramz",
+              "description": "nullable|string|max:255",
+              "type": "text",
+              "uuid": "096feaf0-e28a-4966-8068-1620dd43a808"
+            },
+            {
+              "key": "last_name",
+              "value": "Rustam",
+              "description": "nullable|string|max:255",
+              "type": "text",
+              "uuid": "8e82eb80-0b1f-4098-a4a7-2ec7a4b18837"
+            },
+            {
+              "key": "father_name",
+              "value": "Utkir o'g'liii",
+              "description": "required|string|max:255",
+              "type": "text",
+              "uuid": "5bf9c9d5-e2f5-4252-9133-2b8fabcdc31f"
+            },
+            {
+              "key": "email",
+              "value": "rustamovvramziddin@gmail.comm",
+              "description": "required|email|max:255",
+              "type": "text",
+              "uuid": "9458695d-b364-43cd-a621-ce6d02e6b9e1"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/auth/update-profile",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "update-profile"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Me",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/auth/me",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "me"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "update language",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "language",
+              "value": "en",
+              "type": "text",
+              "uuid": "3cc20ee3-8afb-4ec9-b3b5-5b494fbbc53e"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/auth/update-user-language",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "update-user-language"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "upload-driver-doc-images",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "multipart/form-data",
+            "type": "text"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "en",
+            "description": "en,ru,uz",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "driving_licence_front",
+              "description": "required|image|mimes:jpeg,png,jpg,gif|max:10240',",
+              "type": "file",
+              "uuid": "a1a02d22-0939-4a08-a0b4-2f13973463e8",
+              "src": "/Users/mac/Desktop/Screenshot 2026-05-07 at 00.08.58.png"
+            },
+            {
+              "key": "driving_licence_back",
+              "description": "'required|image|mimes:jpeg,png,jpg,gif|max:10240',",
+              "type": "file",
+              "uuid": "040d4ba5-1aa3-415e-be35-e77f64db7cc1",
+              "src": "/Users/mac/Desktop/Screenshot 2026-05-07 at 00.08.58.png"
+            },
+            {
+              "key": "driver_passport_image",
+              "description": "'required|image|mimes:jpeg,png,jpg,gif|max:10240',",
+              "type": "file",
+              "uuid": "f41ae728-19d5-4996-bd69-e72bc950a97b",
+              "src": "/Users/mac/Desktop/Screenshot 2026-05-07 at 00.08.58.png"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/auth/upload-driver-passport-driving-licence",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "upload-driver-passport-driving-licence"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "sms (test server side )",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{api}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "phone",
+              "value": "998916650127",
+              "type": "text",
+              "uuid": "abecae4d-e374-473e-88b3-ea2ebb86d2f6"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{qardam_base_url}}/api/v1/auth/send-sms-as-test",
+          "host": [
+            "{{qardam_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "send-sms-as-test"
+          ],
+          "query": [
+            {
+              "key": "",
+              "value": null,
+              "type": "text",
+              "disabled": true
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "send sms",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "password",
+              "value": "&DSv9KNvG4b#",
+              "type": "string"
+            },
+            {
+              "key": "username",
+              "value": "gotogether",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "https://sms-provider.com/api/send",
+          "protocol": "https",
+          "host": [
+            "sms-provider",
+            "com"
+          ],
+          "path": [
+            "api",
+            "send"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

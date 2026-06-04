@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:ketamiz/src/ui/auth/login_screen.dart';
+import 'package:ketamiz/src/ui/menu/new_ketamiz/add_docs_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/edit_profile_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/my_vehicles_screen.dart';
+import 'package:ketamiz/src/ui/menu/profile/support_screen.dart';
+import 'package:ketamiz/src/ui/menu/profile/terms_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/top_up_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/transaction_history_screen.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_12h_400w.dart';
@@ -11,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../bloc/profile_bloc.dart';
 import '../../../model/settings_model.dart';
+import '../../../resources/repository.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/utils.dart';
 import '../../widgets/containers/settings_container.dart';
@@ -36,6 +40,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _myName = '';
   String _myPhone = '';
   bool _isDriver = false;
+  String _verificationStatus = 'none'; // none | pending | approved | rejected
 
   @override
   void initState() {
@@ -140,7 +145,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       MaterialPageRoute(
                         builder: (context) => const EditProfileScreen(),
                       ),
-                    );
+                    ).then((_) {
+                      if (mounted) _refresh();
+                    });
                   },
                   child: Container(
                     padding:
@@ -275,25 +282,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 24),
+          // Role-specific section
+          if (_isDriver) ...[
+            Text16h500w(title: translate("profile.driver_section")),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MyVehiclesScreen()),
+              ),
+              child: SettingsContainer(
+                settingsModel: SettingsModel(
+                  icon: Icons.directions_car_outlined,
+                  title: translate("profile.my_vehicles"),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ] else ...[
+            _buildBecomeDriverBanner(),
+            const SizedBox(height: 16),
+          ],
           Text16h500w(
             title: translate("profile.settings"),
           ),
-          if (_isDriver)
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const MyVehiclesScreen(),
-                  ),
-                );
-              },
-              child: SettingsContainer(
-                  settingsModel: SettingsModel(
-                icon: Icons.directions_car_outlined,
-                title: translate("profile.my_vehicles"),
-              )),
-            ),
           SettingsContainer(
               settingsModel: SettingsModel(
             icon: Icons.lock_clock,
@@ -316,21 +328,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Text16h500w(
             title: translate("profile.about_us"),
           ),
-          SettingsContainer(
-              settingsModel: SettingsModel(
-            icon: Icons.info,
-            title: translate("profile.info"),
-          )),
-          SettingsContainer(
-              settingsModel: SettingsModel(
-            icon: Icons.privacy_tip,
-            title: translate("profile.privacy_security"),
-          )),
-          SettingsContainer(
-              settingsModel: SettingsModel(
-            icon: Icons.contact_support,
-            title: translate("profile.contact_us"),
-          )),
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const TermsScreen()),
+            ),
+            child: SettingsContainer(
+                settingsModel: SettingsModel(
+              icon: Icons.description_outlined,
+              title: translate("profile.terms"),
+            )),
+          ),
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const TermsScreen()),
+            ),
+            child: SettingsContainer(
+                settingsModel: SettingsModel(
+              icon: Icons.privacy_tip,
+              title: translate("profile.privacy_security"),
+            )),
+          ),
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SupportScreen()),
+            ),
+            child: SettingsContainer(
+                settingsModel: SettingsModel(
+              icon: Icons.contact_support,
+              title: translate("profile.contact_us"),
+            )),
+          ),
           const SizedBox(height: 16),
           Text16h500w(
             title: translate("profile.other"),
@@ -342,6 +372,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           )),
           GestureDetector(
             onTap: () async {
+              // Best-effort server logout; proceed regardless of result.
+              try {
+                await Repository().fetchLogout();
+              } catch (_) {}
               await wipeSharedPreferences();
               if (!mounted) return;
               Navigator.of(context).popUntil(
@@ -363,6 +397,161 @@ class _ProfileScreenState extends State<ProfileScreen> {
             )),
           ),
         ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBecomeDriverBanner() {
+    if (_verificationStatus == 'pending') {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.yellow.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.yellow.withOpacity(0.4)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppTheme.yellow.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.hourglass_top_rounded,
+                  color: AppTheme.yellow, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text16h500w(title: translate("profile.verification_pending")),
+                  const SizedBox(height: 2),
+                  Text14h400w(
+                    title: translate("profile.verification_pending_msg"),
+                    color: AppTheme.dark,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_verificationStatus == 'rejected') {
+      return GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AddDocsScreen()),
+        ).then((_) => _refresh()),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppTheme.red.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppTheme.red.withOpacity(0.3)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.red.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child:
+                    const Icon(Icons.error_outline, color: AppTheme.red, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text16h500w(title: translate("profile.verification_rejected")),
+                    const SizedBox(height: 2),
+                    Text14h400w(
+                      title: translate("profile.resubmit_docs"),
+                      color: AppTheme.red,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppTheme.red, size: 20),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // status == 'none' — show become driver CTA
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const AddDocsScreen()),
+      ).then((_) => _refresh()),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.purple,
+              AppTheme.blue,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              offset: const Offset(0, 4),
+              blurRadius: 20,
+              color: AppTheme.purple.withOpacity(0.3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.drive_eta_rounded,
+                  color: Colors.white, size: 24),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    translate("profile.become_driver"),
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    translate("profile.become_driver_subtitle"),
+                    style: TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 13,
+                      color: Colors.white.withOpacity(0.85),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios,
+                color: Colors.white, size: 16),
+          ],
         ),
       ),
     );
@@ -397,10 +586,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     String firstName = prefs.getString('first_name') ?? '';
     String lastName = prefs.getString('last_name') ?? '';
     setState(() {
-      _myImage = prefs.getString('avatar') ?? '';
+      _myImage = prefs.getString('image') ?? '';
       _myName = '$firstName $lastName';
       _myPhone = prefs.getString('phone') ?? '';
       _isDriver = prefs.getString('role') == 'driver';
+      _verificationStatus =
+          prefs.getString('driving_verification_status') ?? 'none';
     });
   }
 
@@ -430,6 +621,10 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
   Future<void> _apply() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('language', _selected);
+    // Best-effort sync of language to the backend.
+    try {
+      Repository().fetchUpdateLanguage(_selected);
+    } catch (_) {}
     if (!mounted) return;
     final delegate = LocalizedApp.of(context).delegate;
     await delegate.changeLocale(Locale(_selected));

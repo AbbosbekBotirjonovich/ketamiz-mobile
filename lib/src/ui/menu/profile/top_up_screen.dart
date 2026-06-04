@@ -84,6 +84,40 @@ class _TopUpScreenState extends State<TopUpScreen> {
     }
   }
 
+  Future<void> _deleteCard(int index) async {
+    final card = cards[index];
+    final cardId = card.id;
+    if (cardId == null) return;
+    CenterDialog.showConfirmation(
+      context,
+      translate("profile.delete_card"),
+      translate("profile.delete_card_confirm"),
+      onConfirm: () async {
+        Navigator.pop(context);
+        setState(() => isLoading = true);
+        final response = await _repository.fetchDeleteCard(cardId);
+        if (!mounted) return;
+        setState(() => isLoading = false);
+        if (response.isSuccess) {
+          CustomSnackBar().showSnackBar(
+            context,
+            translate("profile.card_deleted"),
+            1,
+          );
+          await _fetchCards();
+        } else {
+          CenterDialog.showActionFailed(
+            context,
+            translate("ketamiz.error"),
+            response.result is Map && response.result['message'] != null
+                ? response.result['message']
+                : translate("auth.something_went_wrong"),
+          );
+        }
+      },
+    );
+  }
+
   Future<void> _createPayment() async {
     if (amountController.text.isEmpty) {
       CenterDialog.showActionFailed(
@@ -156,6 +190,17 @@ class _TopUpScreenState extends State<TopUpScreen> {
       barrierDismissible: false,
       builder: (dialogContext) {
         return VerifyCardDialog(
+          onResend: () async {
+            final resend = await _repository.fetchResendPaymentSms(payId);
+            if (!mounted) return;
+            CustomSnackBar().showSnackBar(
+              context,
+              resend.isSuccess
+                  ? translate("auth.code_resent")
+                  : translate("auth.something_went_wrong"),
+              resend.isSuccess ? 1 : 0,
+            );
+          },
           onVerify: (code) async {
             setState(() {
               isLoading = true;
@@ -375,6 +420,8 @@ class _TopUpScreenState extends State<TopUpScreen> {
                                                     children: [
                                                       CardContainer(
                                                         card: cards[index],
+                                                        onDelete: () =>
+                                                            _deleteCard(index),
                                                         onTapped: () {
                                                           setState(() {
                                                             isCardSelectOpen =

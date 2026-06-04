@@ -7,10 +7,12 @@ import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
 
 class VerifyCardDialog extends StatefulWidget {
   final Function(String) onVerify;
+  final Future<void> Function()? onResend;
 
   const VerifyCardDialog({
     Key? key,
     required this.onVerify,
+    this.onResend,
   }) : super(key: key);
 
   @override
@@ -19,6 +21,14 @@ class VerifyCardDialog extends StatefulWidget {
 
 class _VerifyCardDialogState extends State<VerifyCardDialog> {
   final TextEditingController _codeController = TextEditingController();
+  bool _isResending = false;
+
+  Future<void> _handleResend() async {
+    if (widget.onResend == null || _isResending) return;
+    setState(() => _isResending = true);
+    await widget.onResend!();
+    if (mounted) setState(() => _isResending = false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +87,23 @@ class _VerifyCardDialogState extends State<VerifyCardDialog> {
                 title: translate("auth.verify"),
               ),
             ),
+            if (widget.onResend != null) ...[
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: _handleResend,
+                child: Text(
+                  _isResending
+                      ? translate("auth.sending")
+                      : translate("auth.send_again"),
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.purple,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
