@@ -68,7 +68,7 @@ class _NewKetamizState extends State<NewKetamiz> {
         title: Text16h500w(title: translate("ketamiz.title")),
         centerTitle: true,
       ),
-      body: isDocsAdded == false
+      body: isDocsAdded == false && !isDocsVerified
           ? Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -528,7 +528,7 @@ class _NewKetamizState extends State<NewKetamiz> {
                           children: [
                             Padding(
                               padding: const EdgeInsets.only(
-                                left: 96,
+                                left: 16,
                                 bottom: 96,
                                 right: 16,
                               ),

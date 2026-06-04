@@ -70,9 +70,14 @@ class DestinationsContainer extends StatelessWidget {
         (r) => r.id == trip.toRegionId.toString(),
         orElse: () => unknown);
 
-    final from =
-        "${fromVillage.text}, ${fromCityModel.text}, ${fromRegion.text}";
-    final to = "${toVillage.text}, ${toCityModel.text}, ${toRegion.text}";
+    final from = [fromVillage, fromCityModel, fromRegion]
+        .where((l) => l.text != "—")
+        .map((l) => l.text)
+        .join(", ");
+    final to = [toVillage, toCityModel, toRegion]
+        .where((l) => l.text != "—")
+        .map((l) => l.text)
+        .join(", ");
 
     return Container(
       padding: const EdgeInsets.all(16),
