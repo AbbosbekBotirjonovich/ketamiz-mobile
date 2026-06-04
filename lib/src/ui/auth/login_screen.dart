@@ -79,6 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: Colors.white,
       body: GestureDetector(
         onTap: () {
@@ -176,20 +177,24 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  Container(
-                    height: isLogin
-                        ? MediaQuery.of(context).size.height - 340
-                        : MediaQuery.of(context).size.height - 22,
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: isLogin
+                          ? MediaQuery.of(context).size.height - 340
+                          : MediaQuery.of(context).size.height - 22,
+                    ),
+                    child: Container(
                     padding: const EdgeInsets.only(left: 16, right: 16),
                     decoration: const BoxDecoration(
                       color: Colors.white,
                     ),
                     child: ListView(
                       shrinkWrap: true,
-                      padding: EdgeInsets.only(top: isLogin ? 0 : 98),
-                      physics: isLogin
-                          ? const NeverScrollableScrollPhysics()
-                          : const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.only(
+                        top: isLogin ? 0 : 98,
+                        bottom: 100,
+                      ),
+                      physics: const AlwaysScrollableScrollPhysics(),
                       children: [
                         Container(
                           height: 56,
@@ -443,6 +448,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                       ],
                     ),
+                  ),
                   ),
                 ],
               ),

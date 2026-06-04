@@ -46,7 +46,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
             children: [
               const SizedBox(height: 60),
               const Text(
-                'Qadam',
+                'Ketamiz',
                 style: TextStyle(
                   fontFamily: AppTheme.fontFamily,
                   fontSize: 36,
