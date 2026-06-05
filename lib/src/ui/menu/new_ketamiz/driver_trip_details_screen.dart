@@ -11,7 +11,6 @@ import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_14h_400w.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
 import 'package:ketamiz/src/utils/utils.dart';
-import '../../../lan_localization/load_places.dart';
 import '../../../theme/app_theme.dart';
 import '../../widgets/texts/text_12h_400w.dart';
 import '../home/map_route_screen.dart';
@@ -63,28 +62,20 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
   }
 
   void setLocations() {
-    fromRegion = LocationData.regions
-        .firstWhere((r) => r.id == widget.trip.fromRegionId.toString())
-        .text;
-    fromCity = LocationData.cities
-        .firstWhere((c) => c.id == widget.trip.fromCityId.toString())
-        .text;
-    fromNeighborhood = LocationData.villages
-        .firstWhere((n) => n.id == widget.trip.fromVillageId.toString())
-        .text;
+    final t = widget.trip;
+    fromRegion = t.fromRegion;
+    fromCity = t.fromCity;
+    fromNeighborhood = t.fromVillage;
+    toRegion = t.toRegion;
+    toCity = t.toCity;
+    toNeighborhood = t.toVillage;
 
-    toRegion = LocationData.regions
-        .firstWhere((r) => r.id == widget.trip.toRegionId.toString())
-        .text;
-    toCity = LocationData.cities
-        .firstWhere((c) => c.id == widget.trip.toCityId.toString())
-        .text;
-    toNeighborhood = LocationData.villages
-        .firstWhere((n) => n.id == widget.trip.toVillageId.toString())
-        .text;
-
-    from = "$fromNeighborhood, $fromCity, $fromRegion";
-    to = "$toNeighborhood, $toCity, $toRegion";
+    from = [fromNeighborhood, fromCity, fromRegion]
+        .where((s) => s.isNotEmpty)
+        .join(", ");
+    to = [toNeighborhood, toCity, toRegion]
+        .where((s) => s.isNotEmpty)
+        .join(", ");
   }
 
   List<PassengerInfoModel> passengersList = [];

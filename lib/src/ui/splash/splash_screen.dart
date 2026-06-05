@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:ketamiz/src/lan_localization/load_places.dart';
@@ -25,8 +24,7 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
     _setLanguage();
-    LocationData.loadPlaces(context);
-    _nextScreen();
+    _loadAndNavigate();
 
     _controller = AnimationController(
       vsync: this,
@@ -71,6 +69,14 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
+  Future<void> _loadAndNavigate() async {
+    await Future.wait([
+      LocationData.loadPlaces(context),
+      Future.delayed(const Duration(milliseconds: 2000)),
+    ]);
+    _nextScreen();
+  }
+
   Future<void> _setLanguage() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final savedLang = prefs.getString('language');
@@ -85,23 +91,18 @@ class _SplashScreenState extends State<SplashScreen>
     final hasLanguage = prefs.getString('language') != null;
     final isLoggedIn = !(prefs.getBool('isFirst') ?? true);
 
-    Timer(
-      const Duration(milliseconds: 2000),
-      () {
-        if (!mounted) return;
-        Widget destination;
-        if (!hasLanguage) {
-          destination = const LanguageSelectionScreen();
-        } else if (isLoggedIn) {
-          destination = const MainScreen();
-        } else {
-          destination = const LoginScreen();
-        }
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => destination),
-        );
-      },
+    if (!mounted) return;
+    Widget destination;
+    if (!hasLanguage) {
+      destination = const LanguageSelectionScreen();
+    } else if (isLoggedIn) {
+      destination = const MainScreen();
+    } else {
+      destination = const LoginScreen();
+    }
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => destination),
     );
   }
 }

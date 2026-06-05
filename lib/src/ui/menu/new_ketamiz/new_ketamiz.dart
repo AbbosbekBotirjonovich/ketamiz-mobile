@@ -222,6 +222,12 @@ class _NewKetamizState extends State<NewKetamiz> {
                                   itemBuilder: (context, index) {
                                     final tripListModel = TripListModel(
                                       id: trips[index].id,
+                                      fromRegion: trips[index].fromRegion,
+                                      fromCity: trips[index].fromCity,
+                                      fromVillage: trips[index].fromVillage,
+                                      toRegion: trips[index].toRegion,
+                                      toCity: trips[index].toCity,
+                                      toVillage: trips[index].toVillage,
                                       fromWhere: "",
                                       toWhere: "",
                                       fromRegionId: trips[index].fromRegionId,

@@ -9,8 +9,6 @@ import 'package:ketamiz/src/ui/widgets/texts/text_14h_500w.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
 import 'package:ketamiz/src/utils/utils.dart';
 
-import '../../../lan_localization/load_places.dart';
-
 class HistoryContainer extends StatelessWidget {
   const HistoryContainer({super.key, required this.booking});
 
@@ -72,20 +70,12 @@ class HistoryContainer extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text12h400w(
-                      title: _findLocationText(
-                        LocationData.regions,
-                        booking.trip.startRegionId.toString(),
-                      ),
+                      title: booking.trip.startRegion,
                       color: AppTheme.gray,
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      safeSubstring(
-                          _findLocationText(
-                            LocationData.villages,
-                            booking.trip.startQuarterId.toString(),
-                          ),
-                          3),
+                      safeSubstring(booking.trip.startQuarter, 3),
                       style: const TextStyle(
                         fontFamily: AppTheme.fontFamily,
                         fontSize: 36,
@@ -96,10 +86,7 @@ class HistoryContainer extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text12h400w(
-                      title: _findLocationText(
-                        LocationData.cities,
-                        booking.trip.startDistrictId.toString(),
-                      ),
+                      title: booking.trip.startDistrict,
                       color: AppTheme.gray,
                     ),
                   ],
@@ -184,20 +171,12 @@ class HistoryContainer extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text12h400w(
-                      title: _findLocationText(
-                        LocationData.regions,
-                        booking.trip.endRegionId.toString(),
-                      ),
+                      title: booking.trip.endRegion,
                       color: AppTheme.gray,
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      safeSubstring(
-                          _findLocationText(
-                            LocationData.villages,
-                            booking.trip.endQuarterId.toString(),
-                          ),
-                          3),
+                      safeSubstring(booking.trip.endQuarter, 3),
                       style: const TextStyle(
                         fontFamily: AppTheme.fontFamily,
                         fontSize: 36,
@@ -208,10 +187,7 @@ class HistoryContainer extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text12h400w(
-                      title: _findLocationText(
-                        LocationData.cities,
-                        booking.trip.endDistrictId.toString(),
-                      ),
+                      title: booking.trip.endDistrict,
                       color: AppTheme.gray,
                     ),
                   ],
@@ -236,14 +212,6 @@ class HistoryContainer extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _findLocationText(List locations, String id) {
-    try {
-      return locations.firstWhere((item) => item.id == id).text;
-    } catch (_) {
-      return '---';
-    }
   }
 
   String _statusText(String status) {

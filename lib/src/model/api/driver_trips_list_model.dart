@@ -60,6 +60,12 @@ class DriverTripsListModel {
 
 class DriverTripModel {
   int id;
+  String fromRegion;
+  String fromCity;
+  String fromVillage;
+  String toRegion;
+  String toCity;
+  String toVillage;
   int fromRegionId;
   int toRegionId;
   int fromCityId;
@@ -87,6 +93,12 @@ class DriverTripModel {
 
   DriverTripModel({
     required this.id,
+    this.fromRegion = "",
+    this.fromCity = "",
+    this.fromVillage = "",
+    this.toRegion = "",
+    this.toCity = "",
+    this.toVillage = "",
     required this.fromRegionId,
     required this.toRegionId,
     required this.fromCityId,
@@ -116,6 +128,12 @@ class DriverTripModel {
   factory DriverTripModel.fromJson(Map<String, dynamic> json) =>
       DriverTripModel(
         id: _asInt(json["id"]),
+        fromRegion: json["start_region"]?.toString() ?? "",
+        fromCity: json["start_district"]?.toString() ?? "",
+        fromVillage: json["start_quarter"]?.toString() ?? "",
+        toRegion: json["end_region"]?.toString() ?? "",
+        toCity: json["end_district"]?.toString() ?? "",
+        toVillage: json["end_quarter"]?.toString() ?? "",
         fromRegionId: _asInt(json["from_region_id"]),
         toRegionId: _asInt(json["to_region_id"]),
         fromCityId: _asInt(json["from_district_id"]),

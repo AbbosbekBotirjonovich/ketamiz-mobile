@@ -143,6 +143,12 @@ class Passenger {
 
 class BookedTrip {
   int id;
+  String startRegion;
+  String startDistrict;
+  String startQuarter;
+  String endRegion;
+  String endDistrict;
+  String endQuarter;
   int startRegionId;
   int endRegionId;
   int startDistrictId;
@@ -161,6 +167,12 @@ class BookedTrip {
 
   BookedTrip({
     required this.id,
+    this.startRegion = "",
+    this.startDistrict = "",
+    this.startQuarter = "",
+    this.endRegion = "",
+    this.endDistrict = "",
+    this.endQuarter = "",
     required this.startRegionId,
     required this.endRegionId,
     required this.startDistrictId,
@@ -199,6 +211,12 @@ class BookedTrip {
 
   factory BookedTrip.fromJson(Map<String, dynamic> json) => BookedTrip(
         id: _asInt(json["id"]),
+        startRegion: json["start_region"]?.toString() ?? "",
+        startDistrict: json["start_district"]?.toString() ?? "",
+        startQuarter: json["start_quarter"]?.toString() ?? "",
+        endRegion: json["end_region"]?.toString() ?? "",
+        endDistrict: json["end_district"]?.toString() ?? "",
+        endQuarter: json["end_quarter"]?.toString() ?? "",
         startRegionId: _asInt(json["start_region_id"]),
         endRegionId: _asInt(json["end_region_id"]),
         startDistrictId: _asInt(json["start_district_id"]),

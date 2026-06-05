@@ -72,7 +72,7 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
       pricePerSeat = widget.trip.pricePerSeat;
     }
     initTimeState(widget.trip.startTime);
-    setLocations();
+    setLocations(); // async — updates state when ready
     _initFirstPassenger();
   }
 
@@ -89,35 +89,57 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
     });
   }
 
-  void setLocations() {
-    fromRegion = LocationData.regions
-        .firstWhere((r) => r.id == widget.trip.fromRegionId.toString(),
-            orElse: () => _unknownLocation)
-        .text;
-    fromCity = LocationData.cities
-        .firstWhere((c) => c.id == widget.trip.fromCityId.toString(),
-            orElse: () => _unknownLocation)
-        .text;
-    fromNeighborhood = LocationData.villages
-        .firstWhere((n) => n.id == widget.trip.fromVillageId.toString(),
-            orElse: () => _unknownLocation)
-        .text;
+  Future<void> setLocations() async {
+    final trip = widget.trip;
 
-    toRegion = LocationData.regions
-        .firstWhere((r) => r.id == widget.trip.toRegionId.toString(),
-            orElse: () => _unknownLocation)
-        .text;
-    toCity = LocationData.cities
-        .firstWhere((c) => c.id == widget.trip.toCityId.toString(),
-            orElse: () => _unknownLocation)
-        .text;
-    toNeighborhood = LocationData.villages
-        .firstWhere((n) => n.id == widget.trip.toVillageId.toString(),
-            orElse: () => _unknownLocation)
-        .text;
+    // Use string fields from API response directly
+    if (trip.fromRegion.isNotEmpty || trip.fromCity.isNotEmpty || trip.fromVillage.isNotEmpty) {
+      fromRegion = trip.fromRegion;
+      fromCity = trip.fromCity;
+      fromNeighborhood = trip.fromVillage;
+      toRegion = trip.toRegion;
+      toCity = trip.toCity;
+      toNeighborhood = trip.toVillage;
+    } else {
+      // Fallback: resolve from integer IDs via LocationData
+      if (LocationData.regions.isEmpty) {
+        await LocationData.loadPlaces(context);
+      }
+      fromRegion = LocationData.regions
+          .firstWhere((r) => r.id == trip.fromRegionId.toString(),
+              orElse: () => _unknownLocation)
+          .text;
+      fromCity = LocationData.cities
+          .firstWhere((c) => c.id == trip.fromCityId.toString(),
+              orElse: () => _unknownLocation)
+          .text;
+      fromNeighborhood = LocationData.villages
+          .firstWhere((n) => n.id == trip.fromVillageId.toString(),
+              orElse: () => _unknownLocation)
+          .text;
+      toRegion = LocationData.regions
+          .firstWhere((r) => r.id == trip.toRegionId.toString(),
+              orElse: () => _unknownLocation)
+          .text;
+      toCity = LocationData.cities
+          .firstWhere((c) => c.id == trip.toCityId.toString(),
+              orElse: () => _unknownLocation)
+          .text;
+      toNeighborhood = LocationData.villages
+          .firstWhere((n) => n.id == trip.toVillageId.toString(),
+              orElse: () => _unknownLocation)
+          .text;
+    }
 
-    from = "$fromNeighborhood, $fromCity, $fromRegion";
-    to = "$toNeighborhood, $toCity, $toRegion";
+    if (!mounted) return;
+    setState(() {
+      from = [fromNeighborhood, fromCity, fromRegion]
+          .where((s) => s.isNotEmpty && s != "—")
+          .join(", ");
+      to = [toNeighborhood, toCity, toRegion]
+          .where((s) => s.isNotEmpty && s != "—")
+          .join(", ");
+    });
   }
 
   @override

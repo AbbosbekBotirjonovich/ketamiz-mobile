@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
-import '../../../lan_localization/load_places.dart';
 import '../../../model/api/trip_list_model.dart';
-import '../../../model/location_model.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/utils.dart';
 
@@ -50,34 +48,16 @@ class DestinationsContainer extends StatelessWidget {
         : (time.hour > 12 ? time.hour - 12 : time.hour);
     final h1 = hour12.toString();
 
-    final unknown = LocationModel(id: "0", text: "—", parentID: "0");
-    final fromVillage = LocationData.villages.firstWhere(
-        (n) => n.id == trip.fromVillageId.toString(),
-        orElse: () => unknown);
-    final fromCityModel = LocationData.cities.firstWhere(
-        (c) => c.id == trip.fromCityId.toString(),
-        orElse: () => unknown);
-    final fromRegion = LocationData.regions.firstWhere(
-        (r) => r.id == trip.fromRegionId.toString(),
-        orElse: () => unknown);
-    final toVillage = LocationData.villages.firstWhere(
-        (n) => n.id == trip.toVillageId.toString(),
-        orElse: () => unknown);
-    final toCityModel = LocationData.cities.firstWhere(
-        (c) => c.id == trip.toCityId.toString(),
-        orElse: () => unknown);
-    final toRegion = LocationData.regions.firstWhere(
-        (r) => r.id == trip.toRegionId.toString(),
-        orElse: () => unknown);
-
-    final from = [fromVillage, fromCityModel, fromRegion]
-        .where((l) => l.text != "—")
-        .map((l) => l.text)
-        .join(", ");
-    final to = [toVillage, toCityModel, toRegion]
-        .where((l) => l.text != "—")
-        .map((l) => l.text)
-        .join(", ");
+    final from = trip.fromWhere.isNotEmpty
+        ? trip.fromWhere
+        : [trip.fromVillage, trip.fromCity, trip.fromRegion]
+            .where((s) => s.isNotEmpty)
+            .join(", ");
+    final to = trip.toWhere.isNotEmpty
+        ? trip.toWhere
+        : [trip.toVillage, trip.toCity, trip.toRegion]
+            .where((s) => s.isNotEmpty)
+            .join(", ");
 
     return Container(
       padding: const EdgeInsets.all(16),
