@@ -341,11 +341,14 @@
   },
   "history": {
     "history": "History",
+    "all": "All",
     "in_progress": "In Progress",
     "completed": "Completed",
     "canceled": "Canceled",
     "price": "Price",
-    "no_trips": "No trips found"
+    "no_trips": "No trips found",
+    "as_driver": "As Driver",
+    "as_client": "As Client"
   },
   "nav": {
     "home": "Home",

@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
-import 'package:ketamiz/src/ui/menu/history/history.dart';
-import 'package:ketamiz/src/ui/menu/new_ketamiz/new_ketamiz.dart';
+import 'package:ketamiz/src/ui/menu/history/trips_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/profile_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/wallet_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,21 +27,22 @@ class _MainScreenState extends State<MainScreen> {
   bool _isDriver = false;
   bool _isRoleLoaded = false;
 
-  // Client tabs: Home, Bookings, Wallet, Profile
-  static const List<Widget> _clientScreens = [
-    HomeScreen(),
-    History(),
-    WalletScreen(),
-    ProfileScreen(),
-  ];
-
-  // Driver tabs: Home, My Trips, [Create — handled via push], Profile
-  static const List<Widget> _driverScreens = [
-    HomeScreen(),
-    NewKetamiz(),
-    SizedBox(), // placeholder; tapping tab 2 pushes CreateNewKetamizScreen
-    ProfileScreen(),
-  ];
+  List<Widget> _buildScreens(String localeKey) {
+    if (_isDriver) {
+      return [
+        HomeScreen(key: ValueKey('home_$localeKey')),
+        TripsScreen(key: ValueKey('trips_$localeKey')),
+        const SizedBox(), // placeholder; tapping tab 2 pushes CreateNewKetamizScreen
+        ProfileScreen(key: ValueKey('profile_$localeKey')),
+      ];
+    }
+    return [
+      HomeScreen(key: ValueKey('home_$localeKey')),
+      TripsScreen(key: ValueKey('trips_$localeKey')),
+      WalletScreen(key: ValueKey('wallet_$localeKey')),
+      ProfileScreen(key: ValueKey('profile_$localeKey')),
+    ];
+  }
 
   @override
   void initState() {
@@ -62,9 +62,6 @@ class _MainScreenState extends State<MainScreen> {
       });
     }
   }
-
-  List<Widget> get _screens =>
-      _isDriver ? _driverScreens : _clientScreens;
 
   void _onTabTapped(int index) {
     // Driver tab 2 = Create Trip action (push, not switch)
@@ -100,6 +97,10 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Register as dependent of Localizations so bottom nav labels and all
+    // tab screens rebuild immediately when the locale changes.
+    final localeKey = Localizations.localeOf(context).languageCode;
+
     if (!_isRoleLoaded) {
       return const Scaffold(
         backgroundColor: AppTheme.bg,
@@ -114,7 +115,7 @@ class _MainScreenState extends State<MainScreen> {
       backgroundColor: AppTheme.bg,
       body: Stack(
         children: [
-          IndexedStack(index: _selectedIndex, children: _screens),
+          IndexedStack(index: _selectedIndex, children: _buildScreens(localeKey)),
           Positioned(
             bottom: 0,
             left: 0,

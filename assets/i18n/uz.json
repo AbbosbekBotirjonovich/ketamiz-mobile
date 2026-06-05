@@ -341,11 +341,14 @@
   },
   "history": {
     "history": "Tarix",
+    "all": "Barchasi",
     "in_progress": "Jarayonda",
     "completed": "Yakunlangan",
     "canceled": "Bekor qilingan",
     "price": "Narx",
-    "no_trips": "Sayohatlar topilmadi"
+    "no_trips": "Sayohatlar topilmadi",
+    "as_driver": "Haydovchi",
+    "as_client": "Yo'lovchi"
   },
   "nav": {
     "home": "Asosiy",

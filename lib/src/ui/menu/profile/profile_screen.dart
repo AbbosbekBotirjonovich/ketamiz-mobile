@@ -626,8 +626,7 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
       Repository().fetchUpdateLanguage(_selected);
     } catch (_) {}
     if (!mounted) return;
-    final delegate = LocalizedApp.of(context).delegate;
-    await delegate.changeLocale(Locale(_selected));
+    await changeLocale(context, _selected);
     if (!mounted) return;
     Navigator.pop(context);
   }
