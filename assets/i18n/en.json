@@ -353,6 +353,7 @@
     "completed": "Completed",
     "canceled": "Canceled",
     "price": "Price",
+    "total": "total",
     "seats": "seats",
     "no_trips": "No trips found",
     "as_driver": "As Driver",
