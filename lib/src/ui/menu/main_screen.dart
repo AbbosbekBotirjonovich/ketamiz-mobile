@@ -22,13 +22,9 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
+class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  bool _isDriver = false;
   bool _isRoleLoaded = false;
-  String _balance = '0';
-  String _lockedBalance = '0';
-  String _currency = 'UZS';
 
   // Index 2 is a placeholder — Create Trip is an action, not a screen.
   List<Widget> _buildScreens(String localeKey) => [
@@ -42,43 +38,17 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     resetHomeBloc();
     resetProfileBloc();
     resetKetamizBloc();
     _loadRole();
   }
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _loadBalance();
-  }
-
   Future<void> _loadRole() async {
-    final prefs = await SharedPreferences.getInstance();
+    await SharedPreferences.getInstance();
     if (mounted) {
-      setState(() {
-        _isDriver = prefs.getString('role') == 'driver';
-        _isRoleLoaded = true;
-      });
+      setState(() => _isRoleLoaded = true);
     }
-    await _loadBalance();
-  }
-
-  Future<void> _loadBalance() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
-      _balance = prefs.getString('balance') ?? '0';
-      _lockedBalance = prefs.getString('balance_locked') ?? '0';
-      _currency = prefs.getString('balance_currency') ?? 'UZS';
-    });
   }
 
   void _onTabTapped(int index) {
@@ -87,7 +57,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       return;
     }
     setState(() => _selectedIndex = index);
-    _loadBalance();
   }
 
   Future<void> _handleCreateTrip() async {
@@ -118,7 +87,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
     final safeBottom = MediaQuery.of(context).padding.bottom;
     return Scaffold(
-      backgroundColor: AppTheme.bg,
+      backgroundColor: AppTheme.light,
       body: Stack(
         children: [
           IndexedStack(
@@ -139,163 +108,67 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   // ── Bottom nav ────────────────────────────────────────────────────────────
 
   Widget _buildBottomNav() {
-    final formattedBalance = _formatBalance(_balance);
-    final formattedLocked = _formatBalance(_lockedBalance);
-    final hasLocked = (double.tryParse(_lockedBalance) ?? 0) > 0;
-
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.black,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: AppTheme.border),
         boxShadow: [
           BoxShadow(
             offset: const Offset(0, 8),
-            blurRadius: 32,
-            color: Colors.black.withOpacity(0.28),
+            blurRadius: 24,
+            color: AppTheme.black.withOpacity(0.08),
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // ── Balance row ─────────────────────────────────────────────────
-          GestureDetector(
-            onTap: () => _onTabTapped(3),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: AppTheme.purple.withOpacity(0.18),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.account_balance_wallet_rounded,
-                      color: AppTheme.purple,
-                      size: 16,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        translate('nav.balance'),
-                        style: const TextStyle(
-                          fontFamily: AppTheme.fontFamily,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w400,
-                          color: AppTheme.gray,
-                          height: 1.2,
-                        ),
-                      ),
-                      Text(
-                        '$formattedBalance $_currency',
-                        style: const TextStyle(
-                          fontFamily: AppTheme.fontFamily,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  if (hasLocked) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.lock_outline_rounded,
-                              color: AppTheme.gray, size: 12),
-                          const SizedBox(width: 4),
-                          Text(
-                            '$formattedLocked $_currency',
-                            style: const TextStyle(
-                              fontFamily: AppTheme.fontFamily,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: AppTheme.gray,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                  ],
-                  const Icon(Icons.chevron_right_rounded,
-                      color: AppTheme.gray, size: 18),
-                ],
-              ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(4, 8, 4, 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _navItem(
+              index: 0,
+              activeIcon: SvgPicture.asset('assets/icons/home_full.svg',
+                  width: 22, height: 22,
+                  colorFilter: const ColorFilter.mode(
+                      AppTheme.purple, BlendMode.srcIn)),
+              inactiveIcon: SvgPicture.asset('assets/icons/home.svg',
+                  width: 22, height: 22,
+                  colorFilter: const ColorFilter.mode(
+                      AppTheme.gray, BlendMode.srcIn)),
+              label: translate('nav.home'),
             ),
-          ),
-          // ── Divider ─────────────────────────────────────────────────────
-          Container(
-            height: 1,
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            color: Colors.white.withOpacity(0.08),
-          ),
-          // ── Tabs row ────────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 8, 4, 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                _navItem(
-                  index: 0,
-                  activeIcon: SvgPicture.asset('assets/icons/home_full.svg',
-                      width: 22, height: 22,
-                      colorFilter: const ColorFilter.mode(
-                          Colors.white, BlendMode.srcIn)),
-                  inactiveIcon: SvgPicture.asset('assets/icons/home.svg',
-                      width: 22, height: 22,
-                      colorFilter: const ColorFilter.mode(
-                          AppTheme.gray, BlendMode.srcIn)),
-                  label: translate('nav.home'),
-                ),
-                _navItem(
-                  index: 1,
-                  activeIcon: const Icon(Icons.library_books_rounded,
-                      color: Colors.white, size: 22),
-                  inactiveIcon: const Icon(Icons.library_books_outlined,
-                      color: AppTheme.gray, size: 22),
-                  label: translate('nav.bookings'),
-                ),
-                _createButton(),
-                _navItem(
-                  index: 3,
-                  activeIcon: const Icon(Icons.account_balance_wallet_rounded,
-                      color: Colors.white, size: 22),
-                  inactiveIcon: const Icon(Icons.account_balance_wallet_outlined,
-                      color: AppTheme.gray, size: 22),
-                  label: translate('nav.wallet'),
-                ),
-                _navItem(
-                  index: 4,
-                  activeIcon: SvgPicture.asset('assets/icons/profile_full.svg',
-                      width: 22, height: 22,
-                      colorFilter: const ColorFilter.mode(
-                          Colors.white, BlendMode.srcIn)),
-                  inactiveIcon: SvgPicture.asset('assets/icons/profile.svg',
-                      width: 22, height: 22,
-                      colorFilter: const ColorFilter.mode(
-                          AppTheme.gray, BlendMode.srcIn)),
-                  label: translate('nav.profile'),
-                ),
-              ],
+            _navItem(
+              index: 1,
+              activeIcon: const Icon(Icons.library_books_rounded,
+                  color: AppTheme.purple, size: 22),
+              inactiveIcon: const Icon(Icons.library_books_outlined,
+                  color: AppTheme.gray, size: 22),
+              label: translate('nav.bookings'),
             ),
-          ),
-        ],
+            _createButton(),
+            _navItem(
+              index: 3,
+              activeIcon: const Icon(Icons.account_balance_wallet_rounded,
+                  color: AppTheme.purple, size: 22),
+              inactiveIcon: const Icon(Icons.account_balance_wallet_outlined,
+                  color: AppTheme.gray, size: 22),
+              label: translate('nav.wallet'),
+            ),
+            _navItem(
+              index: 4,
+              activeIcon: SvgPicture.asset('assets/icons/profile_full.svg',
+                  width: 22, height: 22,
+                  colorFilter: const ColorFilter.mode(
+                      AppTheme.purple, BlendMode.srcIn)),
+              inactiveIcon: SvgPicture.asset('assets/icons/profile.svg',
+                  width: 22, height: 22,
+                  colorFilter: const ColorFilter.mode(
+                      AppTheme.gray, BlendMode.srcIn)),
+              label: translate('nav.profile'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -325,7 +198,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               height: 44,
               decoration: BoxDecoration(
                 color: isActive
-                    ? Colors.white.withOpacity(0.14)
+                    ? AppTheme.purple.withOpacity(0.1)
                     : Colors.transparent,
                 shape: BoxShape.circle,
               ),
@@ -349,7 +222,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 fontFamily: AppTheme.fontFamily,
                 fontSize: 11,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                color: isActive ? Colors.white : AppTheme.gray,
+                color: isActive ? AppTheme.purple : AppTheme.gray,
                 height: 1,
               ),
               child: Text(label, maxLines: 1),
@@ -373,9 +246,16 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             Container(
               width: 44,
               height: 44,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppTheme.purple,
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    offset: const Offset(0, 4),
+                    blurRadius: 12,
+                    color: AppTheme.purple.withOpacity(0.35),
+                  ),
+                ],
               ),
               child: const Center(
                 child: Icon(Icons.add_rounded, color: Colors.white, size: 24),
@@ -396,16 +276,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           ],
         ),
       ),
-    );
-  }
-
-  // ── Helpers ───────────────────────────────────────────────────────────────
-
-  String _formatBalance(String raw) {
-    final trimmed = raw.contains('.') ? raw.split('.')[0] : raw;
-    return trimmed.replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]},',
     );
   }
 }

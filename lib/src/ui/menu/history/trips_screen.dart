@@ -103,19 +103,24 @@ class _TripsScreenState extends State<TripsScreen> {
         title: Text16h500w(title: translate('history.history')),
         centerTitle: true,
       ),
-      body: Stack(
-        children: [
-          if (!_roleLoaded)
-            const Center(
-              child: CircularProgressIndicator(color: AppTheme.black),
-            )
-          else if (_asDriver)
-            _buildDriverContent()
-          else
-            _buildClientContent(),
-          _buildHeader(),
-          if (_asDriver) _buildCreateTripButton(),
-        ],
+      // SizedBox.expand keeps the Stack full-screen even when its content is
+      // short (e.g. one trip card), so the Positioned create button always
+      // anchors to the screen bottom, right above the nav bar.
+      body: SizedBox.expand(
+        child: Stack(
+          children: [
+            if (!_roleLoaded)
+              const Center(
+                child: CircularProgressIndicator(color: AppTheme.black),
+              )
+            else if (_asDriver)
+              _buildDriverContent()
+            else
+              _buildClientContent(),
+            _buildHeader(),
+            if (_asDriver) _buildCreateTripButton(),
+          ],
+        ),
       ),
     );
   }
@@ -297,7 +302,7 @@ class _TripsScreenState extends State<TripsScreen> {
           final trips = snap.data!;
           if (trips.isEmpty) return _buildDriverEmpty();
           return ListView.builder(
-            shrinkWrap: true,
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.only(
               top: 140,
               bottom: kNavBarTotalPadding,

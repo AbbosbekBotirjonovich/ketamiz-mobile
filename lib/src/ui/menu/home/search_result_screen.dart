@@ -21,10 +21,12 @@ class SearchResultScreen extends StatefulWidget {
     super.key,
     required this.trip,
     this.isRoundTrip = false,
+    this.requiredSeats = 1,
   });
 
   final TripListModel trip;
   final bool isRoundTrip;
+  final int requiredSeats;
 
   @override
   State<SearchResultScreen> createState() => _SearchResultScreenState();
@@ -70,9 +72,14 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
               stream: blocHome.getTripSearch,
               builder: (context, AsyncSnapshot<TripSearchModel> snapshot) {
                 if (snapshot.hasData) {
-                  if (snapshot.data!.departureTrips.isNotEmpty) {
+                  // Only show trips with enough free seats for the requested
+                  // passenger count.
+                  final trips = snapshot.data!.departureTrips
+                      .where((t) => t.availableSeats >= widget.requiredSeats)
+                      .toList();
+                  if (trips.isNotEmpty) {
                     return ListView.builder(
-                      itemCount: snapshot.data!.departureTrips.length,
+                      itemCount: trips.length,
                       padding: const EdgeInsets.only(
                         top: 282,
                         left: 16,
@@ -89,15 +96,15 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
                                   MaterialPageRoute(
                                     builder: (context) {
                                       return TripDetailsScreen(
-                                          trip: snapshot.data!.departureTrips[index]);
+                                          trip: trips[index]);
                                     },
                                   ),
                                 );
                               },
                               child: DestinationsContainer(
-                                  trip: snapshot.data!.departureTrips[index]),
+                                  trip: trips[index]),
                             ),
-                            index != snapshot.data!.departureTrips.length - 1
+                            index != trips.length - 1
                                 ? const SizedBox(height: 16)
                                 : const SizedBox(),
                           ],
