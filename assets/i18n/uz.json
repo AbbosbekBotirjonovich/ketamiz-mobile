@@ -349,7 +349,17 @@
     "delete_card": "Kartani o'chirish",
     "delete_card_confirm": "Haqiqatan ham bu kartani o'chirmoqchimisiz?",
     "card_deleted": "Karta muvaffaqiyatli o'chirildi",
-    "terms": "Foydalanish shartlari"
+    "terms": "Foydalanish shartlari",
+    "withdraw": "Yechib olish",
+    "withdraw_title": "Pul yechib olish",
+    "enter_withdraw_amount": "Yechib olish miqdorini kiriting",
+    "withdraw_success": "Yechib olish so'rovi muvaffaqiyatli yuborildi",
+    "withdraw_failed": "Yechib olish xatosi",
+    "withdraw_history": "Yechib olish tarixi",
+    "no_withdrawals": "Yechib olish so'rovlari topilmadi",
+    "withdraw_status_pending": "Ko'rib chiqilmoqda",
+    "withdraw_status_approved": "Tasdiqlangan",
+    "withdraw_status_rejected": "Rad etilgan"
   },
   "history": {
     "history": "Tarix",

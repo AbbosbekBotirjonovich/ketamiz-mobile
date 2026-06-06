@@ -349,7 +349,17 @@
     "delete_card": "Delete Card",
     "delete_card_confirm": "Are you sure you want to delete this card?",
     "card_deleted": "Card deleted successfully",
-    "terms": "Terms of Use"
+    "terms": "Terms of Use",
+    "withdraw": "Withdraw",
+    "withdraw_title": "Withdraw Money",
+    "enter_withdraw_amount": "Enter Withdraw Amount",
+    "withdraw_success": "Withdraw request submitted successfully",
+    "withdraw_failed": "Withdraw Failed",
+    "withdraw_history": "Withdraw History",
+    "no_withdrawals": "No withdraw requests found",
+    "withdraw_status_pending": "Pending",
+    "withdraw_status_approved": "Approved",
+    "withdraw_status_rejected": "Rejected"
   },
   "history": {
     "history": "History",

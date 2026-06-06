@@ -10,6 +10,7 @@ import '../../../utils/utils.dart';
 import '../../widgets/texts/text_14h_400w.dart';
 import '../../widgets/texts/text_16h_500w.dart';
 import 'top_up_screen.dart';
+import 'withdraw_screen.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -183,34 +184,69 @@ class _WalletScreenState extends State<WalletScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const TopUpScreen()),
-                ).then((_) => _loadData());
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.purple,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const TopUpScreen()),
+                    ).then((_) => _loadData());
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.purple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  icon: const Icon(Icons.add, size: 20),
+                  label: Text(
+                    translate("profile.top_up"),
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
                 ),
-                elevation: 0,
               ),
-              icon: const Icon(Icons.add, size: 20),
-              label: Text(
-                translate("profile.top_up"),
-                style: const TextStyle(
-                  fontFamily: AppTheme.fontFamily,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const WithdrawScreen()),
+                    ).then((_) => _loadData());
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white.withOpacity(0.12),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                          color: Colors.white.withOpacity(0.3), width: 1),
+                    ),
+                    elevation: 0,
+                  ),
+                  icon: const Icon(Icons.arrow_upward_rounded, size: 20),
+                  label: Text(
+                    translate("profile.withdraw"),
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
         ],
       ),

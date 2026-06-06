@@ -240,6 +240,11 @@ class Repository {
   Future<HttpResult> fetchTransactionList() =>
       apiProvider.fetchTransactionList();
 
+  Future<HttpResult> fetchWithdrawList() => apiProvider.fetchWithdrawList();
+
+  Future<HttpResult> fetchWithdraw(String amount) =>
+      apiProvider.fetchWithdraw(amount);
+
   Future<HttpResult> fetchVehiclesList() => apiProvider.fetchVehiclesList();
 
   Future<HttpResult> fetchDeleteVehicle(int vehicleId) =>

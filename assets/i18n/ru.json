@@ -349,7 +349,17 @@
     "delete_card": "Удалить карту",
     "delete_card_confirm": "Вы уверены, что хотите удалить эту карту?",
     "card_deleted": "Карта успешно удалена",
-    "terms": "Условия использования"
+    "terms": "Условия использования",
+    "withdraw": "Вывод",
+    "withdraw_title": "Вывод средств",
+    "enter_withdraw_amount": "Введите сумму вывода",
+    "withdraw_success": "Запрос на вывод успешно отправлен",
+    "withdraw_failed": "Ошибка вывода",
+    "withdraw_history": "История выводов",
+    "no_withdrawals": "Запросы на вывод не найдены",
+    "withdraw_status_pending": "На рассмотрении",
+    "withdraw_status_approved": "Одобрено",
+    "withdraw_status_rejected": "Отклонено"
   },
   "history": {
     "history": "История",

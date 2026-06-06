@@ -739,6 +739,19 @@ class ApiProvider {
     return await getRequest(url);
   }
 
+  /// Get My Withdraw Requests
+  Future<HttpResult> fetchWithdrawList() async {
+    String url = '$baseUrl/withdraw';
+    return await getRequest(url);
+  }
+
+  /// Create Withdraw Request
+  Future<HttpResult> fetchWithdraw(String amount) async {
+    String url = '$baseUrl/withdraw';
+    final data = {"amount": amount};
+    return await postRequest(url, data);
+  }
+
   /// GET Request using Dio (DELETE method)
   static Future<HttpResult> deleteRequest(String url) async {
     final dio = _dio;
