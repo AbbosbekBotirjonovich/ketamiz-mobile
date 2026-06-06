@@ -4,6 +4,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:ketamiz/src/model/api/driver_trips_list_model.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:ketamiz/src/model/passenger_info_model.dart';
 import 'package:ketamiz/src/ui/menu/home/map_single_screen.dart';
 import 'package:ketamiz/src/ui/widgets/buttons/secondary_button.dart';
@@ -557,6 +558,10 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
                           );
                         },
                       ),
+                      if (widget.trip.googleMapUrl.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        _OpenInMapsButton(url: widget.trip.googleMapUrl),
+                      ],
                     ],
                   ),
                 ),
@@ -744,5 +749,47 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
     return text.length >= length
         ? text.substring(0, length).toUpperCase()
         : text.toUpperCase();
+  }
+}
+
+class _OpenInMapsButton extends StatelessWidget {
+  const _OpenInMapsButton({required this.url});
+
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF4285F4),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.map_outlined, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              translate("home.open_in_google_maps"),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontFamily: AppTheme.fontFamily,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

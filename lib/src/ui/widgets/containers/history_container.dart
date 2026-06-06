@@ -16,6 +16,9 @@ class HistoryContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorCode = booking.vehicle.color.colorCode;
+    final vehicleColor = _parseColor(colorCode);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -32,6 +35,7 @@ class HistoryContainer extends StatelessWidget {
       ),
       child: Column(
         children: [
+          // ── Header: date + status ──────────────────────────────────────
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -61,6 +65,7 @@ class HistoryContainer extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
+          // ── Route row ─────────────────────────────────────────────────
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -163,6 +168,34 @@ class HistoryContainer extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
+                  const SizedBox(height: 2),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (vehicleColor != null)
+                        Container(
+                          width: 10,
+                          height: 10,
+                          margin: const EdgeInsets.only(right: 4),
+                          decoration: BoxDecoration(
+                            color: vehicleColor,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppTheme.gray.withOpacity(0.3),
+                            ),
+                          ),
+                        ),
+                      Text(
+                        booking.vehicle.carNumber,
+                        style: const TextStyle(
+                          color: AppTheme.gray,
+                          fontSize: 11,
+                          fontFamily: AppTheme.fontFamily,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
               const SizedBox(width: 16),
@@ -195,7 +228,52 @@ class HistoryContainer extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+          const Divider(height: 1, color: Color(0xFFF0F0F0)),
+          const SizedBox(height: 12),
+          // ── Driver row ────────────────────────────────────────────────
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: AppTheme.black.withOpacity(0.06),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.person, size: 18, color: AppTheme.dark),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '${booking.driver.firstName} ${booking.driver.lastName}'.trim(),
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.black,
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  const Icon(Icons.event_seat, size: 16, color: AppTheme.gray),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${booking.seatsBooked} ${translate("history.seats")}',
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                      color: AppTheme.gray,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // ── Price row ─────────────────────────────────────────────────
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -208,7 +286,7 @@ class HistoryContainer extends StatelessWidget {
                 color: AppTheme.black,
               ),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -242,6 +320,16 @@ class HistoryContainer extends StatelessWidget {
       default:
         return AppTheme.purple;
     }
+  }
+
+  Color? _parseColor(String hex) {
+    if (hex.isEmpty) return null;
+    final cleaned = hex.replaceAll('#', '');
+    final value = int.tryParse(
+      cleaned.length == 6 ? 'FF$cleaned' : cleaned,
+      radix: 16,
+    );
+    return value != null ? Color(value) : null;
   }
 
   String safeSubstring(String text, int length) {

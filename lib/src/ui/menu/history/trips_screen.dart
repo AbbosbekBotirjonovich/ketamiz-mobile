@@ -11,6 +11,8 @@ import 'package:ketamiz/src/theme/app_theme.dart';
 import 'package:ketamiz/src/ui/menu/home/trip_details_screen.dart';
 import 'package:ketamiz/src/ui/menu/new_ketamiz/add_docs_screen.dart';
 import 'package:ketamiz/src/ui/menu/new_ketamiz/create_new_ketamiz_screen.dart';
+import 'package:ketamiz/src/ui/widgets/buttons/app_dropdown.dart';
+import 'package:ketamiz/src/utils/nav_constants.dart';
 import 'package:ketamiz/src/ui/widgets/buttons/secondary_button.dart';
 import 'package:ketamiz/src/ui/widgets/containers/destinations_container.dart';
 import 'package:ketamiz/src/ui/widgets/containers/history_container.dart';
@@ -153,29 +155,32 @@ class _TripsScreenState extends State<TripsScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        // Status filter tabs
-        Container(
-          padding: const EdgeInsets.all(8),
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(32),
-            boxShadow: [
-              BoxShadow(
-                offset: const Offset(0, 5),
-                blurRadius: 100,
-                spreadRadius: 0,
-                color: Colors.black.withValues(alpha: 0.15),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: AppDropdown<int>(
+            value: _filterIndex,
+            onChanged: _selectFilter,
+            items: [
+              AppDropdownItem(
+                value: 0,
+                label: translate('history.all'),
+                color: AppTheme.gray,
               ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildFilterTab(0, translate('history.all')),
-              _buildFilterTab(1, translate('history.in_progress')),
-              _buildFilterTab(2, translate('history.completed')),
-              _buildFilterTab(3, translate('history.canceled')),
+              AppDropdownItem(
+                value: 1,
+                label: translate('history.in_progress'),
+                color: AppTheme.purple,
+              ),
+              AppDropdownItem(
+                value: 2,
+                label: translate('history.completed'),
+                color: const Color(0xFF4CAF50),
+              ),
+              AppDropdownItem(
+                value: 3,
+                label: translate('history.canceled'),
+                color: const Color(0xFFE53935),
+              ),
             ],
           ),
         ),
@@ -202,24 +207,6 @@ class _TripsScreenState extends State<TripsScreen> {
             fontWeight: FontWeight.w500,
             color: active ? Colors.white : AppTheme.dark,
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilterTab(int index, String label) {
-    final active = _filterIndex == index;
-    return GestureDetector(
-      onTap: () => _selectFilter(index),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
-          color: active ? AppTheme.black : Colors.white,
-          borderRadius: BorderRadius.circular(32),
-        ),
-        child: Text14h400w(
-          title: label,
-          color: active ? Colors.white : AppTheme.dark,
         ),
       ),
     );
@@ -252,7 +239,7 @@ class _TripsScreenState extends State<TripsScreen> {
               return ListView.builder(
                 padding: const EdgeInsets.only(
                   top: 140,
-                  bottom: 92,
+                  bottom: kNavBarTotalPadding,
                   left: 16,
                   right: 16,
                 ),
@@ -313,7 +300,7 @@ class _TripsScreenState extends State<TripsScreen> {
             shrinkWrap: true,
             padding: const EdgeInsets.only(
               top: 140,
-              bottom: 108,
+              bottom: kNavBarTotalPadding,
               left: 24,
               right: 24,
             ),
@@ -449,8 +436,9 @@ class _TripsScreenState extends State<TripsScreen> {
   }
 
   Widget _buildCreateTripButton() {
+    final safeBottom = MediaQuery.of(context).padding.bottom;
     return Positioned(
-      bottom: 96,
+      bottom: kNavBarHeight + kNavBarBottomMargin + kNavBarGap + safeBottom,
       left: 16,
       right: 16,
       child: SecondaryButton(
@@ -486,7 +474,7 @@ class _TripsScreenState extends State<TripsScreen> {
         padding: const EdgeInsets.only(
           left: 24,
           right: 24,
-          bottom: 96,
+          bottom: kNavBarTotalPadding,
           top: 140,
         ),
         itemBuilder: (context, i) => Column(
@@ -578,8 +566,18 @@ class _TripsScreenState extends State<TripsScreen> {
   TripListModel _toTripListModel(DriverTripModel t) {
     return TripListModel(
       id: t.id,
-      fromWhere: '',
-      toWhere: '',
+      fromWhere: [t.fromVillage, t.fromCity, t.fromRegion]
+          .where((s) => s.isNotEmpty)
+          .join(', '),
+      toWhere: [t.toVillage, t.toCity, t.toRegion]
+          .where((s) => s.isNotEmpty)
+          .join(', '),
+      fromRegion: t.fromRegion,
+      fromCity: t.fromCity,
+      fromVillage: t.fromVillage,
+      toRegion: t.toRegion,
+      toCity: t.toCity,
+      toVillage: t.toVillage,
       fromRegionId: t.fromRegionId,
       toRegionId: t.toRegionId,
       fromCityId: t.fromCityId,

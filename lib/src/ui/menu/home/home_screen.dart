@@ -12,6 +12,7 @@ import 'package:ketamiz/src/ui/dialogs/center_dialog.dart';
 import 'package:ketamiz/src/ui/menu/home/search_result_screen.dart';
 import 'package:ketamiz/src/ui/menu/home/trip_details_screen.dart';
 import 'package:ketamiz/src/ui/widgets/containers/active_trips_container.dart';
+import 'package:ketamiz/src/utils/nav_constants.dart';
 import 'package:ketamiz/src/utils/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
@@ -851,7 +852,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: snapshot.data!.length,
-                            padding: const EdgeInsets.only(bottom: 92),
+                            padding: const EdgeInsets.only(bottom: kNavBarTotalPadding),
                             itemBuilder: (context, index) {
                               return Column(
                                 children: [
@@ -921,7 +922,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               padding: const EdgeInsets.only(
                                 left: 24,
                                 right: 24,
-                                bottom: 96,
+                                bottom: kNavBarTotalPadding,
                               ),
                               itemBuilder: (context, index) {
                                 return Column(

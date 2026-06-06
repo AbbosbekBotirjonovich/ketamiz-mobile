@@ -171,6 +171,7 @@
     "payment_method_error_msg": "Please add a credit card to continue",
     "my_active_trips": "My Active Trip",
     "view_route_map": "View Route in Maps",
+    "open_in_google_maps": "Open in Google Maps",
     "no_passenger": "No Passenger Yet",
     "cancel_trip": "Cancel Trip",
     "location": "Location",
@@ -346,6 +347,7 @@
     "completed": "Completed",
     "canceled": "Canceled",
     "price": "Price",
+    "seats": "seats",
     "no_trips": "No trips found",
     "as_driver": "As Driver",
     "as_client": "As Client"
@@ -356,7 +358,8 @@
     "wallet": "Wallet",
     "profile": "Profile",
     "my_trips": "My Trips",
-    "create": "Create"
+    "create": "Create",
+    "balance": "Balance"
   },
   "support": {
     "title": "How can we help you?",

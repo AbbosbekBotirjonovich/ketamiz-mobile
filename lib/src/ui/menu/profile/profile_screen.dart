@@ -16,6 +16,7 @@ import '../../../bloc/profile_bloc.dart';
 import '../../../model/settings_model.dart';
 import '../../../resources/repository.dart';
 import '../../../theme/app_theme.dart';
+import '../../../utils/nav_constants.dart';
 import '../../../utils/utils.dart';
 import '../../widgets/containers/settings_container.dart';
 import '../../widgets/texts/text_14h_400w.dart';
@@ -67,7 +68,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: ListView(
         padding: const EdgeInsets.only(
           top: 22,
-          bottom: 92,
+          bottom: kNavBarTotalPadding,
           left: 16,
           right: 16,
         ),

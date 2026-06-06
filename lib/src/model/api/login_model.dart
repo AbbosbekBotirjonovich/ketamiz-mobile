@@ -25,7 +25,9 @@ class LoginModel {
     user: json["user"] != null ? UserModel.fromJson(json["user"]) : UserModel(
       id: 0, firstName: "", lastName: "", fatherName: "", email: "", phone: "",
       password: "", image: "", role: "", isVerified: 0, verificationCode: "",
-      drivingVerificationStatus: "", createdAt: DateTime.now(), updatedAt: DateTime.now(),
+      drivingVerificationStatus: "", drivingLicenceNumber: "",
+      drivingLicenceExpiry: "", birthDate: "",
+      createdAt: DateTime.now(), updatedAt: DateTime.now(),
     ),
     authorisation: json["authorisation"] != null 
         ? Authorisation.fromJson(json["authorisation"]) 

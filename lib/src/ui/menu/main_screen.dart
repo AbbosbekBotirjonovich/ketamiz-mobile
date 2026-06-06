@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:ketamiz/src/ui/menu/history/trips_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/profile_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/wallet_screen.dart';
+import 'package:ketamiz/src/utils/nav_constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../bloc/home_bloc.dart';
 import '../../bloc/profile_bloc.dart';
@@ -22,35 +22,42 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   int _selectedIndex = 0;
   bool _isDriver = false;
   bool _isRoleLoaded = false;
+  String _balance = '0';
+  String _lockedBalance = '0';
+  String _currency = 'UZS';
 
-  List<Widget> _buildScreens(String localeKey) {
-    if (_isDriver) {
-      return [
+  // Index 2 is a placeholder — Create Trip is an action, not a screen.
+  List<Widget> _buildScreens(String localeKey) => [
         HomeScreen(key: ValueKey('home_$localeKey')),
         TripsScreen(key: ValueKey('trips_$localeKey')),
-        const SizedBox(), // placeholder; tapping tab 2 pushes CreateNewKetamizScreen
+        const SizedBox(),
+        WalletScreen(key: ValueKey('wallet_$localeKey')),
         ProfileScreen(key: ValueKey('profile_$localeKey')),
       ];
-    }
-    return [
-      HomeScreen(key: ValueKey('home_$localeKey')),
-      TripsScreen(key: ValueKey('trips_$localeKey')),
-      WalletScreen(key: ValueKey('wallet_$localeKey')),
-      ProfileScreen(key: ValueKey('profile_$localeKey')),
-    ];
-  }
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     resetHomeBloc();
     resetProfileBloc();
     resetKetamizBloc();
     _loadRole();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _loadBalance();
   }
 
   Future<void> _loadRole() async {
@@ -61,206 +68,239 @@ class _MainScreenState extends State<MainScreen> {
         _isRoleLoaded = true;
       });
     }
+    await _loadBalance();
+  }
+
+  Future<void> _loadBalance() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _balance = prefs.getString('balance') ?? '0';
+      _lockedBalance = prefs.getString('balance_locked') ?? '0';
+      _currency = prefs.getString('balance_currency') ?? 'UZS';
+    });
   }
 
   void _onTabTapped(int index) {
-    // Driver tab 2 = Create Trip action (push, not switch)
-    if (_isDriver && index == 2) {
+    if (index == 2) {
       _handleCreateTrip();
       return;
     }
     setState(() => _selectedIndex = index);
+    _loadBalance();
   }
 
   Future<void> _handleCreateTrip() async {
     final prefs = await SharedPreferences.getInstance();
     final isVerified =
         prefs.getString('driving_verification_status') == 'approved';
-
     if (!mounted) return;
-    if (isVerified) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => CreateNewKetamizScreen(
-            driverTrip: DriverTripModel.defaultTrip(),
-          ),
-        ),
-      );
-    } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const AddDocsScreen()),
-      );
-    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => isVerified
+            ? CreateNewKetamizScreen(driverTrip: DriverTripModel.defaultTrip())
+            : const AddDocsScreen(),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Register as dependent of Localizations so bottom nav labels and all
-    // tab screens rebuild immediately when the locale changes.
     final localeKey = Localizations.localeOf(context).languageCode;
 
     if (!_isRoleLoaded) {
       return const Scaffold(
         backgroundColor: AppTheme.bg,
-        body: Center(
-          child: CircularProgressIndicator(color: AppTheme.purple),
-        ),
+        body: Center(child: CircularProgressIndicator(color: AppTheme.purple)),
       );
     }
 
-    final size = MediaQuery.of(context).size;
+    final safeBottom = MediaQuery.of(context).padding.bottom;
     return Scaffold(
       backgroundColor: AppTheme.bg,
       body: Stack(
         children: [
-          IndexedStack(index: _selectedIndex, children: _buildScreens(localeKey)),
+          IndexedStack(
+            index: _selectedIndex,
+            children: _buildScreens(localeKey),
+          ),
           Positioned(
-            bottom: 0,
-            left: 0,
-            child: _buildBottomNav(size.width),
+            bottom: kNavBarBottomMargin + safeBottom,
+            left: 16,
+            right: 16,
+            child: _buildBottomNav(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBottomNav(double width) {
+  // ── Bottom nav ────────────────────────────────────────────────────────────
+
+  Widget _buildBottomNav() {
+    final formattedBalance = _formatBalance(_balance);
+    final formattedLocked = _formatBalance(_lockedBalance);
+    final hasLocked = (double.tryParse(_lockedBalance) ?? 0) > 0;
+
     return Container(
-      height: 82,
-      width: width,
       decoration: BoxDecoration(
         color: AppTheme.black,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            offset: const Offset(0, 5),
-            blurRadius: 25,
-            color: AppTheme.dark.withOpacity(0.2),
+            offset: const Offset(0, 8),
+            blurRadius: 32,
+            color: Colors.black.withOpacity(0.28),
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: _isDriver
-            ? _buildDriverTabs()
-            : _buildClientTabs(),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // ── Balance row ─────────────────────────────────────────────────
+          GestureDetector(
+            onTap: () => _onTabTapped(3),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppTheme.purple.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.account_balance_wallet_rounded,
+                      color: AppTheme.purple,
+                      size: 16,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        translate('nav.balance'),
+                        style: const TextStyle(
+                          fontFamily: AppTheme.fontFamily,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w400,
+                          color: AppTheme.gray,
+                          height: 1.2,
+                        ),
+                      ),
+                      Text(
+                        '$formattedBalance $_currency',
+                        style: const TextStyle(
+                          fontFamily: AppTheme.fontFamily,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  if (hasLocked) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.lock_outline_rounded,
+                              color: AppTheme.gray, size: 12),
+                          const SizedBox(width: 4),
+                          Text(
+                            '$formattedLocked $_currency',
+                            style: const TextStyle(
+                              fontFamily: AppTheme.fontFamily,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.gray,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                  const Icon(Icons.chevron_right_rounded,
+                      color: AppTheme.gray, size: 18),
+                ],
+              ),
+            ),
+          ),
+          // ── Divider ─────────────────────────────────────────────────────
+          Container(
+            height: 1,
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            color: Colors.white.withOpacity(0.08),
+          ),
+          // ── Tabs row ────────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 8, 4, 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _navItem(
+                  index: 0,
+                  activeIcon: SvgPicture.asset('assets/icons/home_full.svg',
+                      width: 22, height: 22,
+                      colorFilter: const ColorFilter.mode(
+                          Colors.white, BlendMode.srcIn)),
+                  inactiveIcon: SvgPicture.asset('assets/icons/home.svg',
+                      width: 22, height: 22,
+                      colorFilter: const ColorFilter.mode(
+                          AppTheme.gray, BlendMode.srcIn)),
+                  label: translate('nav.home'),
+                ),
+                _navItem(
+                  index: 1,
+                  activeIcon: const Icon(Icons.library_books_rounded,
+                      color: Colors.white, size: 22),
+                  inactiveIcon: const Icon(Icons.library_books_outlined,
+                      color: AppTheme.gray, size: 22),
+                  label: translate('nav.bookings'),
+                ),
+                _createButton(),
+                _navItem(
+                  index: 3,
+                  activeIcon: const Icon(Icons.account_balance_wallet_rounded,
+                      color: Colors.white, size: 22),
+                  inactiveIcon: const Icon(Icons.account_balance_wallet_outlined,
+                      color: AppTheme.gray, size: 22),
+                  label: translate('nav.wallet'),
+                ),
+                _navItem(
+                  index: 4,
+                  activeIcon: SvgPicture.asset('assets/icons/profile_full.svg',
+                      width: 22, height: 22,
+                      colorFilter: const ColorFilter.mode(
+                          Colors.white, BlendMode.srcIn)),
+                  inactiveIcon: SvgPicture.asset('assets/icons/profile.svg',
+                      width: 22, height: 22,
+                      colorFilter: const ColorFilter.mode(
+                          AppTheme.gray, BlendMode.srcIn)),
+                  label: translate('nav.profile'),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // ── Client tabs ──────────────────────────────────────────────────────────
-
-  List<Widget> _buildClientTabs() => [
-        _navItem(
-          index: 0,
-          activeIcon: SvgPicture.asset('assets/icons/home_full.svg',
-              colorFilter: const ColorFilter.mode(
-                  AppTheme.purple, BlendMode.srcIn)),
-          inactiveIcon: SvgPicture.asset('assets/icons/home.svg',
-              colorFilter: const ColorFilter.mode(
-                  AppTheme.gray, BlendMode.srcIn)),
-          label: translate("nav.home"),
-        ),
-        _navItem(
-          index: 1,
-          activeIcon: const Icon(Icons.library_books_rounded,
-              color: AppTheme.purple, size: 24),
-          inactiveIcon: const Icon(Icons.library_books_outlined,
-              color: AppTheme.gray, size: 24),
-          label: translate("nav.bookings"),
-        ),
-        _navItem(
-          index: 2,
-          activeIcon: const Icon(Icons.account_balance_wallet_rounded,
-              color: AppTheme.purple, size: 24),
-          inactiveIcon: const Icon(Icons.account_balance_wallet_outlined,
-              color: AppTheme.gray, size: 24),
-          label: translate("nav.wallet"),
-        ),
-        _navItem(
-          index: 3,
-          activeIcon: SvgPicture.asset('assets/icons/profile_full.svg',
-              colorFilter: const ColorFilter.mode(
-                  AppTheme.purple, BlendMode.srcIn)),
-          inactiveIcon: SvgPicture.asset('assets/icons/profile.svg',
-              colorFilter: const ColorFilter.mode(
-                  AppTheme.gray, BlendMode.srcIn)),
-          label: translate("nav.profile"),
-        ),
-      ];
-
-  // ── Driver tabs ──────────────────────────────────────────────────────────
-
-  List<Widget> _buildDriverTabs() => [
-        _navItem(
-          index: 0,
-          activeIcon: SvgPicture.asset('assets/icons/home_full.svg',
-              colorFilter: const ColorFilter.mode(
-                  AppTheme.purple, BlendMode.srcIn)),
-          inactiveIcon: SvgPicture.asset('assets/icons/home.svg',
-              colorFilter: const ColorFilter.mode(
-                  AppTheme.gray, BlendMode.srcIn)),
-          label: translate("nav.home"),
-        ),
-        _navItem(
-          index: 1,
-          activeIcon: const Icon(
-              CupertinoIcons.arrow_right_arrow_left_circle_fill,
-              color: AppTheme.purple,
-              size: 24),
-          inactiveIcon: const Icon(
-              CupertinoIcons.arrow_right_arrow_left_circle,
-              color: AppTheme.gray,
-              size: 24),
-          label: translate("nav.my_trips"),
-        ),
-        // Create button (action, not a sticky tab)
-        GestureDetector(
-          onTap: () => _handleCreateTrip(),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                height: 44,
-                width: 44,
-                decoration: BoxDecoration(
-                  color: AppTheme.purple,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(Icons.add, color: Colors.white, size: 26),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                translate("nav.create"),
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.gray,
-                  fontFamily: AppTheme.fontFamily,
-                  fontWeight: FontWeight.normal,
-                  height: 1.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-        _navItem(
-          index: 3,
-          activeIcon: SvgPicture.asset('assets/icons/profile_full.svg',
-              colorFilter: const ColorFilter.mode(
-                  AppTheme.purple, BlendMode.srcIn)),
-          inactiveIcon: SvgPicture.asset('assets/icons/profile.svg',
-              colorFilter: const ColorFilter.mode(
-                  AppTheme.gray, BlendMode.srcIn)),
-          label: translate("nav.profile"),
-        ),
-      ];
-
-  // ── Shared nav item ───────────────────────────────────────────────────────
+  // ── Animated nav item — icon circle + label below ───────────────────────
 
   Widget _navItem({
     required int index,
@@ -269,29 +309,103 @@ class _MainScreenState extends State<MainScreen> {
     required String label,
   }) {
     final isActive = _selectedIndex == index;
-    return GestureDetector(
-      onTap: () => _onTabTapped(index),
-      child: Container(
-        color: Colors.transparent,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _onTabTapped(index),
+        behavior: HitTestBehavior.opaque,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            isActive ? activeIcon : inactiveIcon,
+            // Circle background with icon
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: isActive
+                    ? Colors.white.withOpacity(0.14)
+                    : Colors.transparent,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  switchInCurve: Curves.easeIn,
+                  switchOutCurve: Curves.easeOut,
+                  child: isActive
+                      ? KeyedSubtree(key: ValueKey('a_$index'), child: activeIcon)
+                      : KeyedSubtree(key: ValueKey('i_$index'), child: inactiveIcon),
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            // Label
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeInOut,
+              style: TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                color: isActive ? Colors.white : AppTheme.gray,
+                height: 1,
+              ),
+              child: Text(label, maxLines: 1),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Create button — always solid purple circle + label ────────────────────
+
+  Widget _createButton() {
+    return Expanded(
+      child: GestureDetector(
+        onTap: _handleCreateTrip,
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: const BoxDecoration(
+                color: AppTheme.purple,
+                shape: BoxShape.circle,
+              ),
+              child: const Center(
+                child: Icon(Icons.add_rounded, color: Colors.white, size: 24),
+              ),
+            ),
             const SizedBox(height: 4),
             Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                color: isActive ? AppTheme.bg : AppTheme.gray,
+              translate('nav.create'),
+              maxLines: 1,
+              style: const TextStyle(
                 fontFamily: AppTheme.fontFamily,
-                fontWeight: FontWeight.normal,
-                height: 1.5,
+                fontSize: 11,
+                fontWeight: FontWeight.w400,
+                color: AppTheme.gray,
+                height: 1,
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  String _formatBalance(String raw) {
+    final trimmed = raw.contains('.') ? raw.split('.')[0] : raw;
+    return trimmed.replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]},',
     );
   }
 }

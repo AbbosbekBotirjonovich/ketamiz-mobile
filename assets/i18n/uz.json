@@ -171,6 +171,7 @@
     "payment_method_error_msg": "Davom etish uchun kredit karta qo'shing",
     "my_active_trips": "Faol sayohatlarim",
     "view_route_map": "Marshrut xaritasini ko'rish",
+    "open_in_google_maps": "Google Xaritada ochish",
     "no_passenger": "Hali yo'lovchilar yo'q",
     "cancel_trip": "Sayohatni bekor qilish",
     "location": "Joylashuv",
@@ -346,6 +347,7 @@
     "completed": "Yakunlangan",
     "canceled": "Bekor qilingan",
     "price": "Narx",
+    "seats": "o'rin",
     "no_trips": "Sayohatlar topilmadi",
     "as_driver": "Haydovchi",
     "as_client": "Yo'lovchi"
@@ -356,7 +358,8 @@
     "wallet": "Hamyon",
     "profile": "Profil",
     "my_trips": "Sayohatlarim",
-    "create": "Yaratish"
+    "create": "Yaratish",
+    "balance": "Balans"
   },
   "support": {
     "title": "Sizga qanday yordam bera olamiz?",

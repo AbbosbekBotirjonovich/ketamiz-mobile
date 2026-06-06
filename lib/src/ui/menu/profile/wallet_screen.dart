@@ -5,6 +5,7 @@ import '../../../bloc/profile_bloc.dart';
 import '../../../model/api/top_up_model.dart';
 import '../../../resources/repository.dart';
 import '../../../theme/app_theme.dart';
+import '../../../utils/nav_constants.dart';
 import '../../../utils/utils.dart';
 import '../../widgets/texts/text_14h_400w.dart';
 import '../../widgets/texts/text_16h_500w.dart';
@@ -87,7 +88,7 @@ class _WalletScreenState extends State<WalletScreen> {
         onRefresh: _loadData,
         child: ListView(
           padding: const EdgeInsets.only(
-              top: 20, left: 16, right: 16, bottom: 92),
+              top: 20, left: 16, right: 16, bottom: kNavBarTotalPadding),
           children: [
             _buildBalanceCard(),
             const SizedBox(height: 24),
