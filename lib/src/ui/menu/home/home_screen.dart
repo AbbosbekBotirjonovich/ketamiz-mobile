@@ -178,7 +178,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _pickPassengers() {
-    int temp = passengerCount;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -191,11 +190,21 @@ class _HomeScreenState extends State<HomeScreen> {
             left: 24,
             right: 24,
             top: 24,
-            bottom: 24 + MediaQuery.of(context).padding.bottom,
+            bottom: 32 + MediaQuery.of(context).padding.bottom,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Drag handle
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: AppTheme.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
               Text(
                 translate("home.number_passenger"),
                 style: const TextStyle(
@@ -205,22 +214,25 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: AppTheme.black,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _stepperButton(
                     icon: Icons.remove_rounded,
-                    enabled: temp > 1,
-                    onTap: () => setSheetState(() => temp--),
+                    enabled: passengerCount > 1,
+                    onTap: () {
+                      setSheetState(() => passengerCount--);
+                      setState(() {});
+                    },
                   ),
                   SizedBox(
                     width: 80,
                     child: Text(
-                      temp.toString(),
+                      passengerCount.toString(),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        fontSize: 28,
+                        fontSize: 32,
                         fontWeight: FontWeight.w700,
                         fontFamily: AppTheme.fontFamily,
                         color: AppTheme.black,
@@ -229,36 +241,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   _stepperButton(
                     icon: Icons.add_rounded,
-                    enabled: temp < 4,
-                    onTap: () => setSheetState(() => temp++),
+                    enabled: passengerCount < 4,
+                    onTap: () {
+                      setSheetState(() => passengerCount++);
+                      setState(() {});
+                    },
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() => passengerCount = temp);
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.purple,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: Text(
-                    translate("home.apply"),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
-                  ),
+              const SizedBox(height: 8),
+              Text(
+                translate(passengerCount == 1
+                    ? "home.passenger"
+                    : "home.passengers"),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontFamily: AppTheme.fontFamily,
+                  fontWeight: FontWeight.w400,
+                  color: AppTheme.gray,
                 ),
               ),
             ],
