@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:ketamiz/src/theme/app_theme.dart';
 import 'package:ketamiz/src/ui/widgets/buttons/primary_button.dart';
 import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
+import 'package:latlong2/latlong.dart';
 
+/// Tap-to-pick a location on a free OpenStreetMap (Leaflet-style) map.
 class MapSelectScreen extends StatefulWidget {
   final String place;
   final Function(LatLng position) onSelected;
@@ -24,7 +26,6 @@ class _MapSelectScreenState extends State<MapSelectScreen> {
   LatLng? _selectedLocation;
   LatLng _initialPosition = const LatLng(41.2995, 69.2401); // Default to Tashkent
   bool _isLoading = true;
-  MapType _currentMapType = MapType.normal;
 
   @override
   void initState() {
@@ -41,12 +42,12 @@ class _MapSelectScreenState extends State<MapSelectScreen> {
 
     // List of address variants to try, from most specific to least specific
     List<String> variants = [];
-    
+
     // 1. Original place with Uzbekistan suffix
     if (!place.toLowerCase().contains('uzbekistan')) {
       variants.add('$place, Uzbekistan');
     }
-    
+
     // 2. Original place as is
     variants.add(place);
 
@@ -60,7 +61,7 @@ class _MapSelectScreenState extends State<MapSelectScreen> {
       }
       variants.add(shorter);
     }
-    
+
     if (parts.isNotEmpty) {
       // Try just the last part (usually the city or region)
       String last = parts.last;
@@ -99,16 +100,6 @@ class _MapSelectScreenState extends State<MapSelectScreen> {
   void _onMapTap(LatLng position) {
     setState(() {
       _selectedLocation = position;
-    });
-  }
-
-  void _toggleMapType() {
-    setState(() {
-      if (_currentMapType == MapType.normal) {
-        _currentMapType = MapType.hybrid;
-      } else {
-        _currentMapType = MapType.normal;
-      }
     });
   }
 
@@ -162,28 +153,41 @@ class _MapSelectScreenState extends State<MapSelectScreen> {
             )
           : Stack(
               children: [
-                GoogleMap(
-                  initialCameraPosition: CameraPosition(
-                    target: _initialPosition,
-                    zoom: 16,
+                FlutterMap(
+                  options: MapOptions(
+                    initialCenter: _initialPosition,
+                    initialZoom: 14,
+                    onTap: (tapPosition, latLng) => _onMapTap(latLng),
+                    interactionOptions: const InteractionOptions(
+                      flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                    ),
                   ),
-                  scrollGesturesEnabled: true,
-                  zoomControlsEnabled: false,
-                  zoomGesturesEnabled: true,
-                  compassEnabled: false,
-                  myLocationEnabled: false,
-                  mapType: _currentMapType,
-                  myLocationButtonEnabled: false,
-                  onMapCreated: _onMapCreated,
-                  onTap: _onMapTap,
-                  markers: _selectedLocation != null
-                      ? {
+                  children: [
+                    TileLayer(
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'uz.ketamiz.app',
+                    ),
+                    if (_selectedLocation != null)
+                      MarkerLayer(
+                        markers: [
                           Marker(
-                            markerId: const MarkerId('selected'),
-                            position: _selectedLocation!,
+                            point: _selectedLocation!,
+                            width: 44,
+                            height: 44,
+                            alignment: Alignment.topCenter,
+                            child: const Icon(
+                              Icons.location_on,
+                              color: AppTheme.red,
+                              size: 44,
+                            ),
                           ),
-                        }
-                      : {},
+                        ],
+                      ),
+                    const SimpleAttributionWidget(
+                      source: Text('OpenStreetMap contributors'),
+                    ),
+                  ],
                 ),
                 Column(
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -230,25 +234,6 @@ class _MapSelectScreenState extends State<MapSelectScreen> {
                       ),
                     ),
                     const Spacer(),
-                    Row(
-                      children: [
-                        const SizedBox(width: 16),
-                        FloatingActionButton(
-                          onPressed: _toggleMapType,
-                          mini: true,
-                          backgroundColor: Colors.white,
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.layers,
-                            color: AppTheme.purple,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
                     Padding(
                       padding: const EdgeInsets.only(
                         bottom: 32,
@@ -266,6 +251,4 @@ class _MapSelectScreenState extends State<MapSelectScreen> {
             ),
     );
   }
-
-  void _onMapCreated(GoogleMapController controllerParam) {}
 }

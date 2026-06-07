@@ -5,6 +5,7 @@ import 'package:ketamiz/src/model/api/trip_list_model.dart';
 import 'package:ketamiz/src/model/location_model.dart';
 import 'package:ketamiz/src/ui/dialogs/bottom_dialog.dart';
 import 'package:ketamiz/src/ui/dialogs/center_dialog.dart';
+import 'package:ketamiz/src/ui/menu/home/all_trips_screen.dart';
 import 'package:ketamiz/src/ui/menu/home/search_result_screen.dart';
 import 'package:ketamiz/src/ui/menu/home/trip_details_screen.dart';
 import 'package:ketamiz/src/ui/widgets/containers/active_trips_container.dart';
@@ -290,6 +291,28 @@ class _HomeScreenState extends State<HomeScreen> {
           size: 22,
         ),
       ),
+    );
+  }
+
+  // ── View all ────────────────────────────────────────────────────────────
+
+  /// Resets the search form and opens the full list of available trips.
+  void _showAllTrips() {
+    setState(() {
+      fromRegion = LocationModel(id: "0", text: "", parentID: '');
+      fromCity = LocationModel(id: "0", text: "", parentID: '');
+      fromNeighborhood = LocationModel(id: "0", text: "", parentID: '');
+      toRegion = LocationModel(id: "0", text: "", parentID: '');
+      toCity = LocationModel(id: "0", text: "", parentID: '');
+      toNeighborhood = LocationModel(id: "0", text: "", parentID: '');
+      _fromText = "";
+      _toText = "";
+      departureDate = DateTime.now();
+      passengerCount = 1;
+    });
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AllTripsScreen()),
     );
   }
 
@@ -712,13 +735,22 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                Text(
-                  translate("home.view_all"),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppTheme.purple,
-                    fontFamily: AppTheme.fontFamily,
-                    fontWeight: FontWeight.w500,
+                GestureDetector(
+                  onTap: _showAllTrips,
+                  behavior: HitTestBehavior.opaque,
+                  // Generous hit area for a small text button
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 4, vertical: 8),
+                    child: Text(
+                      translate("home.view_all"),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppTheme.purple,
+                        fontFamily: AppTheme.fontFamily,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
                 ),
               ],

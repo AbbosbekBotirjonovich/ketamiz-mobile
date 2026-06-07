@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_translate/flutter_translate.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../theme/app_theme.dart';
 import '../../widgets/buttons/primary_button.dart';
 import '../../widgets/containers/leading_back.dart';
 import '../../widgets/texts/text_16h_500w.dart';
 
-class MapSingleScreen extends StatefulWidget {
+/// Single location pin on a free OpenStreetMap (Leaflet-style) map.
+class MapSingleScreen extends StatelessWidget {
   final LatLng location;
   final String place;
 
@@ -16,42 +18,6 @@ class MapSingleScreen extends StatefulWidget {
     required this.location,
     required this.place,
   });
-
-  @override
-  State<MapSingleScreen> createState() => _MapSingleScreenState();
-}
-
-class _MapSingleScreenState extends State<MapSingleScreen> {
-  final Set<Marker> _markers = {};
-  bool isLoading = true;
-  MapType _currentMapType = MapType.normal;
-
-  @override
-  void initState() {
-    super.initState();
-    _setMarker();
-  }
-
-  void _setMarker() {
-    _markers.add(
-      Marker(
-        markerId: const MarkerId('location'),
-        position: widget.location,
-        infoWindow: const InfoWindow(title: 'Location'),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-      ),
-    );
-  }
-
-  void _toggleMapType() {
-    setState(() {
-      if (_currentMapType == MapType.normal) {
-        _currentMapType = MapType.hybrid;
-      } else {
-        _currentMapType = MapType.normal;
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,24 +31,38 @@ class _MapSingleScreenState extends State<MapSingleScreen> {
       ),
       body: Stack(
         children: [
-          GoogleMap(
-            initialCameraPosition: CameraPosition(
-              target: widget.location,
-              zoom: 16,
+          FlutterMap(
+            options: MapOptions(
+              initialCenter: location,
+              initialZoom: 16,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+              ),
             ),
-            markers: _markers,
-            scrollGesturesEnabled: true,
-            zoomControlsEnabled: false,
-            zoomGesturesEnabled: true,
-            compassEnabled: false,
-            myLocationEnabled: false,
-            mapType: _currentMapType,
-            myLocationButtonEnabled: false,
-            onMapCreated: (GoogleMapController controller) {
-              setState(() {
-                isLoading = false;
-              });
-            },
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'uz.ketamiz.app',
+              ),
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: location,
+                    width: 44,
+                    height: 44,
+                    alignment: Alignment.topCenter,
+                    child: const Icon(
+                      Icons.location_on,
+                      color: AppTheme.red,
+                      size: 44,
+                    ),
+                  ),
+                ],
+              ),
+              const SimpleAttributionWidget(
+                source: Text('OpenStreetMap contributors'),
+              ),
+            ],
           ),
           Column(
             children: [
@@ -113,7 +93,7 @@ class _MapSingleScreenState extends State<MapSingleScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        widget.place,
+                        place,
                         style: const TextStyle(
                           fontFamily: AppTheme.fontFamily,
                           fontSize: 16,
@@ -128,25 +108,6 @@ class _MapSingleScreenState extends State<MapSingleScreen> {
                 ),
               ),
               const Spacer(),
-              Row(
-                children: [
-                  const SizedBox(width: 16),
-                  FloatingActionButton(
-                    onPressed: _toggleMapType,
-                    mini: true,
-                    backgroundColor: Colors.white,
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.layers,
-                      color: AppTheme.purple,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.only(
                   bottom: 32,
@@ -160,34 +121,6 @@ class _MapSingleScreenState extends State<MapSingleScreen> {
               ),
             ],
           ),
-          if (isLoading)
-            Container(
-              color: Colors.transparent,
-              child: Center(
-                child: Container(
-                  height: 96,
-                  width: 96,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        offset: const Offset(0, 5),
-                        blurRadius: 25,
-                        spreadRadius: 0,
-                        color: Colors.black.withOpacity(0.05),
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: CircularProgressIndicator(
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(AppTheme.purple),
-                    ),
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );

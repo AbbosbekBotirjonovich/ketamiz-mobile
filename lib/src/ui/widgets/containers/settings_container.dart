@@ -35,7 +35,14 @@ class SettingsContainer extends StatelessWidget {
             color: AppTheme.black,
           ),
           const SizedBox(width: 16),
-          Text14h500w(title: settingsModel.title),
+          // Bounded width: long titles shrink to fit instead of overflowing.
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text14h500w(title: settingsModel.title),
+            ),
+          ),
         ],
       ),
     );

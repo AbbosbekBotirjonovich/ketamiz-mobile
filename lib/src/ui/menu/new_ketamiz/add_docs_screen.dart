@@ -125,24 +125,30 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Column(
-              children: [
-                Text16h500w(title: _getAppBarTitle()),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(totalSteps, (index) {
-                    return Row(
-                      children: [
-                        _buildStepIndicator(index + 1),
-                        if (index < totalSteps - 1) const SizedBox(width: 4),
-                      ],
-                    );
-                  }),
-                ),
-              ],
+            Flexible(
+              child: Column(
+                children: [
+                  // Scale long titles down to fit instead of overflowing.
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text16h500w(title: _getAppBarTitle()),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(totalSteps, (index) {
+                      return Row(
+                        children: [
+                          _buildStepIndicator(index + 1),
+                          if (index < totalSteps - 1) const SizedBox(width: 4),
+                        ],
+                      );
+                    }),
+                  ),
+                ],
+              ),
             ),
-            SizedBox(width: 52),
+            const SizedBox(width: 52),
           ],
         ),
         centerTitle: true,

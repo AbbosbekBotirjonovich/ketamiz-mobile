@@ -1,13 +1,11 @@
-import 'package:dotted_line/dotted_line.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:lottie/lottie.dart';
 import 'package:ketamiz/src/bloc/home_bloc.dart';
 import 'package:ketamiz/src/model/api/trip_list_model.dart';
 import 'package:ketamiz/src/ui/menu/home/trip_details_screen.dart';
 import 'package:ketamiz/src/ui/widgets/containers/destinations_container.dart';
-import 'package:ketamiz/src/ui/widgets/texts/text_12h_400w.dart';
+import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
 import 'package:ketamiz/src/utils/utils.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../lan_localization/load_places.dart';
@@ -33,7 +31,8 @@ class SearchResultScreen extends StatefulWidget {
 }
 
 class _SearchResultScreenState extends State<SearchResultScreen> {
-  static final _unknownLocation = LocationModel(id: "0", text: "—", parentID: "0");
+  static final _unknownLocation =
+      LocationModel(id: "0", text: "", parentID: "0");
 
   @override
   void initState() {
@@ -60,345 +59,247 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
+  /// "Village, District, Region" — most specific part first, like the home
+  /// search form shows it.
+  String _placeText(int villageId, int cityId, int regionId, String fallback) {
+    String lookup(List<LocationModel> list, int id) {
+      if (id == 0) return '';
+      return list
+          .firstWhere((l) => l.id == id.toString(),
+              orElse: () => _unknownLocation)
+          .text;
+    }
+
+    final parts = [
+      lookup(LocationData.villages, villageId),
+      lookup(LocationData.cities, cityId),
+      lookup(LocationData.regions, regionId),
+    ].where((s) => s.isNotEmpty).toList();
+    return parts.isEmpty ? fallback : parts.join(', ');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          RefreshIndicator(
-            color: AppTheme.purple,
-            onRefresh: _onRefresh,
-            child: StreamBuilder(
-              stream: blocHome.getTripSearch,
-              builder: (context, AsyncSnapshot<TripSearchModel> snapshot) {
-                if (snapshot.hasData) {
-                  // Only show trips with enough free seats for the requested
-                  // passenger count.
-                  final trips = snapshot.data!.departureTrips
-                      .where((t) => t.availableSeats >= widget.requiredSeats)
-                      .toList();
-                  if (trips.isNotEmpty) {
-                    return ListView.builder(
-                      itemCount: trips.length,
-                      padding: const EdgeInsets.only(
-                        top: 282,
-                        left: 16,
-                        right: 16,
-                        bottom: 32,
-                      ),
-                      itemBuilder: (context, index) {
-                        return Column(
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) {
-                                      return TripDetailsScreen(
-                                          trip: trips[index]);
-                                    },
-                                  ),
-                                );
-                              },
-                              child: DestinationsContainer(
-                                  trip: trips[index]),
-                            ),
-                            index != trips.length - 1
-                                ? const SizedBox(height: 16)
-                                : const SizedBox(),
-                          ],
-                        );
-                      },
-                    );
-                  }else{
-                    return ListView(
-                      padding: const EdgeInsets.only(top: 282),
-                      children: [
-                        SizedBox(
-                          height: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top - 282,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Lottie.asset(
-                                "assets/lottie/empty.json",
-                                width: 200,
-                                height: 200,
-                                fit: BoxFit.cover,
-                              ),
-                              const SizedBox(height: 24),
-                              Text16h500w(title: translate("ketamiz.No_trip_found")),
-                            ],
-                          ),
-                        ),
-                      ],
-                    );
-                  }
-                } else {
-                  return Shimmer.fromColors(
-                    baseColor: AppTheme.baseColor,
-                    highlightColor: AppTheme.highlightColor,
-                    child: ListView.builder(
-                      itemCount: 10,
-                      padding: const EdgeInsets.only(
-                        top: 282,
-                        left: 16,
-                        right: 16,
-                        bottom: 32,
-                      ),
-                      itemBuilder: (context, index) {
-                        return Column(
-                          children: [
-                            Container(
-                              height: 250,
-                              width: MediaQuery.of(context).size.width - 32,
-                              color: AppTheme.baseColor,
-                            ),
-                            index != 10
-                                ? const SizedBox(height: 16)
-                                : const SizedBox(),
-                          ],
-                        );
-                      },
-                    ),
-                  );
-                }
-              },
-            ),
-          ),
-          Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: const BoxDecoration(
-                  color: AppTheme.black,
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(24),
-                    bottomRight: Radius.circular(24),
-                  ),
-                ),
-                child: SafeArea(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          InkWell(
-                            borderRadius: BorderRadius.circular(40),
-                            onTap: () {
-                              Navigator.pop(context);
+      backgroundColor: AppTheme.light,
+      appBar: AppBar(
+        leading: const LeadingBack(),
+        title: Text16h500w(title: translate("home.search_result")),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.white,
+      ),
+      body: RefreshIndicator(
+        color: AppTheme.purple,
+        onRefresh: _onRefresh,
+        child: StreamBuilder(
+          stream: blocHome.getTripSearch,
+          builder: (context, AsyncSnapshot<TripSearchModel> snapshot) {
+            final List<Widget> results;
+            if (snapshot.hasData) {
+              // Only show trips with enough free seats for the requested
+              // passenger count.
+              final trips = snapshot.data!.departureTrips
+                  .where((t) => t.availableSeats >= widget.requiredSeats)
+                  .toList();
+              if (trips.isNotEmpty) {
+                results = [
+                  for (var i = 0; i < trips.length; i++) ...[
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) {
+                              return TripDetailsScreen(trip: trips[i]);
                             },
-                            child: Container(
-                              height: 40,
-                              width: 40,
-                              padding: const EdgeInsets.all(8),
-                              child: Center(
-                                child: SvgPicture.asset(
-                                  'assets/icons/arrow_left.svg',
-                                  height: 24,
-                                  width: 24,
-                                  colorFilter: const ColorFilter.mode(
-                                    Colors.white,
-                                    BlendMode.srcIn,
-                                  ),
-                                ),
-                              ),
-                            ),
                           ),
-                          Text16h500w(
-                            title: translate("home.search_result"),
-                            color: Colors.white,
-                          ),
-                          const SizedBox(width: 40),
-                        ],
+                        );
+                      },
+                      child: DestinationsContainer(trip: trips[i]),
+                    ),
+                    if (i != trips.length - 1) const SizedBox(height: 16),
+                  ],
+                ];
+              } else {
+                results = [
+                  const SizedBox(height: 48),
+                  Center(
+                    child: Lottie.asset(
+                      "assets/lottie/empty.json",
+                      width: 200,
+                      height: 200,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Center(
+                    child:
+                        Text16h500w(title: translate("ketamiz.No_trip_found")),
+                  ),
+                ];
+              }
+            } else {
+              results = [
+                Shimmer.fromColors(
+                  baseColor: AppTheme.baseColor,
+                  highlightColor: AppTheme.highlightColor,
+                  child: Column(
+                    children: List.generate(
+                      6,
+                      (_) => Container(
+                        height: 150,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: AppTheme.baseColor,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                       ),
-                      const SizedBox(height: 22),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text12h400w(
-                                  title: LocationData.regions
-                                      .firstWhere((r) =>
-                                          r.id ==
-                                          widget.trip.fromRegionId.toString(),
-                                          orElse: () => _unknownLocation)
-                                      .text,
-                                  color: AppTheme.light,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  safeSubstring(
-                                      LocationData.villages
-                                          .firstWhere((n) =>
-                                              n.id ==
-                                              widget.trip.fromVillageId
-                                                  .toString(),
-                                              orElse: () => _unknownLocation)
-                                          .text,
-                                      3),
-                                  style: const TextStyle(
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontSize: 36,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    letterSpacing: 1.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text12h400w(
-                                  title: LocationData.cities
-                                      .firstWhere((c) =>
-                                          c.id ==
-                                          widget.trip.fromCityId.toString(),
-                                          orElse: () => _unknownLocation)
-                                      .text,
-                                  color: AppTheme.light,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: AppTheme.dark,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  DottedLine(
-                                    direction: Axis.horizontal,
-                                    lineThickness: 2,
-                                    lineLength:
-                                        ((MediaQuery.of(context).size.width -
-                                                        96) /
-                                                    3 -
-                                                40) /
-                                            2,
-                                    dashLength: 2,
-                                    dashColor: AppTheme.gray,
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.light,
-                                      borderRadius: BorderRadius.circular(24),
-                                    ),
-                                    child: SvgPicture.asset(
-                                      "assets/icons/map_pin.svg",
-                                      height: 24, // Adjust size as needed
-                                      width: 24,
-                                      colorFilter: const ColorFilter.mode(
-                                        AppTheme.purple,
-                                        BlendMode.srcIn,
-                                      ),
-                                    ),
-                                  ),
-                                  DottedLine(
-                                    direction: Axis.horizontal,
-                                    lineThickness: 2,
-                                    lineLength:
-                                        ((MediaQuery.of(context).size.width -
-                                                        96) /
-                                                    3 -
-                                                40) /
-                                            2,
-                                    dashLength: 2,
-                                    dashColor: AppTheme.gray,
-                                  ),
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: AppTheme.dark,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text12h400w(
-                                title: Utils.scheduleDateFormat(
-                                    widget.trip.startTime),
-                                color: AppTheme.light,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text12h400w(
-                                  title: LocationData.regions
-                                      .firstWhere((r) =>
-                                          r.id ==
-                                          widget.trip.toRegionId.toString(),
-                                          orElse: () => _unknownLocation)
-                                      .text,
-                                  color: AppTheme.light,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  safeSubstring(
-                                      LocationData.villages
-                                          .firstWhere((n) =>
-                                              n.id ==
-                                              widget.trip.toVillageId
-                                                  .toString(),
-                                              orElse: () => _unknownLocation)
-                                          .text,
-                                      3),
-                                  style: const TextStyle(
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontSize: 36,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    letterSpacing: 1.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text12h400w(
-                                  title: LocationData.cities
-                                      .firstWhere((c) =>
-                                          c.id ==
-                                          widget.trip.toCityId.toString(),
-                                          orElse: () => _unknownLocation)
-                                      .text,
-                                  color: AppTheme.light,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
                 ),
+              ];
+            }
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+              children: [
+                _buildRouteCard(),
+                const SizedBox(height: 16),
+                ...results,
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // ── Route summary card — mirrors the home screen search card ─────────────
+
+  Widget _buildRouteCard() {
+    final fromText = _placeText(
+      widget.trip.fromVillageId,
+      widget.trip.fromCityId,
+      widget.trip.fromRegionId,
+      widget.trip.fromWhere,
+    );
+    final toText = _placeText(
+      widget.trip.toVillageId,
+      widget.trip.toCityId,
+      widget.trip.toRegionId,
+      widget.trip.toWhere,
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            offset: const Offset(0, 4),
+            blurRadius: 20,
+            spreadRadius: 0,
+            color: AppTheme.black.withOpacity(0.05),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          _routeRow(
+            leading: Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+                border: Border.all(color: AppTheme.purple, width: 2),
               ),
-            ],
+            ),
+            text: fromText,
+          ),
+          Container(
+            height: 1,
+            margin: const EdgeInsets.only(left: 28, top: 12, bottom: 12),
+            color: AppTheme.border,
+          ),
+          _routeRow(
+            leading: const Icon(
+              Icons.location_on_rounded,
+              color: AppTheme.purple,
+              size: 16,
+            ),
+            text: toText,
+          ),
+          const SizedBox(height: 14),
+          // Date + passengers summary
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppTheme.light,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  color: AppTheme.dark,
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  Utils.searchDateFormat(widget.trip.startTime),
+                  style: const TextStyle(
+                    color: AppTheme.dark,
+                    fontSize: 13,
+                    fontFamily: AppTheme.fontFamily,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const Spacer(),
+                const Icon(
+                  Icons.person_outline_rounded,
+                  color: AppTheme.dark,
+                  size: 18,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  "${widget.requiredSeats} ${translate(widget.requiredSeats == 1 ? "home.passenger" : "home.passengers")}",
+                  style: const TextStyle(
+                    color: AppTheme.dark,
+                    fontSize: 13,
+                    fontFamily: AppTheme.fontFamily,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  String safeSubstring(String text, int length) {
-    return text.length >= length
-        ? text.substring(0, length).toUpperCase()
-        : text.toUpperCase();
+  Widget _routeRow({required Widget leading, required String text}) {
+    return Row(
+      children: [
+        SizedBox(width: 16, child: Center(child: leading)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppTheme.black,
+              fontSize: 15,
+              fontFamily: AppTheme.fontFamily,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

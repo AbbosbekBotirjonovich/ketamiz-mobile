@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:ketamiz/src/ui/menu/history/trips_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/profile_screen.dart';
@@ -11,6 +10,7 @@ import '../../bloc/profile_bloc.dart';
 import '../../bloc/ketamiz_bloc.dart';
 import '../../model/api/driver_trips_list_model.dart';
 import '../../theme/app_theme.dart';
+import '../dialogs/center_dialog.dart';
 import 'home/home_screen.dart';
 import 'new_ketamiz/add_docs_screen.dart';
 import 'new_ketamiz/create_new_ketamiz_screen.dart';
@@ -22,9 +22,19 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen>
+    with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
+  int _previousIndex = 0;
   bool _isRoleLoaded = false;
+  bool _isDriver = false;
+
+  // Drives the screen transition when switching tabs (fade + slide + scale).
+  late final AnimationController _pageController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 380),
+    value: 1.0,
+  );
 
   // Index 2 is a placeholder — Create Trip is an action, not a screen.
   List<Widget> _buildScreens(String localeKey) => [
@@ -45,33 +55,75 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Future<void> _loadRole() async {
-    await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
     if (mounted) {
-      setState(() => _isRoleLoaded = true);
+      setState(() {
+        _isDriver = prefs.getString('role') == 'driver';
+        _isRoleLoaded = true;
+      });
     }
   }
 
   void _onTabTapped(int index) {
     if (index == 2) {
-      _handleCreateTrip();
+      _isDriver ? _handleCreateTrip() : _handleBecomeDriver();
       return;
     }
-    setState(() => _selectedIndex = index);
+    if (index == _selectedIndex) return;
+    setState(() {
+      _previousIndex = _selectedIndex;
+      _selectedIndex = index;
+    });
+    _pageController.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  /// Docs already submitted and under review — tell the user to wait.
+  void _showApplicationPending() {
+    CenterDialog.showInfo(
+      context,
+      translate('profile.application_pending_title'),
+      translate('profile.application_pending_msg'),
+    );
   }
 
   Future<void> _handleCreateTrip() async {
     final prefs = await SharedPreferences.getInstance();
-    final isVerified =
-        prefs.getString('driving_verification_status') == 'approved';
+    final status = prefs.getString('driving_verification_status') ?? 'none';
     if (!mounted) return;
+    if (status == 'pending') {
+      _showApplicationPending();
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => isVerified
+        builder: (_) => status == 'approved'
             ? CreateNewKetamizScreen(driverTrip: DriverTripModel.defaultTrip())
             : const AddDocsScreen(),
       ),
     );
+  }
+
+  Future<void> _handleBecomeDriver() async {
+    final prefs = await SharedPreferences.getInstance();
+    final status = prefs.getString('driving_verification_status') ?? 'none';
+    if (!mounted) return;
+    if (status == 'pending') {
+      _showApplicationPending();
+      return;
+    }
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddDocsScreen()),
+    );
+    // Role may have changed after submitting docs — refresh the button.
+    _loadRole();
   }
 
   @override
@@ -90,9 +142,28 @@ class _MainScreenState extends State<MainScreen> {
       backgroundColor: AppTheme.light,
       body: Stack(
         children: [
-          IndexedStack(
-            index: _selectedIndex,
-            children: _buildScreens(localeKey),
+          // Tab transition: incoming screen fades in while sliding from the
+          // direction of travel with a subtle zoom — IndexedStack keeps state.
+          AnimatedBuilder(
+            animation: _pageController,
+            builder: (context, child) {
+              final t = Curves.easeOutCubic.transform(_pageController.value);
+              final direction = _selectedIndex >= _previousIndex ? 1.0 : -1.0;
+              return Opacity(
+                opacity: t,
+                child: Transform.translate(
+                  offset: Offset(direction * 32 * (1 - t), 0),
+                  child: Transform.scale(
+                    scale: 0.98 + 0.02 * t,
+                    child: child,
+                  ),
+                ),
+              );
+            },
+            child: IndexedStack(
+              index: _selectedIndex,
+              children: _buildScreens(localeKey),
+            ),
           ),
           Positioned(
             bottom: kNavBarBottomMargin + safeBottom,
@@ -128,14 +199,10 @@ class _MainScreenState extends State<MainScreen> {
           children: [
             _navItem(
               index: 0,
-              activeIcon: SvgPicture.asset('assets/icons/home_full.svg',
-                  width: 22, height: 22,
-                  colorFilter: const ColorFilter.mode(
-                      AppTheme.purple, BlendMode.srcIn)),
-              inactiveIcon: SvgPicture.asset('assets/icons/home.svg',
-                  width: 22, height: 22,
-                  colorFilter: const ColorFilter.mode(
-                      AppTheme.gray, BlendMode.srcIn)),
+              activeIcon: const Icon(Icons.home_rounded,
+                  color: AppTheme.purple, size: 22),
+              inactiveIcon: const Icon(Icons.home_outlined,
+                  color: AppTheme.gray, size: 22),
               label: translate('nav.home'),
             ),
             _navItem(
@@ -157,14 +224,10 @@ class _MainScreenState extends State<MainScreen> {
             ),
             _navItem(
               index: 4,
-              activeIcon: SvgPicture.asset('assets/icons/profile_full.svg',
-                  width: 22, height: 22,
-                  colorFilter: const ColorFilter.mode(
-                      AppTheme.purple, BlendMode.srcIn)),
-              inactiveIcon: SvgPicture.asset('assets/icons/profile.svg',
-                  width: 22, height: 22,
-                  colorFilter: const ColorFilter.mode(
-                      AppTheme.gray, BlendMode.srcIn)),
+              activeIcon: const Icon(Icons.person_rounded,
+                  color: AppTheme.purple, size: 22),
+              inactiveIcon: const Icon(Icons.person_outline_rounded,
+                  color: AppTheme.gray, size: 22),
               label: translate('nav.profile'),
             ),
           ],
@@ -190,26 +253,38 @@ class _MainScreenState extends State<MainScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Circle background with icon
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: isActive
-                    ? AppTheme.purple.withOpacity(0.1)
-                    : Colors.transparent,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 220),
-                  switchInCurve: Curves.easeIn,
-                  switchOutCurve: Curves.easeOut,
-                  child: isActive
-                      ? KeyedSubtree(key: ValueKey('a_$index'), child: activeIcon)
-                      : KeyedSubtree(key: ValueKey('i_$index'), child: inactiveIcon),
+            // Circle background with icon — pops with a spring when selected
+            AnimatedScale(
+              duration: const Duration(milliseconds: 420),
+              curve: isActive ? Curves.elasticOut : Curves.easeOut,
+              scale: isActive ? 1.0 : 0.88,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? AppTheme.purple.withOpacity(0.1)
+                      : Colors.transparent,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    switchInCurve: Curves.easeIn,
+                    switchOutCurve: Curves.easeOut,
+                    transitionBuilder: (child, animation) => ScaleTransition(
+                      scale: Tween<double>(begin: 0.7, end: 1.0)
+                          .animate(animation),
+                      child: FadeTransition(opacity: animation, child: child),
+                    ),
+                    child: isActive
+                        ? KeyedSubtree(
+                            key: ValueKey('a_$index'), child: activeIcon)
+                        : KeyedSubtree(
+                            key: ValueKey('i_$index'), child: inactiveIcon),
+                  ),
                 ),
               ),
             ),
@@ -233,12 +308,13 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  // ── Create button — always solid purple circle + label ────────────────────
+  // ── Center button — solid purple circle + label ───────────────────────────
+  // Drivers: "Create" (new trip). Clients: "Become a Driver" (docs flow).
 
   Widget _createButton() {
     return Expanded(
       child: GestureDetector(
-        onTap: _handleCreateTrip,
+        onTap: _isDriver ? _handleCreateTrip : _handleBecomeDriver,
         behavior: HitTestBehavior.opaque,
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -257,13 +333,19 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                 ],
               ),
-              child: const Center(
-                child: Icon(Icons.add_rounded, color: Colors.white, size: 24),
+              child: Center(
+                child: Icon(
+                  _isDriver ? Icons.add_rounded : Icons.drive_eta_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              translate('nav.create'),
+              _isDriver
+                  ? translate('nav.create')
+                  : translate('nav.become_driver'),
               maxLines: 1,
               style: const TextStyle(
                 fontFamily: AppTheme.fontFamily,

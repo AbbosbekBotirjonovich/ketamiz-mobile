@@ -2,16 +2,20 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:pinput/pinput.dart';
+import 'package:ketamiz/src/model/api/login_model.dart';
 import 'package:ketamiz/src/model/api/verification_resend_model.dart';
 import 'package:ketamiz/src/model/api/verify_code_model.dart';
 import 'package:ketamiz/src/ui/widgets/buttons/secondary_button.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_14h_500w.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import '../../resources/repository.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/secure_storage.dart';
 import '../dialogs/center_dialog.dart';
 import '../dialogs/response_popup.dart';
+import '../menu/main_screen.dart';
 import '../widgets/containers/leading_back.dart';
 import 'login_screen.dart';
 
@@ -19,11 +23,9 @@ class VerificationScreen extends StatefulWidget {
   const VerificationScreen({
     super.key,
     required this.phone,
-    required this.code,
   });
 
   final String phone;
-  final String code;
 
   @override
   State<VerificationScreen> createState() => _VerificationScreenState();
@@ -40,16 +42,9 @@ class _VerificationScreenState extends State<VerificationScreen> {
 
   String validatorText = "";
 
-  // void codeUpdated() {
-  //   setState(() {
-  //     _pinPutController.text = code!;
-  //   });
-  // }
-
   @override
   void initState() {
     _startTimer();
-    _pinPutController.text = widget.code;
     super.initState();
   }
 
@@ -293,7 +288,6 @@ class _VerificationScreenState extends State<VerificationScreen> {
     if (response.isSuccess) {
       var result = VerificationResendModel.fromJson(response.result);
       setState(() {
-        _pinPutController.text = result.code.toString();
         _isLoading = false;
       });
       showResponsePopup(
@@ -357,6 +351,40 @@ class _VerificationScreenState extends State<VerificationScreen> {
       });
       if (result.status == "success") {
         _timer?.cancel();
+
+        // The backend returns a token with the verify response — log the
+        // user straight in instead of sending them back to the login form.
+        final login = LoginModel.fromJson(response.result);
+        if (login.authorisation.token.isNotEmpty) {
+          await SecureStorage.setToken(login.authorisation.token);
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          prefs.setBool("isFirst", false);
+          prefs.setString(
+            "token_date",
+            "${login.user.createdAt.day}-${login.user.createdAt.month}-${login.user.createdAt.year}",
+          );
+          await _repository.cacheLoginUser(login.user);
+          if (!mounted) return;
+          showResponsePopup(
+            context,
+            status: result.status,
+            message: result.message,
+          );
+          Navigator.of(context).popUntil(
+            (route) => route.isFirst,
+          );
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) {
+                return const MainScreen();
+              },
+            ),
+          );
+          return;
+        }
+
+        // No token in the response — fall back to the login screen.
         Navigator.of(context).popUntil(
           (route) => route.isFirst,
         );

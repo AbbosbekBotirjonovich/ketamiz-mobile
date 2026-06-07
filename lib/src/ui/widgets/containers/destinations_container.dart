@@ -27,6 +27,39 @@ class DestinationsContainer extends StatelessWidget {
     return AppTheme.green;
   }
 
+  String get _status => trip.status.toLowerCase();
+
+  /// Seats only make sense while the trip can still be booked.
+  bool get _isActive => _status.isEmpty || _status == 'active';
+
+  Color get _statusColor {
+    switch (_status) {
+      case 'completed':
+        return const Color(0xFF4CAF50);
+      case 'canceled':
+      case 'cancelled':
+        return const Color(0xFFE53935);
+      default:
+        return AppTheme.purple;
+    }
+  }
+
+  String get _statusText {
+    switch (_status) {
+      case 'active':
+        return translate('history.active');
+      case 'in_progress':
+        return translate('history.in_progress');
+      case 'completed':
+        return translate('history.completed');
+      case 'canceled':
+      case 'cancelled':
+        return translate('history.canceled');
+      default:
+        return trip.status;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -46,27 +79,49 @@ class DestinationsContainer extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Top row: seats badge + price ─────────────────────────────────
+          // ── Top row: status badge + seats badge (active only) + price ────
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: _seatsColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  "${trip.availableSeats} ${translate("home.seats_left")}",
-                  style: TextStyle(
-                    color: _seatsColor,
-                    fontSize: 12,
-                    fontFamily: AppTheme.fontFamily,
-                    fontWeight: FontWeight.w600,
+              if (trip.status.isNotEmpty) ...[
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: _statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    _statusText,
+                    style: TextStyle(
+                      color: _statusColor,
+                      fontSize: 12,
+                      fontFamily: AppTheme.fontFamily,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(width: 8),
+              ],
+              // Seats left — only while the trip is still bookable
+              if (_isActive)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: _seatsColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    "${trip.availableSeats} ${translate("home.seats_left")}",
+                    style: TextStyle(
+                      color: _seatsColor,
+                      fontSize: 12,
+                      fontFamily: AppTheme.fontFamily,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               const Spacer(),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,

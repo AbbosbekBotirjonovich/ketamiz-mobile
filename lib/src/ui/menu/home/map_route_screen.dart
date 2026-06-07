@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-import '../../../resources/app_provider.dart';
 import '../../../theme/app_theme.dart';
 import '../../widgets/buttons/primary_button.dart';
 
+/// Route between two points on a free OpenStreetMap (Leaflet-style) map.
+/// Routing uses the public OSRM server; falls back to a straight line.
 class MapRouteScreen extends StatefulWidget {
   final LatLng start;
   final LatLng end;
@@ -27,83 +28,41 @@ class MapRouteScreen extends StatefulWidget {
 }
 
 class _MapRouteScreenState extends State<MapRouteScreen> {
-  final Set<Marker> _markers = {};
-  final Set<Polyline> _polyLines = {};
-  MapType _currentMapType = MapType.normal;
+  List<LatLng> _routePoints = [];
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _setMarkers();
+    // Straight line as immediate fallback; replaced by the road route.
+    _routePoints = [widget.start, widget.end];
     _fetchRoute();
   }
 
-  void _toggleMapType() {
-    setState(() {
-      if (_currentMapType == MapType.normal) {
-        _currentMapType = MapType.hybrid;
-      } else {
-        _currentMapType = MapType.normal;
-      }
-    });
-  }
-
-  void _setMarkers() {
-    _markers.add(
-      Marker(
-        markerId: const MarkerId('start'),
-        position: widget.start,
-        infoWindow: const InfoWindow(title: 'Start'),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-      ),
-    );
-    _markers.add(
-      Marker(
-        markerId: const MarkerId('end'),
-        position: widget.end,
-        infoWindow: const InfoWindow(title: 'End'),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-      ),
-    );
-  }
-
   Future<void> _fetchRoute() async {
-    final apiKey = ApiProvider.mapsApiKey;
-    final url = 'https://maps.googleapis.com/maps/api/directions/json?'
-        'origin=${widget.start.latitude},${widget.start.longitude}'
-        '&destination=${widget.end.latitude},${widget.end.longitude}'
-        '&key=$apiKey';
+    final url = 'https://router.project-osrm.org/route/v1/driving/'
+        '${widget.start.longitude},${widget.start.latitude};'
+        '${widget.end.longitude},${widget.end.latitude}'
+        '?overview=full&geometries=polyline';
 
-    final response = await http.get(Uri.parse(url));
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['status'] == 'OK') {
-        final points = data['routes'][0]['overview_polyline']['points'];
-        final decodedPoints = _decodePolyline(points);
-        setState(() {
-          _polyLines.add(
-            Polyline(
-              polylineId: const PolylineId('route'),
-              points: decodedPoints,
-              color: AppTheme.purple,
-              width: 5,
-            ),
-          );
-          isLoading = false;
-        });
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['code'] == 'Ok' && (data['routes'] as List).isNotEmpty) {
+          final points = data['routes'][0]['geometry'] as String;
+          final decoded = _decodePolyline(points);
+          if (decoded.isNotEmpty && mounted) {
+            setState(() => _routePoints = decoded);
+          }
+        }
       } else {
-        debugPrint('Directions API error: ${data['status']}');
-        setState(() {
-          isLoading = false;
-        });
+        debugPrint('OSRM route failed: ${response.statusCode}');
       }
-    } else {
-      debugPrint('Failed to fetch route: ${response.statusCode}');
-      setState(() {
-        isLoading = false;
-      });
+    } catch (e) {
+      debugPrint('OSRM route error: $e');
     }
+    if (mounted) setState(() => isLoading = false);
   }
 
   List<LatLng> _decodePolyline(String encoded) {
@@ -136,180 +95,155 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
     return points;
   }
 
-  LatLng _calculateCenter() {
-    final lat = (widget.start.latitude + widget.end.latitude) / 2;
-    final lng = (widget.start.longitude + widget.end.longitude) / 2;
-    return LatLng(lat, lng);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          GoogleMap(
-            initialCameraPosition: CameraPosition(
-              target: _calculateCenter(),
-              zoom: 8,
+          FlutterMap(
+            options: MapOptions(
+              initialCameraFit: CameraFit.bounds(
+                bounds: LatLngBounds(widget.start, widget.end),
+                padding: const EdgeInsets.fromLTRB(48, 230, 48, 140),
+              ),
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+              ),
             ),
-            markers: _markers,
-            polylines: _polyLines,
-            scrollGesturesEnabled: true,
-            zoomGesturesEnabled: true,
-            compassEnabled: false,
-            myLocationEnabled: false,
-            mapType: _currentMapType,
-            myLocationButtonEnabled: false,
-            onMapCreated: (GoogleMapController controller) {},
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'uz.ketamiz.app',
+              ),
+              PolylineLayer(
+                polylines: [
+                  Polyline(
+                    points: _routePoints,
+                    color: AppTheme.purple,
+                    strokeWidth: 5,
+                  ),
+                ],
+              ),
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: widget.start,
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.topCenter,
+                    child: const Icon(
+                      Icons.location_on,
+                      color: AppTheme.green,
+                      size: 40,
+                    ),
+                  ),
+                  Marker(
+                    point: widget.end,
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.topCenter,
+                    child: const Icon(
+                      Icons.location_on,
+                      color: AppTheme.red,
+                      size: 40,
+                    ),
+                  ),
+                ],
+              ),
+              const SimpleAttributionWidget(
+                source: Text('OpenStreetMap contributors'),
+              ),
+            ],
           ),
           Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               const SizedBox(height: 64),
-              SizedBox(
-                height: 132,
-                child: Stack(
-                  children: [
-                    Column(
-                      children: [
-                        Container(
-                          width: MediaQuery.of(context).size.width - 32,
-                          padding: const EdgeInsets.all(16),
-                          margin: const EdgeInsets.only(left: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(32),
-                            border: Border.all(color: AppTheme.black),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                spreadRadius: 15,
-                                blurRadius: 25,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.location_on,
-                                color: AppTheme.purple,
-                                size: 24,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  widget.startText,
-                                  style: const TextStyle(
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    height: 1.5,
-                                    color: AppTheme.black,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          width: MediaQuery.of(context).size.width - 32,
-                          padding: const EdgeInsets.all(16),
-                          margin: const EdgeInsets.only(left: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(32),
-                            border: Border.all(color: AppTheme.black),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                spreadRadius: 15,
-                                blurRadius: 25,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.location_on,
-                                color: AppTheme.purple,
-                                size: 24,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  widget.endText,
-                                  style: const TextStyle(
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    height: 1.5,
-                                    color: AppTheme.black,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+              Container(
+                width: MediaQuery.of(context).size.width - 32,
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(left: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(32),
+                  border: Border.all(color: AppTheme.black),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      spreadRadius: 15,
+                      blurRadius: 25,
+                      offset: const Offset(0, 5),
                     ),
-                    SizedBox(
-                      height: 132,
-                      child: Row(
-                        children: [
-                          const Spacer(),
-                          GestureDetector(
-                            onTap: () {},
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: const BoxDecoration(
-                                color: AppTheme.purple,
-                                shape: BoxShape.circle,
-                              ),
-                              child: SvgPicture.asset(
-                                height: 16,
-                                'assets/icons/swap_vertical.svg',
-                                colorFilter: const ColorFilter.mode(
-                                  Colors.white,
-                                  BlendMode.srcIn,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const Spacer(),
-                          const Spacer(),
-                          const Spacer(),
-                        ],
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.location_on,
+                      color: AppTheme.green,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        widget.startText,
+                        style: const TextStyle(
+                          fontFamily: AppTheme.fontFamily,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          height: 1.5,
+                          color: AppTheme.black,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: MediaQuery.of(context).size.width - 32,
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(left: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(32),
+                  border: Border.all(color: AppTheme.black),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      spreadRadius: 15,
+                      blurRadius: 25,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.location_on,
+                      color: AppTheme.red,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        widget.endText,
+                        style: const TextStyle(
+                          fontFamily: AppTheme.fontFamily,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          height: 1.5,
+                          color: AppTheme.black,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
               const Spacer(),
-              Row(
-                children: [
-                  const SizedBox(width: 16),
-                  FloatingActionButton(
-                    onPressed: _toggleMapType,
-                    mini: true,
-                    backgroundColor: Colors.white,
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.layers,
-                      color: AppTheme.purple,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.only(
                   bottom: 32,
@@ -324,33 +258,28 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
             ],
           ),
           if (isLoading)
-            Column(
-              children: [
-                Center(
-                  child: Container(
-                    height: 96,
-                    width: 96,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          offset: const Offset(0, 5),
-                          blurRadius: 25,
-                          spreadRadius: 0,
-                          color: Colors.black.withOpacity(0.05),
-                        ),
-                      ],
+            Center(
+              child: Container(
+                height: 96,
+                width: 96,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      offset: const Offset(0, 5),
+                      blurRadius: 25,
+                      spreadRadius: 0,
+                      color: Colors.black.withOpacity(0.05),
                     ),
-                    child: const Center(
-                      child: CircularProgressIndicator(
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(AppTheme.purple),
-                      ),
-                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.purple),
                   ),
                 ),
-              ],
+              ),
             ),
         ],
       ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:ketamiz/src/model/api/driver_trips_list_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:ketamiz/src/model/passenger_info_model.dart';
@@ -876,8 +876,11 @@ class _OpenInMapsButton extends StatelessWidget {
     return GestureDetector(
       onTap: () async {
         final uri = Uri.parse(url);
-        if (await canLaunchUrl(uri)) {
+        try {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } catch (_) {
+          // No handler for external launch — fall back to in-app browser.
+          await launchUrl(uri, mode: LaunchMode.platformDefault);
         }
       },
       child: Container(

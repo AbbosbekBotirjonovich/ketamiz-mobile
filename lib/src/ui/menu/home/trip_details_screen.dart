@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:ketamiz/src/ui/dialogs/bottom_dialog.dart';
 import 'package:ketamiz/src/ui/dialogs/center_dialog.dart';
 import 'package:ketamiz/src/ui/menu/home/map_single_screen.dart';
@@ -12,6 +12,7 @@ import 'package:ketamiz/src/ui/widgets/containers/passengers_container.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_14h_400w.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
 import 'package:ketamiz/src/utils/utils.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../lan_localization/load_places.dart';
 import '../../../model/api/trip_list_model.dart';
 import '../../../model/location_model.dart';
@@ -55,6 +56,10 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
   List<PassengerModel> passengers = [];
   bool _isCancelling = false;
 
+  /// True when the logged-in user is the driver of this trip — they can't
+  /// book their own trip, so no passenger form should appear.
+  bool _isOwnTrip = false;
+
   @override
   void initState() {
     super.initState();
@@ -67,14 +72,45 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
   Future<void> _initFirstPassenger() async {
     final user = await Repository().appCache.cacheGetMe();
     if (!mounted) return;
+    // The trip's own driver isn't a passenger — never prefill them.
+    if (user.id != 0 && user.id == widget.trip.driver.id) {
+      setState(() => _isOwnTrip = true);
+      return;
+    }
+    final fullName = "${user.firstName} ${user.lastName}".trim();
+    // Nothing cached to prefill — start with an empty list so the user
+    // adds passenger details (name + phone) explicitly.
+    if (fullName.isEmpty && user.phone.isEmpty) {
+      setState(() {
+        passengers = [];
+        passengersNum = 0;
+      });
+      return;
+    }
     setState(() {
       passengers = [
         PassengerModel(
-          fullName: "${user.firstName} ${user.lastName}".trim(),
+          fullName: fullName,
           phoneNumber: user.phone,
         ),
       ];
     });
+  }
+
+  /// Booking needs at least one passenger, each with name AND phone —
+  /// that's what the booking API sends per seat.
+  bool _validatePassengers() {
+    final incomplete = passengers.isEmpty ||
+        passengers.any(
+            (p) => p.fullName.trim().isEmpty || p.phoneNumber.trim().isEmpty);
+    if (incomplete) {
+      CenterDialog.showActionFailed(
+        context,
+        translate("home.passenger_info"),
+        translate("home.fill_passenger_details"),
+      );
+    }
+    return !incomplete;
   }
 
   Future<void> setLocations() async {
@@ -137,6 +173,39 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
     return AppTheme.green;
   }
 
+  String get _status => widget.trip.status.toLowerCase();
+
+  /// Only active trips can still be booked or cancelled.
+  bool get _isActive => _status.isEmpty || _status == 'active';
+
+  Color get _statusColor {
+    switch (_status) {
+      case 'completed':
+        return AppTheme.green;
+      case 'canceled':
+      case 'cancelled':
+        return AppTheme.red;
+      default: // active / in_progress
+        return AppTheme.purple;
+    }
+  }
+
+  String get _statusText {
+    switch (_status) {
+      case 'active':
+        return translate('history.active');
+      case 'in_progress':
+        return translate('history.in_progress');
+      case 'completed':
+        return translate('history.completed');
+      case 'canceled':
+      case 'cancelled':
+        return translate('history.canceled');
+      default:
+        return widget.trip.status;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -157,16 +226,22 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                 _buildRouteCard(),
                 const SizedBox(height: 16),
                 _buildDetailsCard(),
-                if (!widget.isDriver) ...[
+                // Passenger form exists only for booking: active trip,
+                // client view, and not the viewer's own trip.
+                if (!widget.isDriver && _isActive && !_isOwnTrip) ...[
                   const SizedBox(height: 16),
                   _buildPassengerCard(),
                 ],
               ],
             ),
           ),
-          widget.isDriver
-              ? _buildDriverBottomBar()
-              : _buildPassengerBottomBar(),
+          // Booking and cancelling are only possible while the trip is
+          // active — in-progress/completed/cancelled trips get no action bar,
+          // and a driver can't book their own trip.
+          if (_isActive && (widget.isDriver || !_isOwnTrip))
+            widget.isDriver
+                ? _buildDriverBottomBar()
+                : _buildPassengerBottomBar(),
         ],
       ),
     );
@@ -193,27 +268,48 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Seats badge + price row
+          // Status badge + seats badge (active only) + price row
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: _seatsColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  "${widget.trip.availableSeats} ${translate("home.seats_left")}",
-                  style: TextStyle(
-                    color: _seatsColor,
-                    fontSize: 12,
-                    fontFamily: AppTheme.fontFamily,
-                    fontWeight: FontWeight.w600,
+              if (widget.trip.status.isNotEmpty) ...[
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: _statusColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    _statusText,
+                    style: TextStyle(
+                      color: _statusColor,
+                      fontSize: 12,
+                      fontFamily: AppTheme.fontFamily,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(width: 8),
+              ],
+              if (_isActive)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: _seatsColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    "${widget.trip.availableSeats} ${translate("home.seats_left")}",
+                    style: TextStyle(
+                      color: _seatsColor,
+                      fontSize: 12,
+                      fontFamily: AppTheme.fontFamily,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               const Spacer(),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -561,15 +657,18 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
           _divider(),
           Row(
             children: [
-              Expanded(
-                child: _infoRow(
-                  icon: Icons.event_seat_rounded,
-                  iconColor: _seatsColor,
-                  label: translate("home.available_seats"),
-                  value: "${widget.trip.availableSeats}",
+              // Seats only matter while the trip is still bookable.
+              if (_isActive) ...[
+                Expanded(
+                  child: _infoRow(
+                    icon: Icons.event_seat_rounded,
+                    iconColor: _seatsColor,
+                    label: translate("home.available_seats"),
+                    value: "${widget.trip.availableSeats}",
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
+                const SizedBox(width: 12),
+              ],
               Expanded(
                 child: _infoRow(
                   icon: Icons.payments_rounded,
@@ -582,6 +681,10 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
           ),
           const SizedBox(height: 14),
           _routeMapButton(),
+          if (_googleMapsUrl.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _openInMapsButton(),
+          ],
         ],
       ),
     );
@@ -660,6 +763,18 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
             ],
           ),
           const SizedBox(height: 12),
+          if (passengers.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                translate("home.fill_passenger_details"),
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 13,
+                  color: AppTheme.gray,
+                ),
+              ),
+            ),
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -734,12 +849,13 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
           Expanded(
             child: GestureDetector(
               onTap: () {
+                if (!_validatePassengers()) return;
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => PaymentScreen(
                       trip: widget.trip,
-                      passengersNum: passengersNum,
+                      passengersNum: passengers.length,
                       passengers: passengers,
                     ),
                   ),
@@ -929,6 +1045,62 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
           "assets/icons/map_pin.svg",
           colorFilter:
               const ColorFilter.mode(AppTheme.purple, BlendMode.srcIn),
+        ),
+      ),
+    );
+  }
+
+  /// Backend-provided link when available, otherwise a directions deep link
+  /// built from the trip coordinates. Both open the installed Google Maps
+  /// app via LaunchMode.externalApplication.
+  String get _googleMapsUrl {
+    if (widget.trip.googleMapUrl.isNotEmpty) return widget.trip.googleMapUrl;
+    final t = widget.trip;
+    if (t.startLat.isEmpty ||
+        t.startLong.isEmpty ||
+        t.endLat.isEmpty ||
+        t.endLong.isEmpty) {
+      return '';
+    }
+    return 'https://www.google.com/maps/dir/?api=1'
+        '&origin=${t.startLat},${t.startLong}'
+        '&destination=${t.endLat},${t.endLong}'
+        '&travelmode=driving';
+  }
+
+  Widget _openInMapsButton() {
+    return GestureDetector(
+      onTap: () async {
+        final uri = Uri.parse(_googleMapsUrl);
+        try {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } catch (_) {
+          // No handler for external launch — fall back to in-app browser.
+          await launchUrl(uri, mode: LaunchMode.platformDefault);
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        decoration: BoxDecoration(
+          color: const Color(0xFF4285F4),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.map_outlined, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              translate("home.open_in_google_maps"),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontFamily: AppTheme.fontFamily,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
     );

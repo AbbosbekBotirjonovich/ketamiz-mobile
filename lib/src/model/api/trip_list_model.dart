@@ -32,6 +32,7 @@ class TripListModel {
   String endLat;
   String endLong;
   String status;
+  String googleMapUrl;
   DateTime createdAt;
   DateTime updatedAt;
   TripDriver driver;
@@ -63,6 +64,7 @@ class TripListModel {
     required this.endLat,
     required this.endLong,
     required this.status,
+    this.googleMapUrl = "",
     required this.createdAt,
     required this.updatedAt,
     required this.driver,
@@ -106,6 +108,7 @@ class TripListModel {
       endLat: json["end_lat"]?.toString() ?? "",
       endLong: json["end_long"]?.toString() ?? "",
       status: json["status"]?.toString() ?? "",
+      googleMapUrl: json["google_map_url"]?.toString() ?? "",
       createdAt: _parseDate(json["created_at"]),
       updatedAt: _parseDate(json["updated_at"]),
       driver: json["driver"] is Map<String, dynamic>
@@ -159,6 +162,7 @@ class TripListModel {
     "end_lat": endLat,
     "end_long": endLong,
     "status": status,
+    "google_map_url": googleMapUrl,
     "created_at": createdAt.toIso8601String(),
     "updated_at": updatedAt.toIso8601String(),
     "driver": driver.toJson(),

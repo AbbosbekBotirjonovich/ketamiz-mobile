@@ -33,7 +33,6 @@ class BottomDialog {
         LocationModel(id: '0', text: '', parentID: '0');
     LocationModel selectedVillage = village ??
         LocationModel(id: '0', text: '', parentID: '0');
-    LocationModel selectedLocation = LocationModel(id: '0', text: '', parentID: '0');
 
     showModalBottomSheet(
       barrierColor: Colors.black.withOpacity(0.45), // Using AppTheme.black
@@ -55,7 +54,7 @@ class BottomDialog {
                 .toList();
 
             return Container(
-              height: selectedLocation.text.isEmpty ? 524 : 256,
+              height: 524,
               decoration: const BoxDecoration(
                 borderRadius: BorderRadius.only(
                   topRight: Radius.circular(24),
@@ -100,8 +99,7 @@ class BottomDialog {
                   ),
                   const SizedBox(height: 4),
                   Expanded(
-                    child: selectedLocation.text.isEmpty
-                        ? ListView.builder(
+                    child: ListView.builder(
                       itemCount: currentList.length,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 4),
@@ -110,9 +108,36 @@ class BottomDialog {
                         return Column(
                           children: [
                             GestureDetector(
+                              // Selecting advances straight to the next level
+                              // (region -> district -> village) — no Apply.
                               onTap: () {
                                 setState(() {
-                                  selectedLocation = location;
+                                  if (selectedRegion.id == '0') {
+                                    selectedRegion = location;
+                                  } else if (selectedCity.id == '0') {
+                                    selectedCity = location;
+                                    // District without villages — finish now.
+                                    final hasVillages = LocationData.villages
+                                        .any((v) =>
+                                            v.parentID == selectedCity.id);
+                                    if (!hasVillages) {
+                                      onChanged(
+                                        selectedRegion,
+                                        selectedCity,
+                                        LocationModel(
+                                            id: '0', text: '', parentID: '0'),
+                                      );
+                                      Navigator.pop(context);
+                                    }
+                                  } else {
+                                    selectedVillage = location;
+                                    onChanged(
+                                      selectedRegion,
+                                      selectedCity,
+                                      selectedVillage,
+                                    );
+                                    Navigator.pop(context);
+                                  }
                                 });
                               },
                               child: Container(
@@ -141,37 +166,6 @@ class BottomDialog {
                           ],
                         );
                       },
-                    )
-                        : GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedLocation = LocationModel(
-                              id: '0', text: '', parentID: '0');
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        margin: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppTheme.light,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppTheme.purple),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                selectedLocation.text,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                     ),
                   ),
                   Container(
@@ -181,14 +175,15 @@ class BottomDialog {
                         GestureDetector(
                           onTap: () {
                             setState(() {
-                              if (selectedLocation.text.isNotEmpty) {
-                                selectedLocation = LocationModel(
+                              if (selectedCity.id != '0') {
+                                // Back to district list
+                                selectedCity = LocationModel(
                                     id: '0', text: '', parentID: '0');
-                              } else if (selectedVillage.id != '0') {
                                 selectedVillage = LocationModel(
                                     id: '0', text: '', parentID: '0');
-                              } else if (selectedCity.id != '0') {
-                                selectedCity = LocationModel(
+                              } else if (selectedRegion.id != '0') {
+                                // Back to region list
+                                selectedRegion = LocationModel(
                                     id: '0', text: '', parentID: '0');
                               } else {
                                 Navigator.pop(context);
@@ -210,58 +205,6 @@ class BottomDialog {
                                 colorFilter: const ColorFilter.mode(
                                   AppTheme.purple,
                                   BlendMode.srcIn,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              if (selectedLocation.text.isEmpty) return;
-
-                              setState(() {
-                                if (selectedRegion.id == '0') {
-                                  selectedRegion = selectedLocation;
-                                  selectedCity = LocationModel(
-                                      id: '0', text: '', parentID: '0');
-                                  selectedVillage = LocationModel(
-                                      id: '0', text: '', parentID: '0');
-                                } else if (selectedCity.id == '0' &&
-                                    selectedLocation.parentID == selectedRegion.id) {
-                                  selectedCity = selectedLocation;
-                                  selectedVillage = LocationModel(
-                                      id: '0', text: '', parentID: '0');
-                                } else if (selectedVillage.id == '0' &&
-                                    selectedLocation.parentID == selectedCity.id) {
-                                  selectedVillage = selectedLocation;
-                                  onChanged(
-                                    selectedRegion,
-                                    selectedCity,
-                                    selectedVillage,
-                                  );
-                                  Navigator.pop(context);
-                                }
-                                selectedLocation = LocationModel(
-                                    id: '0', text: '', parentID: '0');
-                              });
-                            },
-                            child: Container(
-                              height: 56,
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              decoration: BoxDecoration(
-                                color: AppTheme.purple,
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  translate("home.apply"),
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white,
-                                  ),
                                 ),
                               ),
                             ),

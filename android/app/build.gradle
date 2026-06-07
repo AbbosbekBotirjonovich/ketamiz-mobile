@@ -49,12 +49,6 @@ android {
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
-
-        // Read Maps API key from local.properties (not committed to VCS)
-        def mapsApiKey = localProperties.getProperty('MAPS_API_KEY') ?: ''
-        manifestPlaceholders += [
-            mapsApiKey: mapsApiKey
-        ]
     }
 
     buildTypes {

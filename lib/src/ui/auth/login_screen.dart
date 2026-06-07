@@ -28,6 +28,11 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLoading = false;
   bool isLogin = true;
 
+  // Keeps the focused field visible above the keyboard AND the
+  // bottom-anchored login/register button (48 high + 24 bottom padding).
+  static const EdgeInsets _fieldScrollPadding =
+      EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 110);
+
   Repository _repository = Repository();
 
   String _getErrorMessage(dynamic result) {
@@ -194,7 +199,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         top: isLogin ? 0 : 98,
                         bottom: 100,
                       ),
-                      physics: const AlwaysScrollableScrollPhysics(),
+                      // The outer SingleChildScrollView is the only scrollable —
+                      // so focused fields are auto-scrolled in the right view.
+                      physics: const NeverScrollableScrollPhysics(),
                       children: [
                         Container(
                           height: 56,
@@ -310,6 +317,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     icon: Icons.phone_outlined,
                                     controller: phoneController,
                                     phone: true,
+                                    scrollPadding: _fieldScrollPadding,
+                                    textInputAction: TextInputAction.next,
                                   ),
                                   const SizedBox(height: 16),
                                   MainTextField(
@@ -317,6 +326,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     icon: Icons.lock_outline_rounded,
                                     controller: passController,
                                     pass: true,
+                                    scrollPadding: _fieldScrollPadding,
+                                    textInputAction: TextInputAction.done,
                                   ),
                                 ],
                               )
@@ -328,6 +339,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     hintText: translate("auth.first_name"),
                                     icon: Icons.person_outline_rounded,
                                     controller: firstNameController,
+                                    scrollPadding: _fieldScrollPadding,
+                                    textInputAction: TextInputAction.next,
                                   ),
                                   const SizedBox(height: 16),
                                   Container(
@@ -348,6 +361,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                     child: TextFormField(
                                       controller: lastNameController,
+                                      scrollPadding: _fieldScrollPadding,
+                                      textInputAction: TextInputAction.next,
                                       textAlignVertical: TextAlignVertical.center,
                                       cursorColor: AppTheme.purple,
                                       enableInteractiveSelection: true,
@@ -415,6 +430,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     hintText: translate("auth.father_name"),
                                     icon: Icons.person_outline_rounded,
                                     controller: fatherNameController,
+                                    scrollPadding: _fieldScrollPadding,
+                                    textInputAction: TextInputAction.next,
                                   ),
                                   const SizedBox(height: 16),
                                   MainTextField(
@@ -422,12 +439,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                     icon: Icons.phone_outlined,
                                     controller: phoneRegController,
                                     phone: true,
+                                    scrollPadding: _fieldScrollPadding,
+                                    textInputAction: TextInputAction.next,
                                   ),
                                   const SizedBox(height: 16),
                                   MainTextField(
                                     hintText: translate("auth.email"),
                                     icon: Icons.email_outlined,
                                     controller: emailController,
+                                    scrollPadding: _fieldScrollPadding,
+                                    textInputAction: TextInputAction.next,
                                   ),
                                   const SizedBox(height: 16),
                                   MainTextField(
@@ -435,6 +456,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     icon: Icons.lock_outline_rounded,
                                     controller: passRegController,
                                     pass: true,
+                                    scrollPadding: _fieldScrollPadding,
+                                    textInputAction: TextInputAction.next,
                                   ),
                                   const SizedBox(height: 16),
                                   MainTextField(
@@ -443,6 +466,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     icon: Icons.lock_outline_rounded,
                                     controller: passAgainController,
                                     pass: true,
+                                    scrollPadding: _fieldScrollPadding,
+                                    textInputAction: TextInputAction.done,
                                   ),
                                 ],
                               ),
@@ -543,7 +568,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 MaterialPageRoute(
                                   builder: (context) => VerificationScreen(
                                     phone: phone,
-                                    code: "", // Code will be sent or requested again
                                   ),
                                 ),
                               );
@@ -610,7 +634,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                   builder: (context) {
                                     return VerificationScreen(
                                       phone: phone,
-                                      code: result.code.toString(),
                                     );
                                   },
                                 ),

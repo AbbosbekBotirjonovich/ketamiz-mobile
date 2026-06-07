@@ -12,6 +12,8 @@ class MainTextField extends StatefulWidget {
     this.pass = false,
     this.phone = false,
     this.inputFormatters = const [],
+    this.scrollPadding = const EdgeInsets.all(20),
+    this.textInputAction,
   });
 
   final String hintText;
@@ -20,6 +22,14 @@ class MainTextField extends StatefulWidget {
   final bool pass;
   final bool phone;
   final List<TextInputFormatter> inputFormatters;
+
+  /// Keyboard action button: [TextInputAction.next] jumps to the next field
+  /// without closing the keyboard; [TextInputAction.done] dismisses it.
+  final TextInputAction? textInputAction;
+
+  /// Extra space kept between the focused field and the keyboard when the
+  /// field is auto-scrolled into view (covers bottom-anchored buttons).
+  final EdgeInsets scrollPadding;
 
   @override
   State<MainTextField> createState() => _MainTextFieldState();
@@ -71,6 +81,8 @@ class _MainTextFieldState extends State<MainTextField> {
             ? TextInputType.phone
             : TextInputType.text,
         autofocus: false,
+        scrollPadding: widget.scrollPadding,
+        textInputAction: widget.textInputAction,
         inputFormatters: widget.inputFormatters,
         decoration: InputDecoration(
           border:
