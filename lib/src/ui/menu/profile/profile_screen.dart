@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:ketamiz/src/ui/auth/login_screen.dart';
+import 'package:ketamiz/src/ui/dialogs/center_dialog.dart';
 import 'package:ketamiz/src/ui/menu/new_ketamiz/add_docs_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/edit_profile_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/my_vehicles_screen.dart';
@@ -372,25 +373,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             title: translate("profile.share"),
           )),
           GestureDetector(
-            onTap: () async {
-              // Best-effort server logout; proceed regardless of result.
-              try {
-                await Repository().fetchLogout();
-              } catch (_) {}
-              await wipeSharedPreferences();
-              if (!mounted) return;
-              Navigator.of(context).popUntil(
-                (route) => route.isFirst,
-              );
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) {
-                    return const LoginScreen();
-                  },
-                ),
-              );
-            },
+            onTap: _confirmLogout,
             child: SettingsContainer(
                 settingsModel: SettingsModel(
               icon: Icons.logout_outlined,
@@ -400,6 +383,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
         ),
       ),
+    );
+  }
+
+  void _confirmLogout() {
+    CenterDialog.showConfirmation(
+      context,
+      translate("profile.logout"),
+      translate("profile.logout_confirm"),
+      onConfirm: () async {
+        Navigator.pop(context); // close the dialog
+        // Best-effort server logout; proceed regardless of result.
+        try {
+          await Repository().fetchLogout();
+        } catch (_) {}
+        await wipeSharedPreferences();
+        if (!mounted) return;
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
+      },
     );
   }
 

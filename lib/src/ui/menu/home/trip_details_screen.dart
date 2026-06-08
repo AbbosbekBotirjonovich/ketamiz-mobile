@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ketamiz/src/ui/dialogs/bottom_dialog.dart';
 import 'package:ketamiz/src/ui/dialogs/center_dialog.dart';
 import 'package:ketamiz/src/ui/menu/home/map_single_screen.dart';
 import 'package:ketamiz/src/ui/menu/home/payment_screen.dart';
+import 'package:ketamiz/src/ui/menu/new_ketamiz/map_select_screen.dart';
 import 'package:ketamiz/src/ui/menu/main_screen.dart';
 import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
 import 'package:ketamiz/src/ui/widgets/containers/passengers_container.dart';
@@ -22,15 +22,46 @@ import '../../../theme/app_theme.dart';
 import '../../dialogs/snack_bar.dart';
 import 'map_route_screen.dart';
 
+/// How a passenger's pickup point is chosen when others already have one.
+enum _PickupChoice { same, map }
+
+/// A passenger on a driver's own trip — shown read-only in the driver view.
+class _BookedPassenger {
+  final String name;
+  final String phone;
+  final String lat;
+  final String lng;
+
+  _BookedPassenger(this.name, this.phone, this.lat, this.lng);
+
+  bool get hasLocation =>
+      lat.isNotEmpty &&
+      lng.isNotEmpty &&
+      lat != '0' &&
+      lng != '0' &&
+      double.tryParse(lat) != null &&
+      double.tryParse(lng) != null;
+}
+
 class TripDetailsScreen extends StatefulWidget {
   const TripDetailsScreen({
     super.key,
     required this.trip,
     this.isDriver = false,
+    this.isBooked = false,
+    this.bookings = const [],
   });
 
   final TripListModel trip;
   final bool isDriver;
+
+  /// Whether the current user has already booked this trip. Controls whether
+  /// the exact route is shown on the map or only an approximate 25 km area.
+  final bool isBooked;
+
+  /// Raw bookings for this trip — only used in the driver view to list who
+  /// booked, their contact numbers and pickup locations.
+  final List<dynamic> bookings;
 
   @override
   State<TripDetailsScreen> createState() => _TripDetailsScreenState();
@@ -60,13 +91,59 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
   /// book their own trip, so no passenger form should appear.
   bool _isOwnTrip = false;
 
+  /// Parsed bookings for the driver view.
+  List<_BookedPassenger> _bookedPassengers = [];
+
   @override
   void initState() {
     super.initState();
     final p = widget.trip.pricePerSeat;
     pricePerSeat = p.contains(".") ? p.split(".")[0] : p;
     setLocations();
-    _initFirstPassenger();
+    if (widget.isDriver) {
+      _bookedPassengers = _parseBookings(widget.bookings);
+    } else {
+      _initFirstPassenger();
+    }
+  }
+
+  /// Flatten the trip's bookings into a flat passenger list. Handles both
+  /// shapes seen from the API: a booking with a nested `passengers` array, or
+  /// a booking that is itself the passenger record.
+  List<_BookedPassenger> _parseBookings(List<dynamic> bookings) {
+    final result = <_BookedPassenger>[];
+
+    String pick(Map m, List<String> keys) {
+      for (final k in keys) {
+        final v = m[k];
+        if (v != null && v.toString().isNotEmpty) return v.toString();
+      }
+      return '';
+    }
+
+    void addFrom(Map m) {
+      result.add(_BookedPassenger(
+        pick(m, ['name', 'full_name', 'fullName']),
+        pick(m, ['phone', 'phone_number', 'phoneNumber']),
+        pick(m, ['latitude', 'lat']),
+        pick(m, ['longitude', 'long', 'lng']),
+      ));
+    }
+
+    for (final b in bookings) {
+      if (b is! Map) continue;
+      final passengers = b['passengers'];
+      if (passengers is List && passengers.isNotEmpty) {
+        for (final p in passengers) {
+          if (p is Map) addFrom(p);
+        }
+      } else {
+        addFrom(b);
+      }
+    }
+    return result
+        .where((p) => p.name.isNotEmpty || p.phone.isNotEmpty)
+        .toList();
   }
 
   Future<void> _initFirstPassenger() async {
@@ -97,12 +174,14 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
     });
   }
 
-  /// Booking needs at least one passenger, each with name AND phone —
-  /// that's what the booking API sends per seat.
+  /// Booking needs at least one passenger, each with name, phone AND a pickup
+  /// location — that's what the booking API sends per seat.
   bool _validatePassengers() {
     final incomplete = passengers.isEmpty ||
-        passengers.any(
-            (p) => p.fullName.trim().isEmpty || p.phoneNumber.trim().isEmpty);
+        passengers.any((p) =>
+            p.fullName.trim().isEmpty ||
+            p.phoneNumber.trim().isEmpty ||
+            !p.hasLocation);
     if (incomplete) {
       CenterDialog.showActionFailed(
         context,
@@ -111,6 +190,154 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
       );
     }
     return !incomplete;
+  }
+
+  /// Add a passenger: collect name + phone, then a pickup location.
+  void _onAddPassenger() {
+    if (passengers.length >= widget.trip.availableSeats) {
+      CenterDialog.showActionFailed(
+        context,
+        translate("home.passenger_info"),
+        translate("home.no_seats_left"),
+      );
+      return;
+    }
+    BottomDialog.showAddPassenger(
+      context,
+      PassengerModel(fullName: ""),
+      (data) async {
+        final exists =
+            passengers.any((p) => p.fullName == data.fullName);
+        if (exists || data.fullName.isEmpty) {
+          CenterDialog.showActionFailed(
+            context,
+            translate("home.passenger_exist"),
+            translate("home.passenger_exist_error"),
+          );
+          return;
+        }
+        setState(() {
+          passengers.add(data);
+          passengersNum++;
+        });
+        // Immediately prompt for this passenger's pickup point.
+        await _setPassengerLocation(passengers.length - 1);
+      },
+    );
+  }
+
+  /// Choose a pickup point for [index]. If other passengers already have a
+  /// location, offer to reuse it (family booking) or pick a new one (friend).
+  Future<void> _setPassengerLocation(int index) async {
+    if (index < 0 || index >= passengers.length) return;
+
+    final others = <PassengerModel>[
+      for (var i = 0; i < passengers.length; i++)
+        if (i != index && passengers[i].hasLocation) passengers[i]
+    ];
+
+    LatLng? picked;
+    if (others.isNotEmpty) {
+      final choice = await _showPickupChoice();
+      if (choice == null || !mounted) return; // cancelled
+      if (choice == _PickupChoice.same) {
+        picked = LatLng(
+          double.parse(others.first.latitude),
+          double.parse(others.first.longitude),
+        );
+      }
+    }
+
+    if (!mounted) return;
+    picked ??= await Navigator.push<LatLng>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapSelectScreen(
+          place: from,
+          onSelected: (_) {},
+        ),
+      ),
+    );
+
+    if (picked == null || !mounted) return;
+    setState(() {
+      passengers[index].latitude = picked!.latitude.toString();
+      passengers[index].longitude = picked.longitude.toString();
+    });
+  }
+
+  /// Bottom sheet: reuse another passenger's pickup point or pick on the map.
+  Future<_PickupChoice?> _showPickupChoice() {
+    return showModalBottomSheet<_PickupChoice>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppTheme.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text16h500w(title: translate("home.pickup_location")),
+              const SizedBox(height: 16),
+              _pickupOption(
+                icon: Icons.people_alt_outlined,
+                label: translate("home.pickup_same_as_others"),
+                onTap: () =>
+                    Navigator.pop(sheetContext, _PickupChoice.same),
+              ),
+              const SizedBox(height: 12),
+              _pickupOption(
+                icon: Icons.map_outlined,
+                label: translate("home.pickup_choose_on_map"),
+                onTap: () =>
+                    Navigator.pop(sheetContext, _PickupChoice.map),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _pickupOption({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppTheme.light,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppTheme.purple, size: 22),
+            const SizedBox(width: 12),
+            Expanded(child: Text16h500w(title: label)),
+            const Icon(Icons.chevron_right, color: AppTheme.gray, size: 20),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> setLocations() async {
@@ -226,6 +453,11 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                 _buildRouteCard(),
                 const SizedBox(height: 16),
                 _buildDetailsCard(),
+                // Driver view: who booked this trip (name, phone, location).
+                if (widget.isDriver) ...[
+                  const SizedBox(height: 16),
+                  _buildBookedPassengersCard(),
+                ],
                 // Passenger form exists only for booking: active trip,
                 // client view, and not the viewer's own trip.
                 if (!widget.isDriver && _isActive && !_isOwnTrip) ...[
@@ -520,38 +752,17 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
             iconColor: AppTheme.purple,
             label: translate("home.travelling_from"),
             child: Expanded(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      from.isEmpty ? "—" : from,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.end,
-                      style: const TextStyle(
-                        fontFamily: AppTheme.fontFamily,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: AppTheme.black,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  _mapPinButton(() {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => MapSingleScreen(
-                          location: LatLng(
-                            double.parse(widget.trip.startLat),
-                            double.parse(widget.trip.startLong),
-                          ),
-                          place: from,
-                        ),
-                      ),
-                    );
-                  }),
-                ],
+              child: Text(
+                from.isEmpty ? "—" : from,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.end,
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.black,
+                ),
               ),
             ),
           ),
@@ -561,38 +772,17 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
             iconColor: AppTheme.red,
             label: translate("home.where_to"),
             child: Expanded(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      to.isEmpty ? "—" : to,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.end,
-                      style: const TextStyle(
-                        fontFamily: AppTheme.fontFamily,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: AppTheme.black,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  _mapPinButton(() {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => MapSingleScreen(
-                          location: LatLng(
-                            double.parse(widget.trip.endLat),
-                            double.parse(widget.trip.endLong),
-                          ),
-                          place: to,
-                        ),
-                      ),
-                    );
-                  }),
-                ],
+              child: Text(
+                to.isEmpty ? "—" : to,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.end,
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.black,
+                ),
               ),
             ),
           ),
@@ -680,12 +870,157 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
             ],
           ),
           const SizedBox(height: 14),
-          _routeMapButton(),
-          if (_googleMapsUrl.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            _openInMapsButton(),
-          ],
+          // Map actions:
+          //  • Driver who created this trip → open in Google Maps (exact).
+          //  • Client → in-app map; exact route only after booking, otherwise
+          //    an approximate 25 km area.
+          if (widget.isDriver || _isOwnTrip) ...[
+            if (_googleMapsUrl.isNotEmpty) _openInMapsButton(),
+          ] else
+            _routeMapButton(),
         ],
+      ),
+    );
+  }
+
+  // ── Booked passengers card (driver view) ───────────────────────────────────
+  Widget _buildBookedPassengersCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            offset: const Offset(0, 4),
+            blurRadius: 16,
+            color: AppTheme.black.withValues(alpha: 0.06),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text16h500w(title: translate("home.booked_passengers")),
+              ),
+              if (_bookedPassengers.isNotEmpty)
+                Text(
+                  "${_bookedPassengers.length}",
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.purple,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_bookedPassengers.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                translate("ketamiz.no_passenger"),
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 13,
+                  color: AppTheme.gray,
+                ),
+              ),
+            )
+          else
+            ...List.generate(_bookedPassengers.length, (i) {
+              final p = _bookedPassengers[i];
+              return Container(
+                margin: EdgeInsets.only(
+                    bottom: i == _bookedPassengers.length - 1 ? 0 : 10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.light,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: const Icon(Icons.person,
+                          size: 22, color: AppTheme.black),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text14h400w(
+                              title: p.name.isEmpty ? "—" : p.name),
+                          if (p.phone.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text14h400w(title: p.phone, color: AppTheme.gray),
+                          ],
+                        ],
+                      ),
+                    ),
+                    // Call the passenger.
+                    if (p.phone.isNotEmpty)
+                      GestureDetector(
+                        onTap: () => _callPassenger(p.phone),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: const Icon(Icons.call,
+                              size: 20, color: AppTheme.green),
+                        ),
+                      ),
+                    // View this passenger's pickup point on the map.
+                    if (p.hasLocation) ...[
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => _showPassengerLocation(p),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: const Icon(Icons.location_on,
+                              size: 20, color: AppTheme.purple),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            }),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _callPassenger(String phone) async {
+    final uri = Uri.parse('tel:$phone');
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {}
+  }
+
+  void _showPassengerLocation(_BookedPassenger p) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapSingleScreen(
+          location: LatLng(double.parse(p.lat), double.parse(p.lng)),
+          place: p.name.isEmpty ? translate("home.pickup_location") : p.name,
+        ),
       ),
     );
   }
@@ -723,30 +1058,7 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
               ),
               const SizedBox(width: 8),
               GestureDetector(
-                onTap: () {
-                  if (passengersNum < widget.trip.availableSeats) {
-                    BottomDialog.showAddPassenger(
-                      context,
-                      PassengerModel(fullName: ""),
-                      (data) {
-                        final exists = passengers
-                            .any((p) => p.fullName == data.fullName);
-                        if (!exists && data.fullName.isNotEmpty) {
-                          setState(() {
-                            passengers.add(data);
-                            passengersNum++;
-                          });
-                        } else {
-                          CenterDialog.showActionFailed(
-                            context,
-                            translate("home.passenger_exist"),
-                            translate("home.passenger_exist_error"),
-                          );
-                        }
-                      },
-                    );
-                  }
-                },
+                onTap: _onAddPassenger,
                 child: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
@@ -784,8 +1096,12 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
             itemBuilder: (context, index) => PassengersContainer(
               passenger: passengers[index],
               onEdit: (data) {
-                if (data.fullName.isNotEmpty && data != passengers[index]) {
-                  setState(() => passengers[index] = data);
+                // Preserve the already-chosen pickup point across name/phone edits.
+                if (data.fullName.isNotEmpty) {
+                  setState(() {
+                    passengers[index].fullName = data.fullName;
+                    passengers[index].phoneNumber = data.phoneNumber;
+                  });
                 }
               },
               onDelete: () {
@@ -796,6 +1112,7 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                   });
                 }
               },
+              onSetLocation: () => _setPassengerLocation(index),
             ),
           ),
         ],
@@ -835,7 +1152,7 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                 color: AppTheme.gray,
               ),
               Text(
-                "${Utils.priceFormat((total * passengersNum).toString())} ${translate("currency")}",
+                "${Utils.priceFormat((total * passengers.length).toString())} ${translate("currency")}",
                 style: const TextStyle(
                   color: AppTheme.black,
                   fontSize: 18,
@@ -997,17 +1314,30 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
             child: Icon(icon, color: iconColor, size: 16),
           ),
           const SizedBox(width: 10),
-          Flexible(
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontFamily: AppTheme.fontFamily,
-                fontSize: 13,
-                color: AppTheme.gray,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ),
+          // When an Expanded value (child) follows, the label must NOT take a
+          // flex share — otherwise label and value split the row 50/50 and the
+          // value right-aligns to the middle, leaving empty space on the right.
+          child != null
+              ? Text(
+                  label,
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 13,
+                    color: AppTheme.gray,
+                    fontWeight: FontWeight.w400,
+                  ),
+                )
+              : Flexible(
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 13,
+                      color: AppTheme.gray,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
           if (child != null) ...[const SizedBox(width: 8), child],
           if (valueWidget != null) ...[const Spacer(), valueWidget],
           if (value != null) ...[
@@ -1028,27 +1358,6 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
   }
 
   Widget _divider() => const Divider(height: 1, color: AppTheme.border);
-
-  Widget _mapPinButton(VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: AppTheme.light,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppTheme.border),
-        ),
-        child: SvgPicture.asset(
-          "assets/icons/map_pin.svg",
-          colorFilter:
-              const ColorFilter.mode(AppTheme.purple, BlendMode.srcIn),
-        ),
-      ),
-    );
-  }
 
   /// Backend-provided link when available, otherwise a directions deep link
   /// built from the trip coordinates. Both open the installed Google Maps
@@ -1107,6 +1416,8 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
   }
 
   Widget _routeMapButton() {
+    // Exact route is revealed only after the user has booked this trip.
+    final showExact = widget.isBooked;
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -1119,6 +1430,7 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                   double.parse(widget.trip.endLong)),
               startText: from,
               endText: to,
+              approximate: !showExact,
             ),
           ),
         );
@@ -1135,10 +1447,11 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.route_rounded, color: AppTheme.purple, size: 18),
+            Icon(showExact ? Icons.route_rounded : Icons.map_outlined,
+                color: AppTheme.purple, size: 18),
             const SizedBox(width: 8),
             Text(
-              translate("home.view_route_map"),
+              translate("home.show_on_map"),
               style: const TextStyle(
                 color: AppTheme.purple,
                 fontSize: 14,

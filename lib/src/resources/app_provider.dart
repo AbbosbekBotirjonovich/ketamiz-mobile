@@ -355,6 +355,8 @@ class ApiProvider {
           .map((e) => {
                 "name": e.fullName,
                 "phone": e.phoneNumber,
+                "longitude": e.longitude,
+                "latitude": e.latitude,
               })
           .toList(),
     };
@@ -371,6 +373,12 @@ class ApiProvider {
   Future<HttpResult> fetchOneBookedTrip(String tripId) async {
     String url = '$baseUrl/client/trips/booking/$tripId';
     return await getRequest(url);
+  }
+
+  /// Cancel a client's booking
+  Future<HttpResult> fetchCancelBooking(String bookingId) async {
+    String url = '$baseUrl/client/booking/$bookingId';
+    return await deleteRequest(url);
   }
 
   /// Get In-Progress Trips

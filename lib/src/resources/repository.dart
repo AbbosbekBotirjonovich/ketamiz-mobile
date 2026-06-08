@@ -206,6 +206,9 @@ class Repository {
   Future<HttpResult> fetchCancelDriverTrip(String tripId) =>
       apiProvider.fetchCancelDriverTrip(tripId);
 
+  Future<HttpResult> fetchCancelBooking(String bookingId) =>
+      apiProvider.fetchCancelBooking(bookingId);
+
   Future<HttpResult> fetchCardList() => apiProvider.fetchCardList();
 
   Future<HttpResult> fetchAddCreditCard(

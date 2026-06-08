@@ -8,6 +8,7 @@ import 'package:ketamiz/src/model/api/book_model.dart';
 import 'package:ketamiz/src/model/api/driver_trips_list_model.dart';
 import 'package:ketamiz/src/model/api/trip_list_model.dart';
 import 'package:ketamiz/src/theme/app_theme.dart';
+import 'package:ketamiz/src/ui/menu/home/booked_trip_details_screen.dart';
 import 'package:ketamiz/src/ui/menu/home/trip_details_screen.dart';
 import 'package:ketamiz/src/ui/menu/new_ketamiz/add_docs_screen.dart';
 import 'package:ketamiz/src/ui/menu/new_ketamiz/create_new_ketamiz_screen.dart';
@@ -251,7 +252,21 @@ class _TripsScreenState extends State<TripsScreen> {
                 itemCount: bookings.length,
                 itemBuilder: (context, i) => Column(
                   children: [
-                    HistoryContainer(booking: bookings[i]),
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () async {
+                        final cancelled = await Navigator.push<bool>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                BookedTripDetailsScreen(booking: bookings[i]),
+                          ),
+                        );
+                        // Refresh the list if the booking was cancelled.
+                        if (cancelled == true) _fetch();
+                      },
+                      child: HistoryContainer(booking: bookings[i]),
+                    ),
                     if (i < bookings.length - 1) const SizedBox(height: 16),
                   ],
                 ),
@@ -319,6 +334,7 @@ class _TripsScreenState extends State<TripsScreen> {
                       builder: (_) => TripDetailsScreen(
                         trip: _toTripListModel(trips[i]),
                         isDriver: true,
+                        bookings: trips[i].bookings,
                       ),
                     ),
                   ),

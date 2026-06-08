@@ -282,6 +282,8 @@ class _NewKetamizState extends State<NewKetamiz> {
                                                       TripDetailsScreen(
                                                         trip: tripListModel,
                                                         isDriver: true,
+                                                        bookings:
+                                                            trips[index].bookings,
                                                       ),
                                                 ),
                                               );

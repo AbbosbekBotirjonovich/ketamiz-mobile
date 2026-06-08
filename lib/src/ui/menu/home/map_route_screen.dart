@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_translate/flutter_translate.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -9,11 +10,16 @@ import '../../widgets/buttons/primary_button.dart';
 
 /// Route between two points on a free OpenStreetMap (Leaflet-style) map.
 /// Routing uses the public OSRM server; falls back to a straight line.
+///
+/// In [approximate] mode (client hasn't booked yet) the exact start/end are
+/// hidden — only 25 km circles are drawn so the rough area is visible but
+/// the precise pickup/drop-off points are not revealed.
 class MapRouteScreen extends StatefulWidget {
   final LatLng start;
   final LatLng end;
   final String startText;
   final String endText;
+  final bool approximate;
 
   const MapRouteScreen({
     super.key,
@@ -21,6 +27,7 @@ class MapRouteScreen extends StatefulWidget {
     required this.end,
     required this.startText,
     required this.endText,
+    this.approximate = false,
   });
 
   @override
@@ -28,12 +35,20 @@ class MapRouteScreen extends StatefulWidget {
 }
 
 class _MapRouteScreenState extends State<MapRouteScreen> {
+  // Radius (metres) of the privacy circle drawn around unbooked trips.
+  static const double _approxRadiusMeters = 25000;
+
   List<LatLng> _routePoints = [];
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    if (widget.approximate) {
+      // No exact route while location is obscured.
+      isLoading = false;
+      return;
+    }
     // Straight line as immediate fallback; replaced by the road route.
     _routePoints = [widget.start, widget.end];
     _fetchRoute();
@@ -95,6 +110,24 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
     return points;
   }
 
+  /// Bounds that include the full 25 km circles when in approximate mode,
+  /// so neither circle is clipped at the screen edge.
+  LatLngBounds get _cameraBounds {
+    if (!widget.approximate) {
+      return LatLngBounds(widget.start, widget.end);
+    }
+    // ~0.25° latitude ≈ 27 km — enough padding to show both circles.
+    const pad = 0.27;
+    final lats = [widget.start.latitude, widget.end.latitude];
+    final lngs = [widget.start.longitude, widget.end.longitude];
+    return LatLngBounds(
+      LatLng(lats.reduce((a, b) => a < b ? a : b) - pad,
+          lngs.reduce((a, b) => a < b ? a : b) - pad),
+      LatLng(lats.reduce((a, b) => a > b ? a : b) + pad,
+          lngs.reduce((a, b) => a > b ? a : b) + pad),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -104,7 +137,7 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
           FlutterMap(
             options: MapOptions(
               initialCameraFit: CameraFit.bounds(
-                bounds: LatLngBounds(widget.start, widget.end),
+                bounds: _cameraBounds,
                 padding: const EdgeInsets.fromLTRB(48, 230, 48, 140),
               ),
               interactionOptions: const InteractionOptions(
@@ -116,41 +149,65 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'uz.ketamiz.app',
               ),
-              PolylineLayer(
-                polylines: [
-                  Polyline(
-                    points: _routePoints,
-                    color: AppTheme.purple,
-                    strokeWidth: 5,
-                  ),
-                ],
-              ),
-              MarkerLayer(
-                markers: [
-                  Marker(
-                    point: widget.start,
-                    width: 40,
-                    height: 40,
-                    alignment: Alignment.topCenter,
-                    child: const Icon(
-                      Icons.location_on,
-                      color: AppTheme.green,
-                      size: 40,
+              if (widget.approximate)
+                // Privacy circles — exact points hidden until booked.
+                CircleLayer(
+                  circles: [
+                    CircleMarker(
+                      point: widget.start,
+                      radius: _approxRadiusMeters,
+                      useRadiusInMeter: true,
+                      color: AppTheme.green.withOpacity(0.18),
+                      borderColor: AppTheme.green.withOpacity(0.6),
+                      borderStrokeWidth: 2,
                     ),
-                  ),
-                  Marker(
-                    point: widget.end,
-                    width: 40,
-                    height: 40,
-                    alignment: Alignment.topCenter,
-                    child: const Icon(
-                      Icons.location_on,
-                      color: AppTheme.red,
-                      size: 40,
+                    CircleMarker(
+                      point: widget.end,
+                      radius: _approxRadiusMeters,
+                      useRadiusInMeter: true,
+                      color: AppTheme.red.withOpacity(0.18),
+                      borderColor: AppTheme.red.withOpacity(0.6),
+                      borderStrokeWidth: 2,
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                )
+              else ...[
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: _routePoints,
+                      color: AppTheme.purple,
+                      strokeWidth: 5,
+                    ),
+                  ],
+                ),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: widget.start,
+                      width: 40,
+                      height: 40,
+                      alignment: Alignment.topCenter,
+                      child: const Icon(
+                        Icons.location_on,
+                        color: AppTheme.green,
+                        size: 40,
+                      ),
+                    ),
+                    Marker(
+                      point: widget.end,
+                      width: 40,
+                      height: 40,
+                      alignment: Alignment.topCenter,
+                      child: const Icon(
+                        Icons.location_on,
+                        color: AppTheme.red,
+                        size: 40,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SimpleAttributionWidget(
                 source: Text('OpenStreetMap contributors'),
               ),
@@ -244,6 +301,36 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
                 ),
               ),
               const Spacer(),
+              if (widget.approximate)
+                Container(
+                  width: MediaQuery.of(context).size.width - 32,
+                  margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.blue.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppTheme.blue, width: 1),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.lock_outline_rounded,
+                          color: AppTheme.blue, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          translate("home.approximate_location_note"),
+                          style: const TextStyle(
+                            fontFamily: AppTheme.fontFamily,
+                            fontSize: 13,
+                            color: AppTheme.blue,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               Padding(
                 padding: const EdgeInsets.only(
                   bottom: 32,
