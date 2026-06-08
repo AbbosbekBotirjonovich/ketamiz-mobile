@@ -44,12 +44,7 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.approximate) {
-      // No exact route while location is obscured.
-      isLoading = false;
-      return;
-    }
-    // Straight line as immediate fallback; replaced by the road route.
+    // Route is fetched in both modes — circles obscure exact points in approximate mode.
     _routePoints = [widget.start, widget.end];
     _fetchRoute();
   }
@@ -149,8 +144,19 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'uz.ketamiz.app',
               ),
+              // Route line — always drawn; circles cover exact endpoints in approximate mode.
+              if (_routePoints.length >= 2)
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: _routePoints,
+                      color: AppTheme.purple,
+                      strokeWidth: 5,
+                    ),
+                  ],
+                ),
               if (widget.approximate)
-                // Privacy circles — exact points hidden until booked.
+                // Privacy circles — exact points fully obscured until booked.
                 CircleLayer(
                   circles: [
                     CircleMarker(
@@ -171,16 +177,7 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
                     ),
                   ],
                 )
-              else ...[
-                PolylineLayer(
-                  polylines: [
-                    Polyline(
-                      points: _routePoints,
-                      color: AppTheme.purple,
-                      strokeWidth: 5,
-                    ),
-                  ],
-                ),
+              else
                 MarkerLayer(
                   markers: [
                     Marker(
@@ -207,7 +204,6 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
                     ),
                   ],
                 ),
-              ],
               const SimpleAttributionWidget(
                 source: Text('OpenStreetMap contributors'),
               ),
@@ -216,84 +212,72 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
           Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              const SizedBox(height: 64),
+              const SizedBox(height: 52),
               Container(
-                width: MediaQuery.of(context).size.width - 32,
-                padding: const EdgeInsets.all(16),
-                margin: const EdgeInsets.only(left: 16),
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(32),
-                  border: Border.all(color: AppTheme.black),
+                  borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      spreadRadius: 15,
-                      blurRadius: 25,
-                      offset: const Offset(0, 5),
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.location_on,
-                      color: AppTheme.green,
-                      size: 24,
-                    ),
+                    const Icon(Icons.radio_button_checked_rounded,
+                        color: AppTheme.green, size: 16),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         widget.startText,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontFamily: AppTheme.fontFamily,
-                          fontSize: 16,
+                          fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          height: 1.5,
                           color: AppTheme.black,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 6),
               Container(
-                width: MediaQuery.of(context).size.width - 32,
-                padding: const EdgeInsets.all(16),
-                margin: const EdgeInsets.only(left: 16),
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(32),
-                  border: Border.all(color: AppTheme.black),
+                  borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      spreadRadius: 15,
-                      blurRadius: 25,
-                      offset: const Offset(0, 5),
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.location_on,
-                      color: AppTheme.red,
-                      size: 24,
-                    ),
+                    const Icon(Icons.location_on_rounded,
+                        color: AppTheme.red, size: 16),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         widget.endText,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontFamily: AppTheme.fontFamily,
-                          fontSize: 16,
+                          fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          height: 1.5,
                           color: AppTheme.black,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ),
@@ -303,19 +287,26 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
               const Spacer(),
               if (widget.approximate)
                 Container(
-                  width: MediaQuery.of(context).size.width - 32,
                   margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppTheme.blue.withOpacity(0.15),
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppTheme.blue, width: 1),
+                    border: Border.all(
+                        color: AppTheme.red.withOpacity(0.3), width: 1),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Icon(Icons.lock_outline_rounded,
-                          color: AppTheme.blue, size: 20),
+                          color: AppTheme.red, size: 20),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -323,7 +314,7 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
                           style: const TextStyle(
                             fontFamily: AppTheme.fontFamily,
                             fontSize: 13,
-                            color: AppTheme.blue,
+                            color: AppTheme.red,
                             fontWeight: FontWeight.w500,
                           ),
                         ),

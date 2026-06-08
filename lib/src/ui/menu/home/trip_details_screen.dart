@@ -845,29 +845,20 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
             ),
           ),
           _divider(),
-          Row(
-            children: [
-              // Seats only matter while the trip is still bookable.
-              if (_isActive) ...[
-                Expanded(
-                  child: _infoRow(
-                    icon: Icons.event_seat_rounded,
-                    iconColor: _seatsColor,
-                    label: translate("home.available_seats"),
-                    value: "${widget.trip.availableSeats}",
-                  ),
-                ),
-                const SizedBox(width: 12),
-              ],
-              Expanded(
-                child: _infoRow(
-                  icon: Icons.payments_rounded,
-                  iconColor: AppTheme.purple,
-                  label: translate("home.price_per_seat"),
-                  value: "${Utils.priceFormat(pricePerSeat)} ${translate("currency")}",
-                ),
-              ),
-            ],
+          if (_isActive) ...[
+            _infoRow(
+              icon: Icons.event_seat_rounded,
+              iconColor: _seatsColor,
+              label: translate("home.available_seats"),
+              value: "${widget.trip.availableSeats}",
+            ),
+            _divider(),
+          ],
+          _infoRow(
+            icon: Icons.payments_rounded,
+            iconColor: AppTheme.purple,
+            label: translate("home.price_per_seat"),
+            value: "${Utils.priceFormat(pricePerSeat)} ${translate("currency")}",
           ),
           const SizedBox(height: 14),
           // Map actions:
