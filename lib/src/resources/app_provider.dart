@@ -14,10 +14,6 @@ class ApiProvider {
   static String get baseUrl => kIsWeb
       ? "http://localhost:8081/api/v1"
       : "https://qadam.services/api/v1";
-  static const String mapsApiKey = String.fromEnvironment(
-    'MAPS_API_KEY',
-    defaultValue: 'AIzaSyAtf7hud1ntObeLKiYCNrM967iMDtWkMag',
-  );
 
   /// Shared HTTP client. Reused across all requests so the underlying
   /// connection is kept alive/pooled instead of opening a new socket each
@@ -179,7 +175,8 @@ class ApiProvider {
     final data = {
       "first_name": firstName,
       "last_name": lastName,
-      "father_name": fatherName,
+      // Optional — omit entirely when empty so backend validation passes.
+      if (fatherName.trim().isNotEmpty) "father_name": fatherName,
       "email": email,
       "phone": phone,
       "password": password,
@@ -358,6 +355,8 @@ class ApiProvider {
           .map((e) => {
                 "name": e.fullName,
                 "phone": e.phoneNumber,
+                "longitude": e.longitude,
+                "latitude": e.latitude,
               })
           .toList(),
     };
@@ -374,6 +373,12 @@ class ApiProvider {
   Future<HttpResult> fetchOneBookedTrip(String tripId) async {
     String url = '$baseUrl/client/trips/booking/$tripId';
     return await getRequest(url);
+  }
+
+  /// Cancel a client's booking
+  Future<HttpResult> fetchCancelBooking(String bookingId) async {
+    String url = '$baseUrl/client/booking/$bookingId';
+    return await deleteRequest(url);
   }
 
   /// Get In-Progress Trips
@@ -394,24 +399,37 @@ class ApiProvider {
     return await getRequest(url);
   }
 
+  /// JPEG mime type for image parts — without an explicit contentType Dio
+  /// sends multipart parts as application/octet-stream, which backends may
+  /// store/serve as a non-image file that won't open.
+  static final DioMediaType _jpegMediaType = DioMediaType('image', 'jpeg');
+
+  static int _resizeCounter = 0;
+
   Future<File> _resizeImage(File file,
       {int maxWidth = 1280, int quality = 75}) async {
     final bytes = await file.readAsBytes();
-    img.Image? image =
-        img.decodeImage(bytes); // return original if decoding fails
+    img.Image? image = img.decodeImage(bytes);
+
+    // Undecodable input — upload the original file untouched rather than
+    // crashing on the null assert.
+    if (image == null) return file;
 
     // Resize proportionally if wider than maxWidth
-    if (image!.width > maxWidth) {
+    if (image.width > maxWidth) {
       image = img.copyResize(image, width: maxWidth);
     }
 
     // Encode as JPEG with compression
     final resizedBytes = img.encodeJpg(image, quality: quality);
 
-    // Save into a temporary file
+    // Save into a temporary file. The counter guarantees a unique name even
+    // when several images are resized within the same millisecond — with a
+    // timestamp alone, a collision silently overwrites the previous file
+    // while its multipart part still points at the same path.
     final tempDir = Directory.systemTemp;
     final resizedFile = File(
-      '${tempDir.path}/resized_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      '${tempDir.path}/resized_${DateTime.now().millisecondsSinceEpoch}_${_resizeCounter++}.jpg',
     );
     await resizedFile.writeAsBytes(resizedBytes, flush: true);
 
@@ -450,24 +468,27 @@ class ApiProvider {
     final List<File> tempFiles = [];
     try {
       final front = await _resizeImage(File(drivingLicenceFrontPath));
-      tempFiles.add(front);
+      if (front.path != drivingLicenceFrontPath) tempFiles.add(front);
       final back = await _resizeImage(File(drivingLicenceBackPath));
-      tempFiles.add(back);
+      if (back.path != drivingLicenceBackPath) tempFiles.add(back);
       final passport = await _resizeImage(File(passportPath));
-      tempFiles.add(passport);
+      if (passport.path != passportPath) tempFiles.add(passport);
 
       final bodyMap = <String, dynamic>{
         "driving_licence_front": await MultipartFile.fromFile(
           front.path,
           filename: basename(front.path),
+          contentType: _jpegMediaType,
         ),
         "driving_licence_back": await MultipartFile.fromFile(
           back.path,
           filename: basename(back.path),
+          contentType: _jpegMediaType,
         ),
         "driver_passport_image": await MultipartFile.fromFile(
           passport.path,
           filename: basename(passport.path),
+          contentType: _jpegMediaType,
         ),
       };
 
@@ -561,18 +582,20 @@ class ApiProvider {
     try {
       if (techPassportFront.isNotEmpty) {
         File resizedFront = await _resizeImage(File(techPassportFront));
-        tempFiles.add(resizedFront);
+        if (resizedFront.path != techPassportFront) tempFiles.add(resizedFront);
         bodyMap['tech_passport_front'] = await MultipartFile.fromFile(
           resizedFront.path,
           filename: basename(resizedFront.path),
+          contentType: _jpegMediaType,
         );
       }
       if (techPassportBack.isNotEmpty) {
         File resizedBack = await _resizeImage(File(techPassportBack));
-        tempFiles.add(resizedBack);
+        if (resizedBack.path != techPassportBack) tempFiles.add(resizedBack);
         bodyMap['tech_passport_back'] = await MultipartFile.fromFile(
           resizedBack.path,
           filename: basename(resizedBack.path),
+          contentType: _jpegMediaType,
         );
       }
 
@@ -580,10 +603,11 @@ class ApiProvider {
         List<MultipartFile> carFiles = [];
         for (var path in carImages) {
           File resizedCarImage = await _resizeImage(File(path));
-          tempFiles.add(resizedCarImage);
+          if (resizedCarImage.path != path) tempFiles.add(resizedCarImage);
           carFiles.add(await MultipartFile.fromFile(
-              resizedCarImage.path,
-              filename: basename(resizedCarImage.path)
+            resizedCarImage.path,
+            filename: basename(resizedCarImage.path),
+            contentType: _jpegMediaType,
           ));
         }
         bodyMap['car_images[]'] = carFiles;
@@ -737,6 +761,19 @@ class ApiProvider {
   Future<HttpResult> fetchTransactionList() async {
     String url = '$baseUrl/user/balance-transactions';
     return await getRequest(url);
+  }
+
+  /// Get My Withdraw Requests
+  Future<HttpResult> fetchWithdrawList() async {
+    String url = '$baseUrl/withdraw';
+    return await getRequest(url);
+  }
+
+  /// Create Withdraw Request
+  Future<HttpResult> fetchWithdraw(String amount) async {
+    String url = '$baseUrl/withdraw';
+    final data = {"amount": amount};
+    return await postRequest(url, data);
   }
 
   /// GET Request using Dio (DELETE method)

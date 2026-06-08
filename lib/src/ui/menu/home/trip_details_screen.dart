@@ -1,54 +1,78 @@
-import 'package:dotted_line/dotted_line.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:ketamiz/src/ui/dialogs/bottom_dialog.dart';
 import 'package:ketamiz/src/ui/dialogs/center_dialog.dart';
 import 'package:ketamiz/src/ui/menu/home/map_single_screen.dart';
 import 'package:ketamiz/src/ui/menu/home/payment_screen.dart';
+import 'package:ketamiz/src/ui/menu/new_ketamiz/map_select_screen.dart';
 import 'package:ketamiz/src/ui/menu/main_screen.dart';
-import 'package:ketamiz/src/ui/widgets/buttons/secondary_button.dart';
-import '../../dialogs/snack_bar.dart';
 import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
 import 'package:ketamiz/src/ui/widgets/containers/passengers_container.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_14h_400w.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
 import 'package:ketamiz/src/utils/utils.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../lan_localization/load_places.dart';
 import '../../../model/api/trip_list_model.dart';
 import '../../../model/location_model.dart';
 import '../../../model/passenger_model.dart';
 import '../../../resources/repository.dart';
 import '../../../theme/app_theme.dart';
-import '../../widgets/texts/text_12h_400w.dart';
+import '../../dialogs/snack_bar.dart';
 import 'map_route_screen.dart';
+
+/// How a passenger's pickup point is chosen when others already have one.
+enum _PickupChoice { same, map }
+
+/// A passenger on a driver's own trip — shown read-only in the driver view.
+class _BookedPassenger {
+  final String name;
+  final String phone;
+  final String lat;
+  final String lng;
+
+  _BookedPassenger(this.name, this.phone, this.lat, this.lng);
+
+  bool get hasLocation =>
+      lat.isNotEmpty &&
+      lng.isNotEmpty &&
+      lat != '0' &&
+      lng != '0' &&
+      double.tryParse(lat) != null &&
+      double.tryParse(lng) != null;
+}
 
 class TripDetailsScreen extends StatefulWidget {
   const TripDetailsScreen({
     super.key,
     required this.trip,
     this.isDriver = false,
+    this.isBooked = false,
+    this.bookings = const [],
   });
 
   final TripListModel trip;
   final bool isDriver;
+
+  /// Whether the current user has already booked this trip. Controls whether
+  /// the exact route is shown on the map or only an approximate 25 km area.
+  final bool isBooked;
+
+  /// Raw bookings for this trip — only used in the driver view to list who
+  /// booked, their contact numbers and pickup locations.
+  final List<dynamic> bookings;
 
   @override
   State<TripDetailsScreen> createState() => _TripDetailsScreenState();
 }
 
 class _TripDetailsScreenState extends State<TripDetailsScreen> {
-  static final _unknownLocation = LocationModel(id: "0", text: "—", parentID: "0");
+  static final _unknownLocation =
+      LocationModel(id: "0", text: "—", parentID: "0");
 
   String pricePerSeat = "";
   int passengersNum = 1;
-
-  String weekDay = '';
-  String month = '';
-  String t1 = '';
-  String m1 = '';
-  String h1 = '';
 
   String from = '';
   String to = '';
@@ -63,713 +87,1107 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
   List<PassengerModel> passengers = [];
   bool _isCancelling = false;
 
+  /// True when the logged-in user is the driver of this trip — they can't
+  /// book their own trip, so no passenger form should appear.
+  bool _isOwnTrip = false;
+
+  /// Parsed bookings for the driver view.
+  List<_BookedPassenger> _bookedPassengers = [];
+
   @override
   void initState() {
     super.initState();
-    if (widget.trip.pricePerSeat.contains(".")) {
-      pricePerSeat = widget.trip.pricePerSeat.split(".")[0];
-    } else {
-      pricePerSeat = widget.trip.pricePerSeat;
-    }
-    initTimeState(widget.trip.startTime);
+    final p = widget.trip.pricePerSeat;
+    pricePerSeat = p.contains(".") ? p.split(".")[0] : p;
     setLocations();
-    _initFirstPassenger();
+    if (widget.isDriver) {
+      _bookedPassengers = _parseBookings(widget.bookings);
+    } else {
+      _initFirstPassenger();
+    }
+  }
+
+  /// Flatten the trip's bookings into a flat passenger list. Handles both
+  /// shapes seen from the API: a booking with a nested `passengers` array, or
+  /// a booking that is itself the passenger record.
+  List<_BookedPassenger> _parseBookings(List<dynamic> bookings) {
+    final result = <_BookedPassenger>[];
+
+    String pick(Map m, List<String> keys) {
+      for (final k in keys) {
+        final v = m[k];
+        if (v != null && v.toString().isNotEmpty) return v.toString();
+      }
+      return '';
+    }
+
+    void addFrom(Map m) {
+      result.add(_BookedPassenger(
+        pick(m, ['name', 'full_name', 'fullName']),
+        pick(m, ['phone', 'phone_number', 'phoneNumber']),
+        pick(m, ['latitude', 'lat']),
+        pick(m, ['longitude', 'long', 'lng']),
+      ));
+    }
+
+    for (final b in bookings) {
+      if (b is! Map) continue;
+      final passengers = b['passengers'];
+      if (passengers is List && passengers.isNotEmpty) {
+        for (final p in passengers) {
+          if (p is Map) addFrom(p);
+        }
+      } else {
+        addFrom(b);
+      }
+    }
+    return result
+        .where((p) => p.name.isNotEmpty || p.phone.isNotEmpty)
+        .toList();
   }
 
   Future<void> _initFirstPassenger() async {
     final user = await Repository().appCache.cacheGetMe();
     if (!mounted) return;
+    // The trip's own driver isn't a passenger — never prefill them.
+    if (user.id != 0 && user.id == widget.trip.driver.id) {
+      setState(() => _isOwnTrip = true);
+      return;
+    }
+    final fullName = "${user.firstName} ${user.lastName}".trim();
+    // Nothing cached to prefill — start with an empty list so the user
+    // adds passenger details (name + phone) explicitly.
+    if (fullName.isEmpty && user.phone.isEmpty) {
+      setState(() {
+        passengers = [];
+        passengersNum = 0;
+      });
+      return;
+    }
     setState(() {
       passengers = [
         PassengerModel(
-          fullName: "${user.firstName} ${user.lastName}".trim(),
+          fullName: fullName,
           phoneNumber: user.phone,
         ),
       ];
     });
   }
 
-  void setLocations() {
-    fromRegion = LocationData.regions
-        .firstWhere((r) => r.id == widget.trip.fromRegionId.toString(),
-            orElse: () => _unknownLocation)
-        .text;
-    fromCity = LocationData.cities
-        .firstWhere((c) => c.id == widget.trip.fromCityId.toString(),
-            orElse: () => _unknownLocation)
-        .text;
-    fromNeighborhood = LocationData.villages
-        .firstWhere((n) => n.id == widget.trip.fromVillageId.toString(),
-            orElse: () => _unknownLocation)
-        .text;
+  /// Booking needs at least one passenger, each with name, phone AND a pickup
+  /// location — that's what the booking API sends per seat.
+  bool _validatePassengers() {
+    final incomplete = passengers.isEmpty ||
+        passengers.any((p) =>
+            p.fullName.trim().isEmpty ||
+            p.phoneNumber.trim().isEmpty ||
+            !p.hasLocation);
+    if (incomplete) {
+      CenterDialog.showActionFailed(
+        context,
+        translate("home.passenger_info"),
+        translate("home.fill_passenger_details"),
+      );
+    }
+    return !incomplete;
+  }
 
-    toRegion = LocationData.regions
-        .firstWhere((r) => r.id == widget.trip.toRegionId.toString(),
-            orElse: () => _unknownLocation)
-        .text;
-    toCity = LocationData.cities
-        .firstWhere((c) => c.id == widget.trip.toCityId.toString(),
-            orElse: () => _unknownLocation)
-        .text;
-    toNeighborhood = LocationData.villages
-        .firstWhere((n) => n.id == widget.trip.toVillageId.toString(),
-            orElse: () => _unknownLocation)
-        .text;
+  /// Add a passenger: collect name + phone, then a pickup location.
+  void _onAddPassenger() {
+    if (passengers.length >= widget.trip.availableSeats) {
+      CenterDialog.showActionFailed(
+        context,
+        translate("home.passenger_info"),
+        translate("home.no_seats_left"),
+      );
+      return;
+    }
+    BottomDialog.showAddPassenger(
+      context,
+      PassengerModel(fullName: ""),
+      (data) async {
+        final exists =
+            passengers.any((p) => p.fullName == data.fullName);
+        if (exists || data.fullName.isEmpty) {
+          CenterDialog.showActionFailed(
+            context,
+            translate("home.passenger_exist"),
+            translate("home.passenger_exist_error"),
+          );
+          return;
+        }
+        setState(() {
+          passengers.add(data);
+          passengersNum++;
+        });
+        // Immediately prompt for this passenger's pickup point.
+        await _setPassengerLocation(passengers.length - 1);
+      },
+    );
+  }
 
-    from = "$fromNeighborhood, $fromCity, $fromRegion";
-    to = "$toNeighborhood, $toCity, $toRegion";
+  /// Choose a pickup point for [index]. If other passengers already have a
+  /// location, offer to reuse it (family booking) or pick a new one (friend).
+  Future<void> _setPassengerLocation(int index) async {
+    if (index < 0 || index >= passengers.length) return;
+
+    final others = <PassengerModel>[
+      for (var i = 0; i < passengers.length; i++)
+        if (i != index && passengers[i].hasLocation) passengers[i]
+    ];
+
+    LatLng? picked;
+    if (others.isNotEmpty) {
+      final choice = await _showPickupChoice();
+      if (choice == null || !mounted) return; // cancelled
+      if (choice == _PickupChoice.same) {
+        picked = LatLng(
+          double.parse(others.first.latitude),
+          double.parse(others.first.longitude),
+        );
+      }
+    }
+
+    if (!mounted) return;
+    picked ??= await Navigator.push<LatLng>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapSelectScreen(
+          place: from,
+          onSelected: (_) {},
+        ),
+      ),
+    );
+
+    if (picked == null || !mounted) return;
+    setState(() {
+      passengers[index].latitude = picked!.latitude.toString();
+      passengers[index].longitude = picked.longitude.toString();
+    });
+  }
+
+  /// Bottom sheet: reuse another passenger's pickup point or pick on the map.
+  Future<_PickupChoice?> _showPickupChoice() {
+    return showModalBottomSheet<_PickupChoice>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppTheme.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text16h500w(title: translate("home.pickup_location")),
+              const SizedBox(height: 16),
+              _pickupOption(
+                icon: Icons.people_alt_outlined,
+                label: translate("home.pickup_same_as_others"),
+                onTap: () =>
+                    Navigator.pop(sheetContext, _PickupChoice.same),
+              ),
+              const SizedBox(height: 12),
+              _pickupOption(
+                icon: Icons.map_outlined,
+                label: translate("home.pickup_choose_on_map"),
+                onTap: () =>
+                    Navigator.pop(sheetContext, _PickupChoice.map),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _pickupOption({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppTheme.light,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppTheme.purple, size: 22),
+            const SizedBox(width: 12),
+            Expanded(child: Text16h500w(title: label)),
+            const Icon(Icons.chevron_right, color: AppTheme.gray, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> setLocations() async {
+    final trip = widget.trip;
+
+    if (trip.fromRegion.isNotEmpty ||
+        trip.fromCity.isNotEmpty ||
+        trip.fromVillage.isNotEmpty) {
+      fromRegion = trip.fromRegion;
+      fromCity = trip.fromCity;
+      fromNeighborhood = trip.fromVillage;
+      toRegion = trip.toRegion;
+      toCity = trip.toCity;
+      toNeighborhood = trip.toVillage;
+    } else {
+      if (LocationData.regions.isEmpty) {
+        await LocationData.loadPlaces(context);
+      }
+      fromRegion = LocationData.regions
+          .firstWhere((r) => r.id == trip.fromRegionId.toString(),
+              orElse: () => _unknownLocation)
+          .text;
+      fromCity = LocationData.cities
+          .firstWhere((c) => c.id == trip.fromCityId.toString(),
+              orElse: () => _unknownLocation)
+          .text;
+      fromNeighborhood = LocationData.villages
+          .firstWhere((n) => n.id == trip.fromVillageId.toString(),
+              orElse: () => _unknownLocation)
+          .text;
+      toRegion = LocationData.regions
+          .firstWhere((r) => r.id == trip.toRegionId.toString(),
+              orElse: () => _unknownLocation)
+          .text;
+      toCity = LocationData.cities
+          .firstWhere((c) => c.id == trip.toCityId.toString(),
+              orElse: () => _unknownLocation)
+          .text;
+      toNeighborhood = LocationData.villages
+          .firstWhere((n) => n.id == trip.toVillageId.toString(),
+              orElse: () => _unknownLocation)
+          .text;
+    }
+
+    if (!mounted) return;
+    setState(() {
+      from = [fromNeighborhood, fromCity, fromRegion]
+          .where((s) => s.isNotEmpty && s != "—")
+          .join(", ");
+      to = [toNeighborhood, toCity, toRegion]
+          .where((s) => s.isNotEmpty && s != "—")
+          .join(", ");
+    });
+  }
+
+  Color get _seatsColor {
+    final s = widget.trip.availableSeats;
+    if (s <= 1) return AppTheme.red;
+    if (s <= 3) return AppTheme.yellow;
+    return AppTheme.green;
+  }
+
+  String get _status => widget.trip.status.toLowerCase();
+
+  /// Only active trips can still be booked or cancelled.
+  bool get _isActive => _status.isEmpty || _status == 'active';
+
+  Color get _statusColor {
+    switch (_status) {
+      case 'completed':
+        return AppTheme.green;
+      case 'canceled':
+      case 'cancelled':
+        return AppTheme.red;
+      default: // active / in_progress
+        return AppTheme.purple;
+    }
+  }
+
+  String get _statusText {
+    switch (_status) {
+      case 'active':
+        return translate('history.active');
+      case 'in_progress':
+        return translate('history.in_progress');
+      case 'completed':
+        return translate('history.completed');
+      case 'canceled':
+      case 'cancelled':
+        return translate('history.canceled');
+      default:
+        return widget.trip.status;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.light,
       appBar: AppBar(
         leading: const LeadingBack(),
         title: Text16h500w(title: translate("home.trip_details")),
         centerTitle: true,
         elevation: 0,
+        backgroundColor: Colors.white,
       ),
       body: Column(
         children: [
           Expanded(
             child: ListView(
-              shrinkWrap: true,
-              padding: const EdgeInsets.only(
-                top: 22,
-                left: 16,
-                right: 16,
-                bottom: 24,
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
               children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.dark.withOpacity(0.1),
-                        spreadRadius: 15,
-                        blurRadius: 25,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            "$h1:$m1 $t1",
-                            style: const TextStyle(
-                              color: AppTheme.black,
-                              fontSize: 14,
-                              fontFamily: AppTheme.fontFamily,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                          Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 8),
-                            width: 4,
-                            height: 4,
-                            decoration: const BoxDecoration(
-                              color: AppTheme.black,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          Text(
-                            "$weekDay, $month ${widget.trip.startTime.day}",
-                            style: const TextStyle(
-                              color: AppTheme.gray,
-                              fontSize: 14,
-                              fontFamily: AppTheme.fontFamily,
-                              fontWeight: FontWeight.normal,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text12h400w(
-                                  title: fromRegion,
-                                  color: AppTheme.gray,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  safeSubstring(fromNeighborhood, 3),
-                                  style: const TextStyle(
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontSize: 36,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.black,
-                                    letterSpacing: 1.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text12h400w(
-                                  title: fromCity,
-                                  color: AppTheme.gray,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: AppTheme.dark,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  DottedLine(
-                                    direction: Axis.horizontal,
-                                    lineThickness: 2,
-                                    lineLength:
-                                        ((MediaQuery.of(context).size.width -
-                                                        96) /
-                                                    3 -
-                                                40) /
-                                            2,
-                                    dashLength: 2,
-                                    dashColor: AppTheme.gray,
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.black,
-                                      borderRadius: BorderRadius.circular(24),
-                                    ),
-                                    child: SvgPicture.asset(
-                                      "assets/icons/car.svg",
-                                      height: 24, // Adjust size as needed
-                                      width: 24,
-                                      colorFilter: const ColorFilter.mode(
-                                        Colors.white,
-                                        BlendMode.srcIn,
-                                      ),
-                                    ),
-                                  ),
-                                  DottedLine(
-                                    direction: Axis.horizontal,
-                                    lineThickness: 2,
-                                    lineLength:
-                                        ((MediaQuery.of(context).size.width -
-                                                        96) /
-                                                    3 -
-                                                40) /
-                                            2,
-                                    dashLength: 2,
-                                    dashColor: AppTheme.gray,
-                                  ),
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: AppTheme.dark,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                widget.trip.vehicle.model,
-                                style: const TextStyle(
-                                  color: AppTheme.gray,
-                                  fontSize: 12,
-                                  fontFamily: AppTheme.fontFamily,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  toRegion,
-                                  style: const TextStyle(
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.normal,
-                                    height: 1.5,
-                                    color: AppTheme.gray,
-                                  ),
-                                  textAlign: TextAlign.end,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  safeSubstring(toNeighborhood, 3),
-                                  style: const TextStyle(
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontSize: 36,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.black,
-                                    letterSpacing: 1.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  toCity,
-                                  style: const TextStyle(
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.normal,
-                                    height: 1.5,
-                                    color: AppTheme.gray,
-                                  ),
-                                  textAlign: TextAlign.end,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text16h500w(title: translate("home.details")),
+                _buildRouteCard(),
                 const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.dark.withOpacity(0.1),
-                        spreadRadius: 15,
-                        blurRadius: 25,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text14h400w(
-                                  title: translate("home.travelling_from"),
-                                  color: AppTheme.gray,
-                                ),
-                                const SizedBox(height: 4),
-                                Text16h500w(
-                                  title: from,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => MapSingleScreen(
-                                    location: LatLng(
-                                      double.parse(widget.trip.startLat),
-                                      double.parse(widget.trip.startLong),
-                                    ),
-                                    place: from,
-                                  ),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              height: 40,
-                              width: 40,
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: AppTheme.light,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: SvgPicture.asset(
-                                "assets/icons/map_pin.svg",
-                                height: 24,
-                                width: 24,
-                                colorFilter: const ColorFilter.mode(
-                                  AppTheme.black,
-                                  BlendMode.srcIn,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text14h400w(
-                                  title: translate("home.where_to"),
-                                  color: AppTheme.gray,
-                                ),
-                                const SizedBox(height: 4),
-                                Text16h500w(
-                                  title: to,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => MapSingleScreen(
-                                    location: LatLng(
-                                      double.parse(widget.trip.endLat),
-                                      double.parse(widget.trip.endLong),
-                                    ),
-                                    place: to,
-                                  ),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              height: 40,
-                              width: 40,
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: AppTheme.light,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: SvgPicture.asset(
-                                "assets/icons/map_pin.svg",
-                                height: 24,
-                                width: 24,
-                                colorFilter: const ColorFilter.mode(
-                                  AppTheme.black,
-                                  BlendMode.srcIn,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text14h400w(
-                            title: translate("home.departure_date"),
-                            color: AppTheme.gray,
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text14h400w(
-                                title: Utils.scheduleDateFormat(
-                                    widget.trip.startTime),
-                                color: AppTheme.gray,
-                              ),
-                              const SizedBox(height: 4),
-                              Text16h500w(
-                                title:
-                                    "${widget.trip.startTime.hour == 0 ? 12 : (widget.trip.startTime.hour > 12 ? widget.trip.startTime.hour - 12 : widget.trip.startTime.hour)}:${widget.trip.startTime.minute.toString().padLeft(2, '0')} ${widget.trip.startTime.hour < 12 ? 'AM' : 'PM'}",
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text14h400w(
-                            title: translate("home.arrival_date"),
-                            color: AppTheme.gray,
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text14h400w(
-                                title: Utils.scheduleDateFormat(
-                                    widget.trip.startTime),
-                                color: AppTheme.gray,
-                              ),
-                              const SizedBox(height: 4),
-                              Text16h500w(
-                                title:
-                                    "${widget.trip.endTime.hour == 0 ? 12 : (widget.trip.endTime.hour > 12 ? widget.trip.endTime.hour - 12 : widget.trip.endTime.hour)}:${widget.trip.endTime.minute.toString().padLeft(2, '0')} ${widget.trip.endTime.hour < 12 ? 'AM' : 'PM'}",
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text14h400w(
-                                title: translate("home.available_seats"),
-                                color: AppTheme.gray,
-                              ),
-                              const SizedBox(height: 4),
-                              Text16h500w(
-                                  title: "${widget.trip.availableSeats}x"),
-                            ],
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text14h400w(
-                                title: translate("home.price_per_seat"),
-                                color: AppTheme.gray,
-                              ),
-                              const SizedBox(height: 4),
-                              Text16h500w(
-                                  title:
-                                      "${Utils.priceFormat(pricePerSeat)} ${translate("currency")}"),
-                            ],
-                          )
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      SecondaryButton(
-                        title: translate("home.view_route_map"),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) {
-                                return MapRouteScreen(
-                                  start: LatLng(
-                                      double.parse(widget.trip.startLat), double.parse(widget.trip.startLong)),
-                                  end: LatLng(
-                                      double.parse(widget.trip.endLat), double.parse(widget.trip.endLong)),
-                                  startText: from,
-                                  endText: to,
-                                );
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                if (!widget.isDriver) ...[
-                  const SizedBox(height: 24),
-                  Text16h500w(title: translate("home.passenger_info")),
+                _buildDetailsCard(),
+                // Driver view: who booked this trip (name, phone, location).
+                if (widget.isDriver) ...[
                   const SizedBox(height: 16),
-                  Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.dark.withOpacity(0.1),
-                                spreadRadius: 15,
-                                blurRadius: 25,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text14h400w(
-                                      title: translate("home.number_passenger"),
-                                      color: AppTheme.gray,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text16h500w(title: passengersNum.toString()),
-                                  const SizedBox(width: 12),
-                                  GestureDetector(
-                                    onTap: () {
-                                      if (passengersNum <
-                                          widget.trip.availableSeats) {
-                                        BottomDialog.showAddPassenger(
-                                          context,
-                                          PassengerModel(fullName: ""),
-                                          (data) {
-                                            bool isExist = false;
-                                            for (int i = 0;
-                                                i < passengers.length;
-                                                i++) {
-                                              if (passengers[i].fullName ==
-                                                  data.fullName) {
-                                                isExist = true;
-                                                break;
-                                              }
-                                            }
-                                            if (isExist == false &&
-                                                data.fullName != "") {
-                                              setState(() {
-                                                passengers.add(data);
-                                                passengersNum++;
-                                              });
-                                            } else {
-                                              CenterDialog.showActionFailed(
-                                                context,
-                                                translate("home.passenger_exist"),
-                                                translate(
-                                                    "home.passenger_exist_error"),
-                                              );
-                                            }
-                                          },
-                                        );
-                                      }
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.light,
-                                        borderRadius: BorderRadius.circular(24),
-                                      ),
-                                      child: const Icon(
-                                        Icons.add,
-                                        color: AppTheme.black,
-                                        size: 24,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              ListView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: passengers.length,
-                                  padding: EdgeInsets.zero,
-                                  itemBuilder: (context, index) {
-                                    return Column(
-                                      children: [
-                                        PassengersContainer(
-                                          passenger: passengers[index],
-                                          onEdit: (data) {
-                                            if (data.fullName != "" &&
-                                                data != passengers[index]) {
-                                              setState(() {
-                                                passengers[index] = data;
-                                              });
-                                            }
-                                          },
-                                          onDelete: () {
-                                            if (passengers.length > 1) {
-                                              setState(() {
-                                                passengers
-                                                    .remove(passengers[index]);
-                                                passengersNum--;
-                                              });
-                                            }
-                                          },
-                                        ),
-                                        index == passengers.length - 1
-                                            ? const SizedBox()
-                                            : const Divider(),
-                                      ],
-                                    );
-                                  })
-                            ],
-                          ),
-                        ),
+                  _buildBookedPassengersCard(),
+                ],
+                // Passenger form exists only for booking: active trip,
+                // client view, and not the viewer's own trip.
+                if (!widget.isDriver && _isActive && !_isOwnTrip) ...[
+                  const SizedBox(height: 16),
+                  _buildPassengerCard(),
                 ],
               ],
             ),
           ),
-          widget.isDriver ? _buildDriverBottomBar() : _buildPassengerBottomBar(),
+          // Booking and cancelling are only possible while the trip is
+          // active — in-progress/completed/cancelled trips get no action bar,
+          // and a driver can't book their own trip.
+          if (_isActive && (widget.isDriver || !_isOwnTrip))
+            widget.isDriver
+                ? _buildDriverBottomBar()
+                : _buildPassengerBottomBar(),
         ],
       ),
     );
   }
 
-  Widget _buildPassengerBottomBar() {
+  // ── Route hero card ────────────────────────────────────────────────────────
+  Widget _buildRouteCard() {
+    final driverName = widget.trip.driver.name.trim();
+    final vehicleModel = widget.trip.vehicle.model;
+
     return Container(
-      padding: const EdgeInsets.only(
-        bottom: 32,
-        top: 24,
-        left: 16,
-        right: 16,
-      ),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.dark.withOpacity(0.1),
-            spreadRadius: 15,
-            blurRadius: 25,
-            offset: const Offset(0, 5),
+            offset: const Offset(0, 4),
+            blurRadius: 16,
+            color: AppTheme.black.withValues(alpha: 0.06),
           ),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Status badge + seats badge (active only) + price row
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (widget.trip.status.isNotEmpty) ...[
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: _statusColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    _statusText,
+                    style: TextStyle(
+                      color: _statusColor,
+                      fontSize: 12,
+                      fontFamily: AppTheme.fontFamily,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              if (_isActive)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: _seatsColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    "${widget.trip.availableSeats} ${translate("home.seats_left")}",
+                    style: TextStyle(
+                      color: _seatsColor,
+                      fontSize: 12,
+                      fontFamily: AppTheme.fontFamily,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              const Spacer(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    "${Utils.priceFormat(pricePerSeat)} ${translate("currency")}",
+                    style: const TextStyle(
+                      color: AppTheme.black,
+                      fontSize: 17,
+                      fontFamily: AppTheme.fontFamily,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    translate("home.per_passenger"),
+                    style: const TextStyle(
+                      color: AppTheme.gray,
+                      fontSize: 11,
+                      fontFamily: AppTheme.fontFamily,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          // Timeline + places + driver block
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Vertical timeline
+              Column(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                      border: Border.all(color: AppTheme.purple, width: 2),
+                    ),
+                  ),
+                  ...List.generate(
+                    4,
+                    (_) => Container(
+                      margin: const EdgeInsets.symmetric(vertical: 2),
+                      width: 2,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: AppTheme.border,
+                        borderRadius: BorderRadius.circular(1),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppTheme.purple,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 12),
+              // Times + places
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      Utils.timeFormat(widget.trip.startTime),
+                      style: const TextStyle(
+                        color: AppTheme.black,
+                        fontSize: 16,
+                        fontFamily: AppTheme.fontFamily,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      from.isEmpty ? "—" : from,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppTheme.dark,
+                        fontSize: 13,
+                        fontFamily: AppTheme.fontFamily,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      Utils.timeFormat(widget.trip.endTime),
+                      style: const TextStyle(
+                        color: AppTheme.black,
+                        fontSize: 16,
+                        fontFamily: AppTheme.fontFamily,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      to.isEmpty ? "—" : to,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppTheme.dark,
+                        fontSize: 13,
+                        fontFamily: AppTheme.fontFamily,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Driver block
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppTheme.purple.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.person_rounded,
+                      color: AppTheme.purple,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  if (driverName.isNotEmpty)
+                    SizedBox(
+                      width: 92,
+                      child: Text(
+                        driverName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: AppTheme.black,
+                          fontSize: 12,
+                          fontFamily: AppTheme.fontFamily,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  if (vehicleModel.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.directions_car_rounded,
+                            size: 12, color: AppTheme.gray),
+                        const SizedBox(width: 3),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 76),
+                          child: Text(
+                            vehicleModel.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppTheme.gray,
+                              fontSize: 11,
+                              fontFamily: AppTheme.fontFamily,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Details card ───────────────────────────────────────────────────────────
+  Widget _buildDetailsCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            offset: const Offset(0, 4),
+            blurRadius: 16,
+            color: AppTheme.black.withValues(alpha: 0.06),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text16h500w(title: translate("home.details")),
+          const SizedBox(height: 14),
+          _infoRow(
+            icon: Icons.radio_button_checked_rounded,
+            iconColor: AppTheme.purple,
+            label: translate("home.travelling_from"),
+            child: Expanded(
+              child: Text(
+                from.isEmpty ? "—" : from,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.end,
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.black,
+                ),
+              ),
+            ),
+          ),
+          _divider(),
+          _infoRow(
+            icon: Icons.location_on_rounded,
+            iconColor: AppTheme.red,
+            label: translate("home.where_to"),
+            child: Expanded(
+              child: Text(
+                to.isEmpty ? "—" : to,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.end,
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.black,
+                ),
+              ),
+            ),
+          ),
+          _divider(),
+          _infoRow(
+            icon: Icons.calendar_today_rounded,
+            iconColor: AppTheme.purple,
+            label: translate("home.departure_date"),
+            valueWidget: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  Utils.searchDateFormat(widget.trip.startTime),
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    color: AppTheme.gray,
+                  ),
+                ),
+                Text(
+                  Utils.timeFormat(widget.trip.startTime),
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.black,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _divider(),
+          _infoRow(
+            icon: Icons.flag_rounded,
+            iconColor: AppTheme.green,
+            label: translate("home.arrival_date"),
+            valueWidget: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  Utils.searchDateFormat(widget.trip.endTime),
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    color: AppTheme.gray,
+                  ),
+                ),
+                Text(
+                  Utils.timeFormat(widget.trip.endTime),
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.black,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _divider(),
+          if (_isActive) ...[
+            _infoRow(
+              icon: Icons.event_seat_rounded,
+              iconColor: _seatsColor,
+              label: translate("home.available_seats"),
+              value: "${widget.trip.availableSeats}",
+            ),
+            _divider(),
+          ],
+          _infoRow(
+            icon: Icons.payments_rounded,
+            iconColor: AppTheme.purple,
+            label: translate("home.price_per_seat"),
+            value: "${Utils.priceFormat(pricePerSeat)} ${translate("currency")}",
+          ),
+          const SizedBox(height: 14),
+          // Map actions:
+          //  • Driver who created this trip → open in Google Maps (exact).
+          //  • Client → in-app map; exact route only after booking, otherwise
+          //    an approximate 25 km area.
+          if (widget.isDriver || _isOwnTrip) ...[
+            if (_googleMapsUrl.isNotEmpty) _openInMapsButton(),
+          ] else
+            _routeMapButton(),
+        ],
+      ),
+    );
+  }
+
+  // ── Booked passengers card (driver view) ───────────────────────────────────
+  Widget _buildBookedPassengersCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            offset: const Offset(0, 4),
+            blurRadius: 16,
+            color: AppTheme.black.withValues(alpha: 0.06),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text16h500w(
-                title: "${translate("home.total_price")}:",
-                color: AppTheme.gray,
+              Expanded(
+                child: Text16h500w(title: translate("home.booked_passengers")),
               ),
-              Text(
-                "${Utils.priceFormat((int.parse(pricePerSeat) * passengersNum).toString())} ${translate("currency")}",
+              if (_bookedPassengers.isNotEmpty)
+                Text(
+                  "${_bookedPassengers.length}",
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.purple,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_bookedPassengers.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                translate("ketamiz.no_passenger"),
                 style: const TextStyle(
-                  color: AppTheme.black,
-                  fontSize: 20,
                   fontFamily: AppTheme.fontFamily,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.5,
+                  fontSize: 13,
+                  color: AppTheme.gray,
+                ),
+              ),
+            )
+          else
+            ...List.generate(_bookedPassengers.length, (i) {
+              final p = _bookedPassengers[i];
+              return Container(
+                margin: EdgeInsets.only(
+                    bottom: i == _bookedPassengers.length - 1 ? 0 : 10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.light,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: const Icon(Icons.person,
+                          size: 22, color: AppTheme.black),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text14h400w(
+                              title: p.name.isEmpty ? "—" : p.name),
+                          if (p.phone.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text14h400w(title: p.phone, color: AppTheme.gray),
+                          ],
+                        ],
+                      ),
+                    ),
+                    // Call the passenger.
+                    if (p.phone.isNotEmpty)
+                      GestureDetector(
+                        onTap: () => _callPassenger(p.phone),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: const Icon(Icons.call,
+                              size: 20, color: AppTheme.green),
+                        ),
+                      ),
+                    // View this passenger's pickup point on the map.
+                    if (p.hasLocation) ...[
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => _showPassengerLocation(p),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: const Icon(Icons.location_on,
+                              size: 20, color: AppTheme.purple),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            }),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _callPassenger(String phone) async {
+    final uri = Uri.parse('tel:$phone');
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {}
+  }
+
+  void _showPassengerLocation(_BookedPassenger p) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapSingleScreen(
+          location: LatLng(double.parse(p.lat), double.parse(p.lng)),
+          place: p.name.isEmpty ? translate("home.pickup_location") : p.name,
+        ),
+      ),
+    );
+  }
+
+  // ── Passenger card (client view) ───────────────────────────────────────────
+  Widget _buildPassengerCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            offset: const Offset(0, 4),
+            blurRadius: 16,
+            color: AppTheme.black.withValues(alpha: 0.06),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                  child: Text16h500w(title: translate("home.passenger_info"))),
+              Text(
+                passengersNum.toString(),
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.purple,
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: _onAddPassenger,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppTheme.purple.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(
+                    Icons.add,
+                    color: AppTheme.purple,
+                    size: 20,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          SecondaryButton(
-            title: translate("home.book_now"),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PaymentScreen(
-                    trip: widget.trip,
-                    passengersNum: passengersNum,
-                    passengers: passengers,
+          const SizedBox(height: 12),
+          if (passengers.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                translate("home.fill_passenger_details"),
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 13,
+                  color: AppTheme.gray,
+                ),
+              ),
+            ),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.zero,
+            itemCount: passengers.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (context, index) => PassengersContainer(
+              passenger: passengers[index],
+              onEdit: (data) {
+                // Preserve the already-chosen pickup point across name/phone edits.
+                if (data.fullName.isNotEmpty) {
+                  setState(() {
+                    passengers[index].fullName = data.fullName;
+                    passengers[index].phoneNumber = data.phoneNumber;
+                  });
+                }
+              },
+              onDelete: () {
+                if (passengers.length > 1) {
+                  setState(() {
+                    passengers.removeAt(index);
+                    passengersNum--;
+                  });
+                }
+              },
+              onSetLocation: () => _setPassengerLocation(index),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Bottom bars ────────────────────────────────────────────────────────────
+  Widget _buildPassengerBottomBar() {
+    final total = int.tryParse(pricePerSeat) ?? 0;
+    return Container(
+      padding: EdgeInsets.only(
+        top: 16,
+        left: 16,
+        right: 16,
+        bottom: 16 + MediaQuery.of(context).padding.bottom,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: AppTheme.border)),
+        boxShadow: [
+          BoxShadow(
+            offset: const Offset(0, -4),
+            blurRadius: 16,
+            color: AppTheme.black.withValues(alpha: 0.05),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text14h400w(
+                title: translate("home.total_price"),
+                color: AppTheme.gray,
+              ),
+              Text(
+                "${Utils.priceFormat((total * passengers.length).toString())} ${translate("currency")}",
+                style: const TextStyle(
+                  color: AppTheme.black,
+                  fontSize: 18,
+                  fontFamily: AppTheme.fontFamily,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                if (!_validatePassengers()) return;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PaymentScreen(
+                      trip: widget.trip,
+                      passengersNum: passengers.length,
+                      passengers: passengers,
+                    ),
+                  ),
+                );
+              },
+              child: Container(
+                height: 52,
+                decoration: BoxDecoration(
+                  color: AppTheme.purple,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Center(
+                  child: Text(
+                    translate("home.book_now"),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontFamily: AppTheme.fontFamily,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              );
-            },
+              ),
+            ),
           ),
         ],
       ),
@@ -778,37 +1196,37 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
 
   Widget _buildDriverBottomBar() {
     return Container(
-      padding: const EdgeInsets.only(
-        bottom: 32,
-        top: 24,
+      padding: EdgeInsets.only(
+        top: 16,
         left: 16,
         right: 16,
+        bottom: 16 + MediaQuery.of(context).padding.bottom,
       ),
       decoration: BoxDecoration(
         color: Colors.white,
+        border: Border(top: BorderSide(color: AppTheme.border)),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.dark.withOpacity(0.1),
-            spreadRadius: 15,
-            blurRadius: 25,
-            offset: const Offset(0, 5),
+            offset: const Offset(0, -4),
+            blurRadius: 16,
+            color: AppTheme.black.withValues(alpha: 0.05),
           ),
         ],
       ),
       child: GestureDetector(
         onTap: _isCancelling ? null : _cancelTrip,
         child: Container(
-          height: 56,
+          height: 52,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppTheme.red, width: 2),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppTheme.red, width: 1.5),
           ),
           child: Center(
             child: _isCancelling
                 ? const SizedBox(
-                    height: 24,
-                    width: 24,
+                    height: 22,
+                    width: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       color: AppTheme.red,
@@ -818,9 +1236,9 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                     translate("ketamiz.cancel_trip"),
                     style: const TextStyle(
                       color: AppTheme.red,
-                      fontSize: 16,
+                      fontSize: 15,
                       fontFamily: AppTheme.fontFamily,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
           ),
@@ -835,26 +1253,22 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
       translate("ketamiz.cancel_trip"),
       translate("ketamiz.cancel_trip_confirm"),
       onConfirm: () async {
-        Navigator.pop(context); // close dialog
+        Navigator.pop(context);
         setState(() => _isCancelling = true);
 
-        final response = await Repository().fetchCancelDriverTrip(
-          widget.trip.id.toString(),
-        );
+        final response = await Repository()
+            .fetchCancelDriverTrip(widget.trip.id.toString());
 
         if (!mounted) return;
         setState(() => _isCancelling = false);
 
         if (response.isSuccess) {
-          CustomSnackBar().showSnackBar(
-            context,
-            translate("ketamiz.trip_cancelled"),
-            1,
-          );
+          CustomSnackBar()
+              .showSnackBar(context, translate("ketamiz.trip_cancelled"), 1);
           Navigator.of(context).popUntil((route) => route.isFirst);
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const MainScreen()),
+            MaterialPageRoute(builder: (_) => const MainScreen()),
           );
         } else {
           CenterDialog.showActionFailed(
@@ -867,53 +1281,178 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
     );
   }
 
-  initTimeState(DateTime time) {
-    m1 = time.minute < 10 ? '0${time.minute}' : time.minute.toString();
-    time.weekday == 1
-        ? weekDay = 'Monday'
-        : time.weekday == 2
-            ? weekDay = 'Tuesday'
-            : time.weekday == 3
-                ? weekDay = 'Wednesday'
-                : time.weekday == 4
-                    ? weekDay = 'Thursday'
-                    : time.weekday == 5
-                        ? weekDay = 'Friday'
-                        : time.weekday == 6
-                            ? weekDay = 'Saturday'
-                            : weekDay = 'Sunday';
-
-    time.month == 1
-        ? month = 'January'
-        : time.month == 2
-            ? month = 'February'
-            : time.month == 3
-                ? month = 'March'
-                : time.month == 4
-                    ? month = 'April'
-                    : time.month == 5
-                        ? month = 'May'
-                        : time.month == 6
-                            ? month = 'June'
-                            : time.month == 7
-                                ? month = 'July'
-                                : time.month == 8
-                                    ? month = 'August'
-                                    : time.month == 9
-                                        ? month = 'September'
-                                        : time.month == 10
-                                            ? month = 'October'
-                                            : time.month == 11
-                                                ? month = 'November'
-                                                : month = 'December';
-
-    time.hour < 12 ? t1 = 'AM' : t1 = 'PM';
-    h1 = time.hour == 0 ? '12' : (time.hour > 12 ? (time.hour - 12).toString() : time.hour.toString());
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  Widget _infoRow({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    String? value,
+    Widget? valueWidget,
+    Widget? child,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: iconColor, size: 16),
+          ),
+          const SizedBox(width: 10),
+          // When an Expanded value (child) follows, the label must NOT take a
+          // flex share — otherwise label and value split the row 50/50 and the
+          // value right-aligns to the middle, leaving empty space on the right.
+          child != null
+              ? Text(
+                  label,
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 13,
+                    color: AppTheme.gray,
+                    fontWeight: FontWeight.w400,
+                  ),
+                )
+              : Flexible(
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 13,
+                      color: AppTheme.gray,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
+          if (child != null) ...[const SizedBox(width: 8), child],
+          if (valueWidget != null) ...[const Spacer(), valueWidget],
+          if (value != null) ...[
+            const Spacer(),
+            Text(
+              value,
+              style: const TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.black,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
-  String safeSubstring(String text, int length) {
-    return text.length >= length
-        ? text.substring(0, length).toUpperCase()
-        : text.toUpperCase();
+  Widget _divider() => const Divider(height: 1, color: AppTheme.border);
+
+  /// Backend-provided link when available, otherwise a directions deep link
+  /// built from the trip coordinates. Both open the installed Google Maps
+  /// app via LaunchMode.externalApplication.
+  String get _googleMapsUrl {
+    if (widget.trip.googleMapUrl.isNotEmpty) return widget.trip.googleMapUrl;
+    final t = widget.trip;
+    if (t.startLat.isEmpty ||
+        t.startLong.isEmpty ||
+        t.endLat.isEmpty ||
+        t.endLong.isEmpty) {
+      return '';
+    }
+    return 'https://www.google.com/maps/dir/?api=1'
+        '&origin=${t.startLat},${t.startLong}'
+        '&destination=${t.endLat},${t.endLong}'
+        '&travelmode=driving';
+  }
+
+  Widget _openInMapsButton() {
+    return GestureDetector(
+      onTap: () async {
+        final uri = Uri.parse(_googleMapsUrl);
+        try {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } catch (_) {
+          // No handler for external launch — fall back to in-app browser.
+          await launchUrl(uri, mode: LaunchMode.platformDefault);
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        decoration: BoxDecoration(
+          color: const Color(0xFF4285F4),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.map_outlined, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              translate("home.open_in_google_maps"),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontFamily: AppTheme.fontFamily,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _routeMapButton() {
+    // Exact route is revealed only after the user has booked this trip.
+    final showExact = widget.isBooked;
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MapRouteScreen(
+              start: LatLng(double.parse(widget.trip.startLat),
+                  double.parse(widget.trip.startLong)),
+              end: LatLng(double.parse(widget.trip.endLat),
+                  double.parse(widget.trip.endLong)),
+              startText: from,
+              endText: to,
+              approximate: !showExact,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        decoration: BoxDecoration(
+          color: AppTheme.purple.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+              color: AppTheme.purple.withValues(alpha: 0.2), width: 1),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(showExact ? Icons.route_rounded : Icons.map_outlined,
+                color: AppTheme.purple, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              translate("home.show_on_map"),
+              style: const TextStyle(
+                color: AppTheme.purple,
+                fontSize: 14,
+                fontFamily: AppTheme.fontFamily,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

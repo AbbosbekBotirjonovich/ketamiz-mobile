@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
-
 import '../../../theme/app_theme.dart';
 
 class PrimaryButton extends StatelessWidget {
@@ -19,31 +17,43 @@ class PrimaryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: isLoading ? null : onTap,
-      child: Container(
-        height: 56,
-        decoration: BoxDecoration(
-          color: AppTheme.black,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.dark.withOpacity(0.1),
-              spreadRadius: 15,
-              blurRadius: 25,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Center(
-          child: isLoading
-              ? const SizedBox(
-                  height: 24,
-                  width: 24,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
+      child: AnimatedOpacity(
+        opacity: isLoading ? 0.75 : 1.0,
+        duration: const Duration(milliseconds: 150),
+        child: Container(
+          height: 52,
+          decoration: BoxDecoration(
+            color: AppTheme.purple,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.purple.withOpacity(0.28),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Center(
+            child: isLoading
+                ? const SizedBox(
+                    height: 22,
+                    width: 22,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Text(
+                    title,
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      letterSpacing: 0.2,
+                    ),
                   ),
-                )
-              : Text16h500w(title: title, color: Colors.white),
+          ),
         ),
       ),
     );

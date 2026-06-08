@@ -143,6 +143,12 @@ class Passenger {
 
 class BookedTrip {
   int id;
+  String startRegion;
+  String startDistrict;
+  String startQuarter;
+  String endRegion;
+  String endDistrict;
+  String endQuarter;
   int startRegionId;
   int endRegionId;
   int startDistrictId;
@@ -158,9 +164,16 @@ class BookedTrip {
   String fromLongitude;
   String toLatitude;
   String toLongitude;
+  String googleMapUrl;
 
   BookedTrip({
     required this.id,
+    this.startRegion = "",
+    this.startDistrict = "",
+    this.startQuarter = "",
+    this.endRegion = "",
+    this.endDistrict = "",
+    this.endQuarter = "",
     required this.startRegionId,
     required this.endRegionId,
     required this.startDistrictId,
@@ -176,6 +189,7 @@ class BookedTrip {
     required this.fromLongitude,
     required this.toLatitude,
     required this.toLongitude,
+    this.googleMapUrl = "",
   });
 
   factory BookedTrip.empty() => BookedTrip(
@@ -199,6 +213,12 @@ class BookedTrip {
 
   factory BookedTrip.fromJson(Map<String, dynamic> json) => BookedTrip(
         id: _asInt(json["id"]),
+        startRegion: json["start_region"]?.toString() ?? "",
+        startDistrict: json["start_district"]?.toString() ?? "",
+        startQuarter: json["start_quarter"]?.toString() ?? "",
+        endRegion: json["end_region"]?.toString() ?? "",
+        endDistrict: json["end_district"]?.toString() ?? "",
+        endQuarter: json["end_quarter"]?.toString() ?? "",
         startRegionId: _asInt(json["start_region_id"]),
         endRegionId: _asInt(json["end_region_id"]),
         startDistrictId: _asInt(json["start_district_id"]),
@@ -214,6 +234,7 @@ class BookedTrip {
         fromLongitude: json["from_longitude"]?.toString() ?? "",
         toLatitude: json["to_latitude"]?.toString() ?? "",
         toLongitude: json["to_longitude"]?.toString() ?? "",
+        googleMapUrl: json["google_map_url"]?.toString() ?? "",
       );
 
   Map<String, dynamic> toJson() => {
@@ -233,6 +254,7 @@ class BookedTrip {
         "from_longitude": fromLongitude,
         "to_latitude": toLatitude,
         "to_longitude": toLongitude,
+        "google_map_url": googleMapUrl,
       };
 }
 
@@ -279,32 +301,23 @@ class BookVehicle {
 }
 
 class BookCarColor {
-  String titleUz;
-  String titleRu;
-  String titleEn;
+  int id;
   String colorCode;
 
   BookCarColor({
-    required this.titleUz,
-    required this.titleRu,
-    required this.titleEn,
+    required this.id,
     required this.colorCode,
   });
 
-  factory BookCarColor.empty() =>
-      BookCarColor(titleUz: "", titleRu: "", titleEn: "", colorCode: "");
+  factory BookCarColor.empty() => BookCarColor(id: 0, colorCode: "");
 
   factory BookCarColor.fromJson(Map<String, dynamic> json) => BookCarColor(
-        titleUz: json["title_uz"]?.toString() ?? "",
-        titleRu: json["title_ru"]?.toString() ?? "",
-        titleEn: json["title_en"]?.toString() ?? "",
+        id: _asInt(json["id"]),
         colorCode: json["color_code"]?.toString() ?? "",
       );
 
   Map<String, dynamic> toJson() => {
-        "title_uz": titleUz,
-        "title_ru": titleRu,
-        "title_en": titleEn,
+        "id": id,
         "color_code": colorCode,
       };
 }

@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
-import 'package:ketamiz/src/ui/menu/history/history.dart';
-import 'package:ketamiz/src/ui/menu/new_ketamiz/new_ketamiz.dart';
+import 'package:ketamiz/src/ui/menu/history/trips_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/profile_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/wallet_screen.dart';
+import 'package:ketamiz/src/utils/nav_constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../bloc/home_bloc.dart';
 import '../../bloc/profile_bloc.dart';
 import '../../bloc/ketamiz_bloc.dart';
 import '../../model/api/driver_trips_list_model.dart';
 import '../../theme/app_theme.dart';
+import '../dialogs/center_dialog.dart';
 import 'home/home_screen.dart';
 import 'new_ketamiz/add_docs_screen.dart';
 import 'new_ketamiz/create_new_ketamiz_screen.dart';
@@ -23,26 +22,28 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen>
+    with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
-  bool _isDriver = false;
+  int _previousIndex = 0;
   bool _isRoleLoaded = false;
+  bool _isDriver = false;
 
-  // Client tabs: Home, Bookings, Wallet, Profile
-  static const List<Widget> _clientScreens = [
-    HomeScreen(),
-    History(),
-    WalletScreen(),
-    ProfileScreen(),
-  ];
+  // Drives the screen transition when switching tabs (fade + slide + scale).
+  late final AnimationController _pageController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 380),
+    value: 1.0,
+  );
 
-  // Driver tabs: Home, My Trips, [Create — handled via push], Profile
-  static const List<Widget> _driverScreens = [
-    HomeScreen(),
-    NewKetamiz(),
-    SizedBox(), // placeholder; tapping tab 2 pushes CreateNewKetamizScreen
-    ProfileScreen(),
-  ];
+  // Index 2 is a placeholder — Create Trip is an action, not a screen.
+  List<Widget> _buildScreens(String localeKey) => [
+        HomeScreen(key: ValueKey('home_$localeKey')),
+        TripsScreen(key: ValueKey('trips_$localeKey')),
+        const SizedBox(),
+        WalletScreen(key: ValueKey('wallet_$localeKey')),
+        ProfileScreen(key: ValueKey('profile_$localeKey')),
+      ];
 
   @override
   void initState() {
@@ -63,203 +64,179 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  List<Widget> get _screens =>
-      _isDriver ? _driverScreens : _clientScreens;
-
   void _onTabTapped(int index) {
-    // Driver tab 2 = Create Trip action (push, not switch)
-    if (_isDriver && index == 2) {
-      _handleCreateTrip();
+    if (index == 2) {
+      _isDriver ? _handleCreateTrip() : _handleBecomeDriver();
       return;
     }
-    setState(() => _selectedIndex = index);
+    if (index == _selectedIndex) return;
+    setState(() {
+      _previousIndex = _selectedIndex;
+      _selectedIndex = index;
+    });
+    _pageController.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  /// Docs already submitted and under review — tell the user to wait.
+  void _showApplicationPending() {
+    CenterDialog.showInfo(
+      context,
+      translate('profile.application_pending_title'),
+      translate('profile.application_pending_msg'),
+    );
   }
 
   Future<void> _handleCreateTrip() async {
     final prefs = await SharedPreferences.getInstance();
-    final isVerified =
-        prefs.getString('driving_verification_status') == 'approved';
-
+    final status = prefs.getString('driving_verification_status') ?? 'none';
     if (!mounted) return;
-    if (isVerified) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => CreateNewKetamizScreen(
-            driverTrip: DriverTripModel.defaultTrip(),
-          ),
-        ),
-      );
-    } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const AddDocsScreen()),
-      );
+    if (status == 'pending') {
+      _showApplicationPending();
+      return;
     }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => status == 'approved'
+            ? CreateNewKetamizScreen(driverTrip: DriverTripModel.defaultTrip())
+            : const AddDocsScreen(),
+      ),
+    );
+  }
+
+  Future<void> _handleBecomeDriver() async {
+    final prefs = await SharedPreferences.getInstance();
+    final status = prefs.getString('driving_verification_status') ?? 'none';
+    if (!mounted) return;
+    if (status == 'pending') {
+      _showApplicationPending();
+      return;
+    }
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddDocsScreen()),
+    );
+    // Role may have changed after submitting docs — refresh the button.
+    _loadRole();
   }
 
   @override
   Widget build(BuildContext context) {
+    final localeKey = Localizations.localeOf(context).languageCode;
+
     if (!_isRoleLoaded) {
       return const Scaffold(
         backgroundColor: AppTheme.bg,
-        body: Center(
-          child: CircularProgressIndicator(color: AppTheme.purple),
-        ),
+        body: Center(child: CircularProgressIndicator(color: AppTheme.purple)),
       );
     }
 
-    final size = MediaQuery.of(context).size;
+    final safeBottom = MediaQuery.of(context).padding.bottom;
     return Scaffold(
-      backgroundColor: AppTheme.bg,
+      backgroundColor: AppTheme.light,
       body: Stack(
         children: [
-          IndexedStack(index: _selectedIndex, children: _screens),
+          // Tab transition: incoming screen fades in while sliding from the
+          // direction of travel with a subtle zoom — IndexedStack keeps state.
+          AnimatedBuilder(
+            animation: _pageController,
+            builder: (context, child) {
+              final t = Curves.easeOutCubic.transform(_pageController.value);
+              final direction = _selectedIndex >= _previousIndex ? 1.0 : -1.0;
+              return Opacity(
+                opacity: t,
+                child: Transform.translate(
+                  offset: Offset(direction * 32 * (1 - t), 0),
+                  child: Transform.scale(
+                    scale: 0.98 + 0.02 * t,
+                    child: child,
+                  ),
+                ),
+              );
+            },
+            child: IndexedStack(
+              index: _selectedIndex,
+              children: _buildScreens(localeKey),
+            ),
+          ),
           Positioned(
-            bottom: 0,
-            left: 0,
-            child: _buildBottomNav(size.width),
+            bottom: kNavBarBottomMargin + safeBottom,
+            left: 16,
+            right: 16,
+            child: _buildBottomNav(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBottomNav(double width) {
+  // ── Bottom nav ────────────────────────────────────────────────────────────
+
+  Widget _buildBottomNav() {
     return Container(
-      height: 82,
-      width: width,
       decoration: BoxDecoration(
-        color: AppTheme.black,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: AppTheme.border),
         boxShadow: [
           BoxShadow(
-            offset: const Offset(0, 5),
-            blurRadius: 25,
-            color: AppTheme.dark.withOpacity(0.2),
+            offset: const Offset(0, 8),
+            blurRadius: 24,
+            color: AppTheme.black.withOpacity(0.08),
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: _isDriver
-            ? _buildDriverTabs()
-            : _buildClientTabs(),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(4, 8, 4, 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _navItem(
+              index: 0,
+              activeIcon: const Icon(Icons.home_rounded,
+                  color: AppTheme.purple, size: 22),
+              inactiveIcon: const Icon(Icons.home_outlined,
+                  color: AppTheme.gray, size: 22),
+              label: translate('nav.home'),
+            ),
+            _navItem(
+              index: 1,
+              activeIcon: const Icon(Icons.library_books_rounded,
+                  color: AppTheme.purple, size: 22),
+              inactiveIcon: const Icon(Icons.library_books_outlined,
+                  color: AppTheme.gray, size: 22),
+              label: translate('nav.bookings'),
+            ),
+            _createButton(),
+            _navItem(
+              index: 3,
+              activeIcon: const Icon(Icons.account_balance_wallet_rounded,
+                  color: AppTheme.purple, size: 22),
+              inactiveIcon: const Icon(Icons.account_balance_wallet_outlined,
+                  color: AppTheme.gray, size: 22),
+              label: translate('nav.wallet'),
+            ),
+            _navItem(
+              index: 4,
+              activeIcon: const Icon(Icons.person_rounded,
+                  color: AppTheme.purple, size: 22),
+              inactiveIcon: const Icon(Icons.person_outline_rounded,
+                  color: AppTheme.gray, size: 22),
+              label: translate('nav.profile'),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // ── Client tabs ──────────────────────────────────────────────────────────
-
-  List<Widget> _buildClientTabs() => [
-        _navItem(
-          index: 0,
-          activeIcon: SvgPicture.asset('assets/icons/home_full.svg',
-              colorFilter: const ColorFilter.mode(
-                  AppTheme.purple, BlendMode.srcIn)),
-          inactiveIcon: SvgPicture.asset('assets/icons/home.svg',
-              colorFilter: const ColorFilter.mode(
-                  AppTheme.gray, BlendMode.srcIn)),
-          label: translate("nav.home"),
-        ),
-        _navItem(
-          index: 1,
-          activeIcon: const Icon(Icons.library_books_rounded,
-              color: AppTheme.purple, size: 24),
-          inactiveIcon: const Icon(Icons.library_books_outlined,
-              color: AppTheme.gray, size: 24),
-          label: translate("nav.bookings"),
-        ),
-        _navItem(
-          index: 2,
-          activeIcon: const Icon(Icons.account_balance_wallet_rounded,
-              color: AppTheme.purple, size: 24),
-          inactiveIcon: const Icon(Icons.account_balance_wallet_outlined,
-              color: AppTheme.gray, size: 24),
-          label: translate("nav.wallet"),
-        ),
-        _navItem(
-          index: 3,
-          activeIcon: SvgPicture.asset('assets/icons/profile_full.svg',
-              colorFilter: const ColorFilter.mode(
-                  AppTheme.purple, BlendMode.srcIn)),
-          inactiveIcon: SvgPicture.asset('assets/icons/profile.svg',
-              colorFilter: const ColorFilter.mode(
-                  AppTheme.gray, BlendMode.srcIn)),
-          label: translate("nav.profile"),
-        ),
-      ];
-
-  // ── Driver tabs ──────────────────────────────────────────────────────────
-
-  List<Widget> _buildDriverTabs() => [
-        _navItem(
-          index: 0,
-          activeIcon: SvgPicture.asset('assets/icons/home_full.svg',
-              colorFilter: const ColorFilter.mode(
-                  AppTheme.purple, BlendMode.srcIn)),
-          inactiveIcon: SvgPicture.asset('assets/icons/home.svg',
-              colorFilter: const ColorFilter.mode(
-                  AppTheme.gray, BlendMode.srcIn)),
-          label: translate("nav.home"),
-        ),
-        _navItem(
-          index: 1,
-          activeIcon: const Icon(
-              CupertinoIcons.arrow_right_arrow_left_circle_fill,
-              color: AppTheme.purple,
-              size: 24),
-          inactiveIcon: const Icon(
-              CupertinoIcons.arrow_right_arrow_left_circle,
-              color: AppTheme.gray,
-              size: 24),
-          label: translate("nav.my_trips"),
-        ),
-        // Create button (action, not a sticky tab)
-        GestureDetector(
-          onTap: () => _handleCreateTrip(),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                height: 44,
-                width: 44,
-                decoration: BoxDecoration(
-                  color: AppTheme.purple,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(Icons.add, color: Colors.white, size: 26),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                translate("nav.create"),
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.gray,
-                  fontFamily: AppTheme.fontFamily,
-                  fontWeight: FontWeight.normal,
-                  height: 1.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-        _navItem(
-          index: 3,
-          activeIcon: SvgPicture.asset('assets/icons/profile_full.svg',
-              colorFilter: const ColorFilter.mode(
-                  AppTheme.purple, BlendMode.srcIn)),
-          inactiveIcon: SvgPicture.asset('assets/icons/profile.svg',
-              colorFilter: const ColorFilter.mode(
-                  AppTheme.gray, BlendMode.srcIn)),
-          label: translate("nav.profile"),
-        ),
-      ];
-
-  // ── Shared nav item ───────────────────────────────────────────────────────
+  // ── Animated nav item — icon circle + label below ───────────────────────
 
   Widget _navItem({
     required int index,
@@ -268,24 +245,114 @@ class _MainScreenState extends State<MainScreen> {
     required String label,
   }) {
     final isActive = _selectedIndex == index;
-    return GestureDetector(
-      onTap: () => _onTabTapped(index),
-      child: Container(
-        color: Colors.transparent,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _onTabTapped(index),
+        behavior: HitTestBehavior.opaque,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            isActive ? activeIcon : inactiveIcon,
+            // Circle background with icon — pops with a spring when selected
+            AnimatedScale(
+              duration: const Duration(milliseconds: 420),
+              curve: isActive ? Curves.elasticOut : Curves.easeOut,
+              scale: isActive ? 1.0 : 0.88,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? AppTheme.purple.withOpacity(0.1)
+                      : Colors.transparent,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    switchInCurve: Curves.easeIn,
+                    switchOutCurve: Curves.easeOut,
+                    transitionBuilder: (child, animation) => ScaleTransition(
+                      scale: Tween<double>(begin: 0.7, end: 1.0)
+                          .animate(animation),
+                      child: FadeTransition(opacity: animation, child: child),
+                    ),
+                    child: isActive
+                        ? KeyedSubtree(
+                            key: ValueKey('a_$index'), child: activeIcon)
+                        : KeyedSubtree(
+                            key: ValueKey('i_$index'), child: inactiveIcon),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            // Label
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeInOut,
+              style: TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                color: isActive ? AppTheme.purple : AppTheme.gray,
+                height: 1,
+              ),
+              child: Text(label, maxLines: 1),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Center button — solid purple circle + label ───────────────────────────
+  // Drivers: "Create" (new trip). Clients: "Become a Driver" (docs flow).
+
+  Widget _createButton() {
+    return Expanded(
+      child: GestureDetector(
+        onTap: _isDriver ? _handleCreateTrip : _handleBecomeDriver,
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppTheme.purple,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    offset: const Offset(0, 4),
+                    blurRadius: 12,
+                    color: AppTheme.purple.withOpacity(0.35),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Icon(
+                  _isDriver ? Icons.add_rounded : Icons.drive_eta_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+            ),
             const SizedBox(height: 4),
             Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                color: isActive ? AppTheme.bg : AppTheme.gray,
+              _isDriver
+                  ? translate('nav.create')
+                  : translate('nav.become_driver'),
+              maxLines: 1,
+              style: const TextStyle(
                 fontFamily: AppTheme.fontFamily,
-                fontWeight: FontWeight.normal,
-                height: 1.5,
+                fontSize: 11,
+                fontWeight: FontWeight.w400,
+                color: AppTheme.gray,
+                height: 1,
               ),
             ),
           ],

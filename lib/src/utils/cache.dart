@@ -40,8 +40,12 @@ class AppCache {
     prefs.setString("phone", user.phone);
     prefs.setString("role", user.role);
     prefs.setBool("is_verified", user.isVerified == 1 ? true : false);
-    prefs.setString(
-        "driving_verification_status", user.drivingVerificationStatus);
+    prefs.setString("driving_verification_status", user.drivingVerificationStatus);
+    prefs.setString("driving_licence_number", user.drivingLicenceNumber);
+    prefs.setString("driving_licence_expiry", user.drivingLicenceExpiry);
+    if (user.birthDate.isNotEmpty) {
+      prefs.setString("birth_date", user.birthDate);
+    }
   }
 
   Future<void> saveUser(User user) async {
@@ -53,8 +57,9 @@ class AppCache {
     prefs.setString("email", user.email);
     prefs.setString("phone", user.phone);
     prefs.setString("role", user.role);
-    prefs.setString(
-        "driving_verification_status", user.drivingVerificationStatus);
+    prefs.setString("driving_verification_status", user.drivingVerificationStatus);
+    prefs.setString("driving_licence_number", user.drivingLicenceNumber);
+    prefs.setString("driving_licence_expiry", user.drivingLicenceExpiry);
     prefs.setString("balance", user.balance.balance);
     prefs.setString("balance_after_tax", user.balance.afterTax);
     prefs.setString("balance_tax", user.balance.tax);
@@ -89,6 +94,8 @@ class AppCache {
           : DateTime(2000, 1, 1),
       drivingVerificationStatus:
           prefs.getString("driving_verification_status") ?? "none",
+      drivingLicenceNumber: prefs.getString("driving_licence_number") ?? "",
+      drivingLicenceExpiry: prefs.getString("driving_licence_expiry") ?? "",
       createdAt: createdAtStr != null
           ? (DateTime.tryParse(createdAtStr) ?? DateTime(2000, 1, 1))
           : DateTime(2000, 1, 1),

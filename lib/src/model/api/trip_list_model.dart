@@ -8,6 +8,14 @@ class TripListModel {
   int id;
   String fromWhere;
   String toWhere;
+  // String address parts (populated from API string fields)
+  String fromRegion;
+  String fromCity;
+  String fromVillage;
+  String toRegion;
+  String toCity;
+  String toVillage;
+  // Legacy integer ID fields (kept for driver-trip construction via LocationData)
   int fromRegionId;
   int toRegionId;
   int fromCityId;
@@ -24,6 +32,7 @@ class TripListModel {
   String endLat;
   String endLong;
   String status;
+  String googleMapUrl;
   DateTime createdAt;
   DateTime updatedAt;
   TripDriver driver;
@@ -33,6 +42,12 @@ class TripListModel {
     required this.id,
     required this.fromWhere,
     required this.toWhere,
+    this.fromRegion = "",
+    this.fromCity = "",
+    this.fromVillage = "",
+    this.toRegion = "",
+    this.toCity = "",
+    this.toVillage = "",
     required this.fromRegionId,
     required this.toRegionId,
     required this.fromCityId,
@@ -49,48 +64,68 @@ class TripListModel {
     required this.endLat,
     required this.endLong,
     required this.status,
+    this.googleMapUrl = "",
     required this.createdAt,
     required this.updatedAt,
     required this.driver,
     required this.vehicle,
   });
 
-  factory TripListModel.fromJson(Map<String, dynamic> json) => TripListModel(
-    id: _asInt(json["id"]),
-    fromWhere: json["from_where"]?.toString() ?? "",
-    toWhere: json["to_where"]?.toString() ?? "",
-    fromRegionId: _asInt(json["from_region_id"]),
-    toRegionId: _asInt(json["to_region_id"]),
-    fromCityId: _asInt(json["from_district_id"]),
-    toCityId: _asInt(json["to_district_id"]),
-    fromVillageId: _asInt(json["from_quarter_id"]),
-    toVillageId: _asInt(json["to_quarter_id"]),
-    startTime: _parseDate(json["start_time"]),
-    endTime: _parseDate(json["end_time"]),
-    pricePerSeat: json["price_per_seat"]?.toString() ?? "",
-    totalSeats: _asInt(json["total_seats"]),
-    availableSeats: _asInt(json["available_seats"]),
-    startLat: json["start_lat"]?.toString() ?? "",
-    startLong: json["start_long"]?.toString() ?? "",
-    endLat: json["end_lat"]?.toString() ?? "",
-    endLong: json["end_long"]?.toString() ?? "",
-    status: json["status"]?.toString() ?? "",
-    createdAt: _parseDate(json["created_at"]),
-    updatedAt: _parseDate(json["updated_at"]),
-    driver: json["driver"] is Map<String, dynamic>
-        ? TripDriver.fromJson(json["driver"])
-        : TripDriver(id: 0, name: "", role: ""),
-    vehicle: json["vehicle"] is Map<String, dynamic>
-        ? TripVehicle.fromJson(json["vehicle"])
-        : TripVehicle(
-            id: 0,
-            model: "",
-            seats: 0,
-            carNumber: "",
-            color: CarColor(
-                id: 0, titleUz: "", titleRu: "", titleEn: "", code: ""),
-          ),
-  );
+  factory TripListModel.fromJson(Map<String, dynamic> json) {
+    final fromRegion = json["start_region"]?.toString() ?? "";
+    final fromCity = json["start_district"]?.toString() ?? "";
+    final fromVillage = json["start_quarter"]?.toString() ?? "";
+    final toRegion = json["end_region"]?.toString() ?? "";
+    final toCity = json["end_district"]?.toString() ?? "";
+    final toVillage = json["end_quarter"]?.toString() ?? "";
+
+    String _join(List<String> parts) =>
+        parts.where((s) => s.isNotEmpty).join(", ");
+
+    return TripListModel(
+      id: _asInt(json["id"]),
+      fromWhere: _join([fromVillage, fromCity, fromRegion]),
+      toWhere: _join([toVillage, toCity, toRegion]),
+      fromRegion: fromRegion,
+      fromCity: fromCity,
+      fromVillage: fromVillage,
+      toRegion: toRegion,
+      toCity: toCity,
+      toVillage: toVillage,
+      fromRegionId: _asInt(json["from_region_id"]),
+      toRegionId: _asInt(json["to_region_id"]),
+      fromCityId: _asInt(json["from_district_id"]),
+      toCityId: _asInt(json["to_district_id"]),
+      fromVillageId: _asInt(json["from_quarter_id"]),
+      toVillageId: _asInt(json["to_quarter_id"]),
+      startTime: _parseDate(json["start_time"]),
+      endTime: _parseDate(json["end_time"]),
+      pricePerSeat: json["price_per_seat"]?.toString() ?? "",
+      totalSeats: _asInt(json["total_seats"]),
+      availableSeats: _asInt(json["available_seats"]),
+      startLat: json["start_lat"]?.toString() ?? "",
+      startLong: json["start_long"]?.toString() ?? "",
+      endLat: json["end_lat"]?.toString() ?? "",
+      endLong: json["end_long"]?.toString() ?? "",
+      status: json["status"]?.toString() ?? "",
+      googleMapUrl: json["google_map_url"]?.toString() ?? "",
+      createdAt: _parseDate(json["created_at"]),
+      updatedAt: _parseDate(json["updated_at"]),
+      driver: json["driver"] is Map<String, dynamic>
+          ? TripDriver.fromJson(json["driver"])
+          : TripDriver(id: 0, name: "", role: ""),
+      vehicle: json["vehicle"] is Map<String, dynamic>
+          ? TripVehicle.fromJson(json["vehicle"])
+          : TripVehicle(
+              id: 0,
+              model: "",
+              seats: 0,
+              carNumber: "",
+              color: CarColor(
+                  id: 0, titleUz: "", titleRu: "", titleEn: "", code: ""),
+            ),
+    );
+  }
 
   static int _asInt(dynamic v) {
     if (v == null) return 0;
@@ -127,6 +162,7 @@ class TripListModel {
     "end_lat": endLat,
     "end_long": endLong,
     "status": status,
+    "google_map_url": googleMapUrl,
     "created_at": createdAt.toIso8601String(),
     "updated_at": updatedAt.toIso8601String(),
     "driver": driver.toJson(),

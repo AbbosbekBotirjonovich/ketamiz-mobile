@@ -13,7 +13,7 @@ class KetamizBloc {
   Stream<List<DriverTripModel>> get getTrips => _infoTripsFetcher.stream;
   Stream<String> get getError => _errorFetcher.stream;
 
-  fetchDriverTripList(String status) async {
+  Future<void> fetchDriverTripList(String status) async {
     _infoTripsFetcher.sink.add([]);
     try {
       var response = await _repository.fetchDriverTripsList(status);
@@ -29,6 +29,29 @@ class KetamizBloc {
       } else {
         _errorFetcher.sink.add(BlocErrors.serverError);
       }
+    } catch (e) {
+      _errorFetcher.sink.add(BlocErrors.somethingWentWrong);
+    }
+  }
+
+  // The generic /driver/trips endpoint omits nested vehicle/location data.
+  // Fetch all three status endpoints in parallel so every trip has full detail.
+  Future<void> fetchAllDriverTrips() async {
+    _infoTripsFetcher.sink.add([]);
+    try {
+      final responses = await Future.wait([
+        _repository.fetchDriverTripsList('active'),
+        _repository.fetchDriverTripsList('completed'),
+        _repository.fetchDriverTripsList('canceled'),
+      ]);
+      final merged = <DriverTripModel>[];
+      for (final r in responses) {
+        if (r.isSuccess && r.result is Map<String, dynamic>) {
+          merged.addAll(DriverTripsListModel.fromJson(r.result).data);
+        }
+      }
+      merged.sort((a, b) => b.startTime.compareTo(a.startTime));
+      _infoTripsFetcher.sink.add(merged);
     } catch (e) {
       _errorFetcher.sink.add(BlocErrors.somethingWentWrong);
     }

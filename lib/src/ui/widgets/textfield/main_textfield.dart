@@ -3,6 +3,10 @@ import 'package:flutter/services.dart';
 
 import '../../../theme/app_theme.dart';
 
+// Warm cream border used across all input fields.
+const _kBorderColor = Color(0xFFDDD5C8);
+const _kFillColor  = Color(0xFFFFFBF7);
+
 class MainTextField extends StatefulWidget {
   const MainTextField({
     super.key,
@@ -12,6 +16,8 @@ class MainTextField extends StatefulWidget {
     this.pass = false,
     this.phone = false,
     this.inputFormatters = const [],
+    this.scrollPadding = const EdgeInsets.all(20),
+    this.textInputAction,
   });
 
   final String hintText;
@@ -20,129 +26,95 @@ class MainTextField extends StatefulWidget {
   final bool pass;
   final bool phone;
   final List<TextInputFormatter> inputFormatters;
+  final TextInputAction? textInputAction;
+  final EdgeInsets scrollPadding;
 
   @override
   State<MainTextField> createState() => _MainTextFieldState();
 }
 
 class _MainTextFieldState extends State<MainTextField> {
-  bool obscure = false;
+  bool _obscure = false;
 
   @override
   void initState() {
-    if (widget.pass == true) {
-      obscure = widget.pass;
-    }
     super.initState();
+    _obscure = widget.pass;
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 66,
+      height: 58,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            offset:
-            const Offset(0, 4),
-            blurRadius: 100,
-            spreadRadius: 0,
-            color: AppTheme.black
-                .withOpacity(0.05),
-          ),
-        ],
+        color: _kFillColor,
+        borderRadius: BorderRadius.circular(14),
       ),
       child: TextFormField(
         controller: widget.controller,
         textAlignVertical: TextAlignVertical.center,
         cursorColor: AppTheme.purple,
         enableInteractiveSelection: true,
-        obscureText: obscure,
+        obscureText: _obscure,
         style: const TextStyle(
           fontFamily: AppTheme.fontFamily,
-          fontSize: 16,
-          fontWeight: FontWeight.normal,
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
           height: 1.5,
           color: AppTheme.black,
         ),
-        keyboardType: widget.phone == true
-            ? TextInputType.phone
-            : TextInputType.text,
+        keyboardType: widget.phone ? TextInputType.phone : TextInputType.text,
         autofocus: false,
+        scrollPadding: widget.scrollPadding,
+        textInputAction: widget.textInputAction,
         inputFormatters: widget.inputFormatters,
         decoration: InputDecoration(
-          border:
-          const OutlineInputBorder(),
-          enabledBorder:
-          OutlineInputBorder(
-            borderRadius:
-            BorderRadius
-                .circular(16),
-            borderSide:
-            const BorderSide(
-                color: AppTheme
-                    .border),
+          filled: true,
+          fillColor: _kFillColor,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: _kBorderColor),
           ),
-          focusedBorder:
-          OutlineInputBorder(
-            borderRadius:
-            BorderRadius
-                .circular(16),
-            borderSide:
-            const BorderSide(
-              color:
-              AppTheme.purple,
-            ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: _kBorderColor, width: 1),
           ),
-          contentPadding:
-          const EdgeInsets
-              .symmetric(
-            vertical: 20,
-            horizontal: 16,
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: AppTheme.purple, width: 1.5),
           ),
-          // hintText: widget.hintText,
-          // hintStyle: TextStyle(
-          //   fontFamily: AppTheme.fontFamily,
-          //   fontSize: 14,
-          //   fontWeight: FontWeight.normal,
-          //   height: 1.5,
-          //   color: AppTheme.dark.withOpacity(0.6),
-          // ),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 18,
+            horizontal: 14,
+          ),
           labelText: widget.hintText,
           labelStyle: TextStyle(
             fontFamily: AppTheme.fontFamily,
-            fontSize: 14,
-            fontWeight: FontWeight.normal,
-            color: AppTheme.dark.withOpacity(0.6),
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            color: AppTheme.gray,
           ),
-          prefixIcon: Icon(widget.icon),
+          prefixIcon: Icon(widget.icon, size: 18),
           prefixIconColor: WidgetStateColor.resolveWith(
-                (Set<WidgetState> states) {
-              if (states.contains(WidgetState.focused)) {
-                return AppTheme.black;
-              }
-              return AppTheme.dark;
-            },
+            (states) => states.contains(WidgetState.focused)
+                ? AppTheme.purple
+                : AppTheme.gray,
           ),
-          suffixIcon: widget.pass == true? GestureDetector(
-            onTap: () {
-              setState(() {
-                obscure = !obscure;
-              });
-            },
-            child: Icon(obscure == false
-                ? Icons.visibility_off_outlined
-                : Icons.visibility_outlined),
-          ): const SizedBox(),
+          suffixIcon: widget.pass
+              ? GestureDetector(
+                  onTap: () => setState(() => _obscure = !_obscure),
+                  child: Icon(
+                    _obscure
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                    size: 18,
+                  ),
+                )
+              : null,
           suffixIconColor: WidgetStateColor.resolveWith(
-                (Set<WidgetState> states) {
-              if (states.contains(WidgetState.focused)) {
-                return AppTheme.black;
-              }
-              return AppTheme.dark;
-            },
+            (states) => states.contains(WidgetState.focused)
+                ? AppTheme.purple
+                : AppTheme.gray,
           ),
         ),
       ),

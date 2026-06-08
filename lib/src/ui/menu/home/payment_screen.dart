@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:dotted_line/dotted_line.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:ketamiz/src/model/api/book_model.dart';
 import 'package:ketamiz/src/model/passenger_model.dart';
@@ -21,7 +20,6 @@ import '../../../theme/app_theme.dart';
 import '../../../utils/utils.dart';
 import '../../dialogs/snack_bar.dart';
 import '../../widgets/containers/leading_back.dart';
-import '../../widgets/texts/text_12h_400w.dart';
 import '../../widgets/texts/text_16h_500w.dart';
 
 class PaymentScreen extends StatefulWidget {
@@ -81,37 +79,62 @@ class _PaymentScreenState extends State<PaymentScreen> {
     setLocations();
   }
 
-  static final _unknownLocation = LocationModel(id: "0", text: "—", parentID: "0");
+  static final _unknownLocation =
+      LocationModel(id: "0", text: "", parentID: "0");
 
-  void setLocations() {
-    fromRegion = LocationData.regions
-        .firstWhere((r) => r.id == widget.trip.fromRegionId.toString(),
-            orElse: () => _unknownLocation)
-        .text;
-    fromCity = LocationData.cities
-        .firstWhere((c) => c.id == widget.trip.fromCityId.toString(),
-            orElse: () => _unknownLocation)
-        .text;
-    fromNeighborhood = LocationData.villages
-        .firstWhere((n) => n.id == widget.trip.fromVillageId.toString(),
-            orElse: () => _unknownLocation)
-        .text;
+  /// API trips carry location *names* (start_region etc.); ID lookups are
+  /// only a fallback — IDs are often absent, which used to render "—".
+  Future<void> setLocations() async {
+    final trip = widget.trip;
 
-    toRegion = LocationData.regions
-        .firstWhere((r) => r.id == widget.trip.toRegionId.toString(),
-            orElse: () => _unknownLocation)
-        .text;
-    toCity = LocationData.cities
-        .firstWhere((c) => c.id == widget.trip.toCityId.toString(),
-            orElse: () => _unknownLocation)
-        .text;
-    toNeighborhood = LocationData.villages
-        .firstWhere((n) => n.id == widget.trip.toVillageId.toString(),
-            orElse: () => _unknownLocation)
-        .text;
+    if (trip.fromRegion.isNotEmpty ||
+        trip.fromCity.isNotEmpty ||
+        trip.fromVillage.isNotEmpty) {
+      fromRegion = trip.fromRegion;
+      fromCity = trip.fromCity;
+      fromNeighborhood = trip.fromVillage;
+      toRegion = trip.toRegion;
+      toCity = trip.toCity;
+      toNeighborhood = trip.toVillage;
+    } else {
+      if (LocationData.regions.isEmpty) {
+        await LocationData.loadPlaces(context);
+      }
+      fromRegion = LocationData.regions
+          .firstWhere((r) => r.id == trip.fromRegionId.toString(),
+              orElse: () => _unknownLocation)
+          .text;
+      fromCity = LocationData.cities
+          .firstWhere((c) => c.id == trip.fromCityId.toString(),
+              orElse: () => _unknownLocation)
+          .text;
+      fromNeighborhood = LocationData.villages
+          .firstWhere((n) => n.id == trip.fromVillageId.toString(),
+              orElse: () => _unknownLocation)
+          .text;
+      toRegion = LocationData.regions
+          .firstWhere((r) => r.id == trip.toRegionId.toString(),
+              orElse: () => _unknownLocation)
+          .text;
+      toCity = LocationData.cities
+          .firstWhere((c) => c.id == trip.toCityId.toString(),
+              orElse: () => _unknownLocation)
+          .text;
+      toNeighborhood = LocationData.villages
+          .firstWhere((n) => n.id == trip.toVillageId.toString(),
+              orElse: () => _unknownLocation)
+          .text;
+    }
 
-    from = "$fromNeighborhood, $fromCity, $fromRegion";
-    to = "$toNeighborhood, $toCity, $toRegion";
+    if (!mounted) return;
+    setState(() {
+      from = [fromNeighborhood, fromCity, fromRegion]
+          .where((s) => s.isNotEmpty)
+          .join(", ");
+      to = [toNeighborhood, toCity, toRegion]
+          .where((s) => s.isNotEmpty)
+          .join(", ");
+    });
   }
 
   void _startTimer() {
@@ -269,163 +292,64 @@ class _PaymentScreenState extends State<PaymentScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text12h400w(
-                                      title: fromRegion,
-                                      color: AppTheme.gray,
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      safeSubstring(fromNeighborhood, 3),
-                                      style: const TextStyle(
-                                        fontFamily: AppTheme.fontFamily,
-                                        fontSize: 36,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppTheme.black,
-                                        letterSpacing: 1.5,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text12h400w(
-                                      title: fromCity,
-                                      color: AppTheme.gray,
-                                    ),
-                                  ],
-                                ),
+                          const SizedBox(height: 16),
+                          // From / To — full place names, same style as the
+                          // search result and trip details route cards.
+                          _routeRow(
+                            leading: Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                                border: Border.all(
+                                    color: AppTheme.purple, width: 2),
                               ),
-                              const SizedBox(width: 16),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: const BoxDecoration(
-                                          color: AppTheme.dark,
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                      DottedLine(
-                                        direction: Axis.horizontal,
-                                        lineThickness: 2,
-                                        lineLength: ((MediaQuery.of(context)
-                                                            .size
-                                                            .width -
-                                                        96) /
-                                                    3 -
-                                                40) /
-                                            2,
-                                        dashLength: 2,
-                                        dashColor: AppTheme.gray,
-                                      ),
-                                      Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.black,
-                                          borderRadius:
-                                              BorderRadius.circular(24),
-                                        ),
-                                        child: SvgPicture.asset(
-                                          "assets/icons/car.svg",
-                                          height: 24, // Adjust size as needed
-                                          width: 24,
-                                          colorFilter: const ColorFilter.mode(
-                                            Colors.white,
-                                            BlendMode.srcIn,
-                                          ),
-                                        ),
-                                      ),
-                                      DottedLine(
-                                        direction: Axis.horizontal,
-                                        lineThickness: 2,
-                                        lineLength: ((MediaQuery.of(context)
-                                                            .size
-                                                            .width -
-                                                        96) /
-                                                    3 -
-                                                40) /
-                                            2,
-                                        dashLength: 2,
-                                        dashColor: AppTheme.gray,
-                                      ),
-                                      Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: const BoxDecoration(
-                                          color: AppTheme.dark,
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    widget.trip.vehicle.model,
-                                    style: const TextStyle(
-                                      color: AppTheme.gray,
-                                      fontSize: 12,
-                                      fontFamily: AppTheme.fontFamily,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      toRegion,
-                                      style: const TextStyle(
-                                        fontFamily: AppTheme.fontFamily,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.normal,
-                                        height: 1.5,
-                                        color: AppTheme.gray,
-                                      ),
-                                      textAlign: TextAlign.end,
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      safeSubstring(toNeighborhood, 3),
-                                      style: const TextStyle(
-                                        fontFamily: AppTheme.fontFamily,
-                                        fontSize: 36,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppTheme.black,
-                                        letterSpacing: 1.5,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      toCity,
-                                      style: const TextStyle(
-                                        fontFamily: AppTheme.fontFamily,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.normal,
-                                        height: 1.5,
-                                        color: AppTheme.gray,
-                                      ),
-                                      textAlign: TextAlign.end,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                            ),
+                            text: from.isEmpty ? "—" : from,
                           ),
+                          Container(
+                            height: 1,
+                            margin: const EdgeInsets.only(
+                                left: 28, top: 12, bottom: 12),
+                            color: AppTheme.border,
+                          ),
+                          _routeRow(
+                            leading: const Icon(
+                              Icons.location_on_rounded,
+                              color: AppTheme.red,
+                              size: 16,
+                            ),
+                            text: to.isEmpty ? "—" : to,
+                          ),
+                          if (widget.trip.vehicle.model.isNotEmpty) ...[
+                            const SizedBox(height: 14),
+                            Row(
+                              children: [
+                                const SizedBox(
+                                  width: 16,
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.directions_car_rounded,
+                                      color: AppTheme.gray,
+                                      size: 16,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  widget.trip.vehicle.model.toUpperCase(),
+                                  style: const TextStyle(
+                                    color: AppTheme.gray,
+                                    fontSize: 12,
+                                    fontFamily: AppTheme.fontFamily,
+                                    fontWeight: FontWeight.w500,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -795,10 +719,26 @@ class _PaymentScreenState extends State<PaymentScreen> {
     h1 = time.hour == 0 ? '12' : (time.hour > 12 ? (time.hour - 12).toString() : time.hour.toString());
   }
 
-  String safeSubstring(String text, int length) {
-    return text.length >= length
-        ? text.substring(0, length).toUpperCase()
-        : text.toUpperCase();
+  Widget _routeRow({required Widget leading, required String text}) {
+    return Row(
+      children: [
+        SizedBox(width: 16, child: Center(child: leading)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppTheme.black,
+              fontSize: 14,
+              fontFamily: AppTheme.fontFamily,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Future<void> getBalance() async {

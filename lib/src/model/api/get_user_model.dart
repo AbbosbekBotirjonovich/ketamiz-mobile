@@ -35,6 +35,8 @@ class User {
   String role;
   DateTime? birthDate;
   String drivingVerificationStatus;
+  String drivingLicenceNumber;
+  String drivingLicenceExpiry;
   DateTime? createdAt;
   String image;
   Balance balance;
@@ -49,6 +51,8 @@ class User {
     required this.role,
     required this.birthDate,
     required this.drivingVerificationStatus,
+    required this.drivingLicenceNumber,
+    required this.drivingLicenceExpiry,
     required this.createdAt,
     required this.image,
     required this.balance,
@@ -64,6 +68,8 @@ class User {
         role: "",
         birthDate: null,
         drivingVerificationStatus: "none",
+        drivingLicenceNumber: "",
+        drivingLicenceExpiry: "",
         createdAt: null,
         image: "",
         balance: Balance.empty(),
@@ -80,6 +86,10 @@ class User {
         birthDate: _tryParseDate(json["birth_date"]),
         drivingVerificationStatus:
             json["driving_verification_status"]?.toString() ?? "none",
+        drivingLicenceNumber:
+            json["driving_licence_number"]?.toString() ?? "",
+        drivingLicenceExpiry:
+            json["driving_licence_expiry"]?.toString() ?? "",
         createdAt: _tryParseDate(json["created_at"]),
         image: json["image"]?.toString() ?? "",
         balance: json["balance"] is Map<String, dynamic>
@@ -110,6 +120,8 @@ class User {
     "role": role,
     "birth_date": birthDate?.toIso8601String(),
     "driving_verification_status": drivingVerificationStatus,
+    "driving_licence_number": drivingLicenceNumber,
+    "driving_licence_expiry": drivingLicenceExpiry,
     "created_at": createdAt?.toIso8601String(),
     "image": image,
     "balance": balance.toJson(),

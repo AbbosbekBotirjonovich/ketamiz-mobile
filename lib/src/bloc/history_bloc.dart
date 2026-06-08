@@ -17,7 +17,15 @@ class HistoryBloc {
   Stream<bool> get getLoading => _loadingFetcher.stream;
   Stream<String> get getError => _errorFetcher.stream;
 
-  String _cacheKey(int status) => 'cache_history_$status';
+  // 0=All, 1=InProgress, 2=Completed, 3=Canceled
+  static const _cacheKeys = [
+    'cache_history_all',
+    'cache_history_inprogress',
+    'cache_history_completed',
+    'cache_history_canceled',
+  ];
+  String _cacheKey(int status) =>
+      (status >= 0 && status < _cacheKeys.length) ? _cacheKeys[status] : _cacheKeys[0];
 
   List<BookModel> _parseRaw(List<dynamic> raw) => raw
       .whereType<Map>()
@@ -39,16 +47,19 @@ class HistoryBloc {
       HttpResult response;
       switch (status) {
         case 0:
-          response = await _repository.fetchInProgressTrips();
+          response = await _repository.fetchBookedTripsList();
           break;
         case 1:
-          response = await _repository.fetchCompletedTrips();
+          response = await _repository.fetchInProgressTrips();
           break;
         case 2:
+          response = await _repository.fetchCompletedTrips();
+          break;
+        case 3:
           response = await _repository.fetchCanceledTrips();
           break;
         default:
-          response = await _repository.fetchInProgressTrips();
+          response = await _repository.fetchBookedTripsList();
       }
 
       if (response.isSuccess) {

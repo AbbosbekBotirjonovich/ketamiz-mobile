@@ -31,15 +31,37 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
   List<VehicleModel> myVehicles = [];
   bool isLoading = false;
 
-  bool isDocsVerified = false;
+  String driverStatus = "";
 
   Future<void> getDriverStatus() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String status = prefs.getString('driving_verification_status') ?? "";
 
     setState(() {
-      isDocsVerified = status == "approved";
+      driverStatus = status;
     });
+  }
+
+  /// Shared gate for both Add Vehicle buttons (empty state + bottom bar).
+  void _onAddVehicle() {
+    if (driverStatus == "approved") {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => AddVehicleScreen()),
+      );
+    } else if (driverStatus == "pending") {
+      CenterDialog.showInfo(
+        context,
+        translate("profile.application_pending_title"),
+        translate("profile.application_pending_msg"),
+      );
+    } else {
+      CenterDialog.showActionFailed(
+        context,
+        translate("ketamiz.error"),
+        translate("profile.docs_not_verified"),
+      );
+    }
   }
 
   @override
@@ -195,14 +217,7 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
                                   padding: const EdgeInsets.symmetric(horizontal: 32),
                                   child: SecondaryButton(
                                     title: translate("profile.add_vehicle"),
-                                    onTap: () async {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => AddVehicleScreen(),
-                                        ),
-                                      );
-                                    },
+                                    onTap: _onAddVehicle,
                                   ),
                                 ),
                                 const SizedBox(height: 92),
@@ -251,18 +266,7 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
               padding: const EdgeInsets.all(16.0),
               child: PrimaryButton(
                 title: translate("profile.add_vehicle"),
-                onTap: () {
-                  if (isDocsVerified) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AddVehicleScreen(),
-                      ),
-                    );
-                  }else{
-                    CenterDialog.showActionFailed(context, translate("ketamiz.error"), translate("profile.docs_not_verified"));
-                  }
-                },
+                onTap: _onAddVehicle,
               ),
             ),
           ),

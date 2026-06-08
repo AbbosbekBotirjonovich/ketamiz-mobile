@@ -28,6 +28,11 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLoading = false;
   bool isLogin = true;
 
+  // Keeps the focused field visible above the keyboard AND the
+  // bottom-anchored login/register button (48 high + 24 bottom padding).
+  static const EdgeInsets _fieldScrollPadding =
+      EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 110);
+
   Repository _repository = Repository();
 
   String _getErrorMessage(dynamic result) {
@@ -79,7 +84,8 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: true,
+      backgroundColor: const Color(0xFFFFF8EE),
       body: GestureDetector(
         onTap: () {
           FocusScopeNode currentFocus = FocusScope.of(context);
@@ -92,62 +98,39 @@ class _LoginScreenState extends State<LoginScreen> {
             Column(
               children: [
                 Container(
-                  color: AppTheme.black,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.only(top: 98, left: 16, right: 16),
-                    height: MediaQuery.sizeOf(context).height / 2.2,
-                    decoration: BoxDecoration(
-                      image: DecorationImage(
-                        image: const AssetImage('assets/images/intersect.png'),
-                        fit: BoxFit.cover,
-                        colorFilter: ColorFilter.mode(
-                          Colors.white.withOpacity(0.05),
-                          BlendMode.srcIn,
+                  color: const Color(0xFFFFF8EE),
+                  padding: const EdgeInsets.only(top: 60, left: 24, right: 24, bottom: 24),
+                  height: MediaQuery.sizeOf(context).height / 2.2,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Image.asset(
+                          'assets/logos/ketamiz-logo-small.png',
+                          height: 80,
+                          width: 80,
                         ),
                       ),
-                      gradient: LinearGradient(
-                        begin: Alignment.topRight,
-                        end: Alignment.centerLeft,
-                        colors: [
-                          AppTheme.purple.withOpacity(0.4),
-                          AppTheme.purple.withOpacity(0.01),
-                        ],
+                      const SizedBox(height: 28),
+                      Text(
+                        "${translate("auth.hello")},\n${translate("auth.welcome_back")}",
+                        style: const TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: AppTheme.fontFamily,
+                          height: 1.4,
+                          letterSpacing: 1,
+                          color: AppTheme.black,
+                        ),
+                        textAlign: TextAlign.left,
                       ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            Text(
-                              "${translate("auth.hello")},\n${translate("auth.welcome_back")}",
-                              style: const TextStyle(
-                                fontSize: 36,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: AppTheme.fontFamily,
-                                height: 1.4,
-                                letterSpacing: 1,
-                                color: Colors.white,
-                              ),
-                              textAlign: TextAlign.left,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text16h500w(
-                                title: translate("auth.please_enter"),
-                                color: AppTheme.light,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                      const SizedBox(height: 8),
+                      Text16h500w(
+                        title: translate("auth.please_enter"),
+                        color: AppTheme.gray,
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -160,14 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 470),
                     margin: EdgeInsets.only(top: isLogin ? 340 : 0),
-                    // Ensure full width
-                    padding: EdgeInsets.only(
-                      left: 16.0 * MediaQuery.textScalerOf(context).scale(1),
-                      right: 16.0 * MediaQuery.textScalerOf(context).scale(1),
-                      top: 0,
-                      bottom: 24.0,
-                    ),
-                    height: 24,
+                    height: 32,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.only(
@@ -176,21 +152,37 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  Container(
-                    height: isLogin
-                        ? MediaQuery.of(context).size.height - 340
-                        : MediaQuery.of(context).size.height - 22,
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: isLogin
+                          ? MediaQuery.of(context).size.height - 340
+                          : MediaQuery.of(context).size.height - 22,
+                    ),
+                    child: Container(
                     padding: const EdgeInsets.only(left: 16, right: 16),
                     decoration: const BoxDecoration(
                       color: Colors.white,
                     ),
                     child: ListView(
                       shrinkWrap: true,
-                      padding: EdgeInsets.only(top: isLogin ? 0 : 98),
-                      physics: isLogin
-                          ? const NeverScrollableScrollPhysics()
-                          : const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.only(
+                        top: isLogin ? 0 : 20,
+                        bottom: 100,
+                      ),
+                      // The outer SingleChildScrollView is the only scrollable —
+                      // so focused fields are auto-scrolled in the right view.
+                      physics: const NeverScrollableScrollPhysics(),
                       children: [
+                        if (!isLogin) ...[
+                          Center(
+                            child: Image.asset(
+                              'assets/logos/ketamiz-logo-small.png',
+                              height: 72,
+                              width: 72,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                        ],
                         Container(
                           height: 56,
                           padding: const EdgeInsets.all(8),
@@ -305,6 +297,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     icon: Icons.phone_outlined,
                                     controller: phoneController,
                                     phone: true,
+                                    scrollPadding: _fieldScrollPadding,
+                                    textInputAction: TextInputAction.next,
                                   ),
                                   const SizedBox(height: 16),
                                   MainTextField(
@@ -312,6 +306,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     icon: Icons.lock_outline_rounded,
                                     controller: passController,
                                     pass: true,
+                                    scrollPadding: _fieldScrollPadding,
+                                    textInputAction: TextInputAction.done,
                                   ),
                                 ],
                               )
@@ -323,6 +319,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     hintText: translate("auth.first_name"),
                                     icon: Icons.person_outline_rounded,
                                     controller: firstNameController,
+                                    scrollPadding: _fieldScrollPadding,
+                                    textInputAction: TextInputAction.next,
                                   ),
                                   const SizedBox(height: 16),
                                   Container(
@@ -343,6 +341,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                     child: TextFormField(
                                       controller: lastNameController,
+                                      scrollPadding: _fieldScrollPadding,
+                                      textInputAction: TextInputAction.next,
                                       textAlignVertical: TextAlignVertical.center,
                                       cursorColor: AppTheme.purple,
                                       enableInteractiveSelection: true,
@@ -410,6 +410,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     hintText: translate("auth.father_name"),
                                     icon: Icons.person_outline_rounded,
                                     controller: fatherNameController,
+                                    scrollPadding: _fieldScrollPadding,
+                                    textInputAction: TextInputAction.next,
                                   ),
                                   const SizedBox(height: 16),
                                   MainTextField(
@@ -417,12 +419,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                     icon: Icons.phone_outlined,
                                     controller: phoneRegController,
                                     phone: true,
+                                    scrollPadding: _fieldScrollPadding,
+                                    textInputAction: TextInputAction.next,
                                   ),
                                   const SizedBox(height: 16),
                                   MainTextField(
                                     hintText: translate("auth.email"),
                                     icon: Icons.email_outlined,
                                     controller: emailController,
+                                    scrollPadding: _fieldScrollPadding,
+                                    textInputAction: TextInputAction.next,
                                   ),
                                   const SizedBox(height: 16),
                                   MainTextField(
@@ -430,6 +436,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     icon: Icons.lock_outline_rounded,
                                     controller: passRegController,
                                     pass: true,
+                                    scrollPadding: _fieldScrollPadding,
+                                    textInputAction: TextInputAction.next,
                                   ),
                                   const SizedBox(height: 16),
                                   MainTextField(
@@ -438,11 +446,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                     icon: Icons.lock_outline_rounded,
                                     controller: passAgainController,
                                     pass: true,
+                                    scrollPadding: _fieldScrollPadding,
+                                    textInputAction: TextInputAction.done,
                                   ),
                                 ],
                               ),
                       ],
                     ),
+                  ),
                   ),
                 ],
               ),
@@ -537,7 +548,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 MaterialPageRoute(
                                   builder: (context) => VerificationScreen(
                                     phone: phone,
-                                    code: "", // Code will be sent or requested again
                                   ),
                                 ),
                               );
@@ -604,7 +614,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                   builder: (context) {
                                     return VerificationScreen(
                                       phone: phone,
-                                      code: result.code.toString(),
                                     );
                                   },
                                 ),

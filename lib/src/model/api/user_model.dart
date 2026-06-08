@@ -11,6 +11,9 @@ class UserModel {
   int isVerified;
   dynamic verificationCode;
   String drivingVerificationStatus;
+  String drivingLicenceNumber;
+  String drivingLicenceExpiry;
+  String birthDate;
   DateTime createdAt;
   DateTime updatedAt;
 
@@ -27,6 +30,9 @@ class UserModel {
     required this.isVerified,
     required this.verificationCode,
     required this.drivingVerificationStatus,
+    required this.drivingLicenceNumber,
+    required this.drivingLicenceExpiry,
+    required this.birthDate,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -45,6 +51,11 @@ class UserModel {
         verificationCode: json["verification_code"] ?? "",
         drivingVerificationStatus:
             json["driving_verification_status"]?.toString() ?? "",
+        drivingLicenceNumber:
+            json["driving_licence_number"]?.toString() ?? "",
+        drivingLicenceExpiry:
+            json["driving_licence_expiry"]?.toString() ?? "",
+        birthDate: json["birth_date"]?.toString() ?? "",
         createdAt: _parseDate(json["created_at"]),
         updatedAt: _parseDate(json["updated_at"]),
       );

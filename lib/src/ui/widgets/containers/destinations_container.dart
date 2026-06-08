@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
-import '../../../lan_localization/load_places.dart';
 import '../../../model/api/trip_list_model.dart';
-import '../../../model/location_model.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/utils.dart';
 
@@ -12,68 +9,59 @@ class DestinationsContainer extends StatelessWidget {
 
   final TripListModel trip;
 
-  static const _weekDays = <int, String>{
-    1: 'Monday',
-    2: 'Tuesday',
-    3: 'Wednesday',
-    4: 'Thursday',
-    5: 'Friday',
-    6: 'Saturday',
-    7: 'Sunday',
-  };
+  String get _fromPlace {
+    if (trip.fromCity.isNotEmpty) return trip.fromCity;
+    if (trip.fromRegion.isNotEmpty) return trip.fromRegion;
+    return trip.fromWhere;
+  }
 
-  static const _months = <int, String>{
-    1: 'January',
-    2: 'February',
-    3: 'March',
-    4: 'April',
-    5: 'May',
-    6: 'June',
-    7: 'July',
-    8: 'August',
-    9: 'September',
-    10: 'October',
-    11: 'November',
-    12: 'December',
-  };
+  String get _toPlace {
+    if (trip.toCity.isNotEmpty) return trip.toCity;
+    if (trip.toRegion.isNotEmpty) return trip.toRegion;
+    return trip.toWhere;
+  }
+
+  Color get _seatsColor {
+    if (trip.availableSeats <= 1) return AppTheme.red;
+    if (trip.availableSeats <= 3) return AppTheme.yellow;
+    return AppTheme.green;
+  }
+
+  String get _status => trip.status.toLowerCase();
+
+  /// Seats only make sense while the trip can still be booked.
+  bool get _isActive => _status.isEmpty || _status == 'active';
+
+  Color get _statusColor {
+    switch (_status) {
+      case 'completed':
+        return const Color(0xFF4CAF50);
+      case 'canceled':
+      case 'cancelled':
+        return const Color(0xFFE53935);
+      default:
+        return AppTheme.purple;
+    }
+  }
+
+  String get _statusText {
+    switch (_status) {
+      case 'active':
+        return translate('history.active');
+      case 'in_progress':
+        return translate('history.in_progress');
+      case 'completed':
+        return translate('history.completed');
+      case 'canceled':
+      case 'cancelled':
+        return translate('history.canceled');
+      default:
+        return trip.status;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final time = trip.startTime;
-    final weekDay = _weekDays[time.weekday] ?? 'Sunday';
-    final month = _months[time.month] ?? 'December';
-    final m1 =
-        time.minute < 10 ? '0${time.minute}' : time.minute.toString();
-    final t1 = time.hour < 12 ? 'AM' : 'PM';
-    final hour12 = time.hour == 0
-        ? 12
-        : (time.hour > 12 ? time.hour - 12 : time.hour);
-    final h1 = hour12.toString();
-
-    final unknown = LocationModel(id: "0", text: "—", parentID: "0");
-    final fromVillage = LocationData.villages.firstWhere(
-        (n) => n.id == trip.fromVillageId.toString(),
-        orElse: () => unknown);
-    final fromCityModel = LocationData.cities.firstWhere(
-        (c) => c.id == trip.fromCityId.toString(),
-        orElse: () => unknown);
-    final fromRegion = LocationData.regions.firstWhere(
-        (r) => r.id == trip.fromRegionId.toString(),
-        orElse: () => unknown);
-    final toVillage = LocationData.villages.firstWhere(
-        (n) => n.id == trip.toVillageId.toString(),
-        orElse: () => unknown);
-    final toCityModel = LocationData.cities.firstWhere(
-        (c) => c.id == trip.toCityId.toString(),
-        orElse: () => unknown);
-    final toRegion = LocationData.regions.firstWhere(
-        (r) => r.id == trip.toRegionId.toString(),
-        orElse: () => unknown);
-
-    final from =
-        "${fromVillage.text}, ${fromCityModel.text}, ${fromRegion.text}";
-    final to = "${toVillage.text}, ${toCityModel.text}, ${toRegion.text}";
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -81,193 +69,241 @@ class DestinationsContainer extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            offset: const Offset(0, 5),
-            blurRadius: 25,
+            offset: const Offset(0, 4),
+            blurRadius: 16,
             spreadRadius: 0,
-            color: AppTheme.dark.withOpacity(0.2),
+            color: AppTheme.black.withOpacity(0.06),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Top row: status badge + seats badge (active only) + price ────
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppTheme.light,
-                      borderRadius: BorderRadius.circular(16),
+              if (trip.status.isNotEmpty) ...[
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: _statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    _statusText,
+                    style: TextStyle(
+                      color: _statusColor,
+                      fontSize: 12,
+                      fontFamily: AppTheme.fontFamily,
+                      fontWeight: FontWeight.w600,
                     ),
-                    child: Text(
-                      "${trip.availableSeats} ${translate("home.seats_available")}",
-                      style: TextStyle(
-                        color: trip.availableSeats == 1
-                            ? AppTheme.red
-                            : trip.availableSeats <= 3
-                                ? AppTheme.yellow
-                                : AppTheme.green,
-                        fontSize: 12,
-                        fontFamily: AppTheme.fontFamily,
-                        fontWeight: FontWeight.w600,
-                      ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              // Seats left — only while the trip is still bookable
+              if (_isActive)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: _seatsColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    "${trip.availableSeats} ${translate("home.seats_left")}",
+                    style: TextStyle(
+                      color: _seatsColor,
+                      fontSize: 12,
+                      fontFamily: AppTheme.fontFamily,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              const Spacer(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    "${Utils.priceFormat(trip.pricePerSeat)} ${translate("currency")}",
+                    style: const TextStyle(
+                      color: AppTheme.black,
+                      fontSize: 17,
+                      fontFamily: AppTheme.fontFamily,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    translate("home.per_passenger"),
+                    style: const TextStyle(
+                      color: AppTheme.gray,
+                      fontSize: 11,
+                      fontFamily: AppTheme.fontFamily,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ],
               ),
-              const Spacer(),
-              Text(
-                "${Utils.priceFormat(trip.pricePerSeat)} ${translate("currency")}",
-                style: const TextStyle(
-                  color: AppTheme.black,
-                  fontSize: 20,
-                  fontFamily: AppTheme.fontFamily,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
             ],
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Text(
-                "$h1:$m1 $t1",
-                style: const TextStyle(
-                  color: AppTheme.black,
-                  fontSize: 14,
-                  fontFamily: AppTheme.fontFamily,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 1,
-                ),
-              ),
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                width: 4,
-                height: 4,
-                decoration: const BoxDecoration(
-                  color: AppTheme.black,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              Text(
-                "$weekDay, $month ${trip.startTime.day}",
-                style: const TextStyle(
-                  color: AppTheme.gray,
-                  fontSize: 14,
-                  fontFamily: AppTheme.fontFamily,
-                  fontWeight: FontWeight.normal,
-                  letterSpacing: 1,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
+          // ── Body row: timeline + driver ──────────────────────────────────
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              // Timeline dots
               Column(
                 children: [
                   Container(
-                    width: 10,
-                    height: 10,
-                    decoration: const BoxDecoration(
-                      color: AppTheme.dark,
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
+                      color: Colors.white,
+                      border: Border.all(color: AppTheme.purple, width: 2),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Column(
-                    children: List.generate(
-                      3,
-                      (index) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        child: Container(
-                          width: 2,
-                          height: 8,
-                          color: AppTheme.gray,
-                        ),
+                  ...List.generate(
+                    4,
+                    (_) => Container(
+                      margin: const EdgeInsets.symmetric(vertical: 2),
+                      width: 2,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: AppTheme.border,
+                        borderRadius: BorderRadius.circular(1),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  SvgPicture.asset(
-                    "assets/icons/map_pin.svg",
-                    height: 24,
-                    width: 24,
-                    colorFilter: const ColorFilter.mode(
-                      AppTheme.purple,
-                      BlendMode.srcIn,
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppTheme.purple,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
+              // Times + places
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      from,
+                      Utils.timeFormat(trip.startTime),
                       style: const TextStyle(
                         color: AppTheme.black,
                         fontSize: 16,
                         fontFamily: AppTheme.fontFamily,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 12),
                     Text(
-                      to,
+                      _fromPlace,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppTheme.dark,
+                        fontSize: 13,
+                        fontFamily: AppTheme.fontFamily,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      Utils.timeFormat(trip.endTime),
                       style: const TextStyle(
                         color: AppTheme.black,
                         fontSize: 16,
                         fontFamily: AppTheme.fontFamily,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      _toPlace,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppTheme.dark,
+                        fontSize: 13,
+                        fontFamily: AppTheme.fontFamily,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
+              // Driver info
               Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
-                    height: 64,
-                    width: 64,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
-                      color: AppTheme.black,
-                      borderRadius: BorderRadius.circular(16),
+                      color: AppTheme.purple.withOpacity(0.1),
+                      shape: BoxShape.circle,
                     ),
-                    child: Center(
-                      child: SvgPicture.asset(
-                        height: 24,
-                        "assets/icons/car.svg",
-                        colorFilter: const ColorFilter.mode(
-                          Colors.white,
-                          BlendMode.srcIn,
-                        ),
+                    child: const Icon(
+                      Icons.person_rounded,
+                      color: AppTheme.purple,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    width: 92,
+                    child: Text(
+                      trip.driver.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: AppTheme.black,
+                        fontSize: 12,
+                        fontFamily: AppTheme.fontFamily,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    trip.vehicle.model,
-                    style: const TextStyle(
-                      color: AppTheme.black,
-                      fontSize: 12,
-                      fontFamily: AppTheme.fontFamily,
-                      fontWeight: FontWeight.w500,
+                  if (trip.vehicle.model.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.directions_car_rounded,
+                          color: AppTheme.gray,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 4),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 74),
+                          child: Text(
+                            trip.vehicle.model.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppTheme.gray,
+                              fontSize: 11,
+                              fontFamily: AppTheme.fontFamily,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
+                  ],
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 8),
         ],
       ),
     );

@@ -1,19 +1,16 @@
-import 'package:dotted_line/dotted_line.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:ketamiz/src/model/api/driver_trips_list_model.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:ketamiz/src/model/passenger_info_model.dart';
 import 'package:ketamiz/src/ui/menu/home/map_single_screen.dart';
-import 'package:ketamiz/src/ui/widgets/buttons/secondary_button.dart';
 import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_14h_400w.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
 import 'package:ketamiz/src/utils/utils.dart';
-import '../../../lan_localization/load_places.dart';
 import '../../../theme/app_theme.dart';
-import '../../widgets/texts/text_12h_400w.dart';
 import '../home/map_route_screen.dart';
 
 class DriverTripDetailsScreen extends StatefulWidget {
@@ -31,13 +28,6 @@ class DriverTripDetailsScreen extends StatefulWidget {
 
 class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
   String pricePerSeat = "";
-  int passengersNum = 1;
-
-  String weekDay = '';
-  String month = '';
-  String t1 = '';
-  String m1 = '';
-  String h1 = '';
 
   String from = '';
   String to = '';
@@ -49,45 +39,33 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
   String toCity = "";
   String toNeighborhood = "";
 
+  List<PassengerInfoModel> passengersList = [];
+
   @override
   void initState() {
-    if (widget.trip.pricePerSeat.contains(".")) {
-      pricePerSeat = widget.trip.pricePerSeat.split(".")[0];
-    } else {
-      pricePerSeat = widget.trip.pricePerSeat;
-    }
-    initTimeState(widget.trip.startTime);
-    setLocations();
-    _loadPassengers();
     super.initState();
+    final p = widget.trip.pricePerSeat;
+    pricePerSeat = p.contains(".") ? p.split(".")[0] : p;
+    _setLocations();
+    _loadPassengers();
   }
 
-  void setLocations() {
-    fromRegion = LocationData.regions
-        .firstWhere((r) => r.id == widget.trip.fromRegionId.toString())
-        .text;
-    fromCity = LocationData.cities
-        .firstWhere((c) => c.id == widget.trip.fromCityId.toString())
-        .text;
-    fromNeighborhood = LocationData.villages
-        .firstWhere((n) => n.id == widget.trip.fromVillageId.toString())
-        .text;
+  void _setLocations() {
+    final t = widget.trip;
+    fromRegion = t.fromRegion;
+    fromCity = t.fromCity;
+    fromNeighborhood = t.fromVillage;
+    toRegion = t.toRegion;
+    toCity = t.toCity;
+    toNeighborhood = t.toVillage;
 
-    toRegion = LocationData.regions
-        .firstWhere((r) => r.id == widget.trip.toRegionId.toString())
-        .text;
-    toCity = LocationData.cities
-        .firstWhere((c) => c.id == widget.trip.toCityId.toString())
-        .text;
-    toNeighborhood = LocationData.villages
-        .firstWhere((n) => n.id == widget.trip.toVillageId.toString())
-        .text;
-
-    from = "$fromNeighborhood, $fromCity, $fromRegion";
-    to = "$toNeighborhood, $toCity, $toRegion";
+    from = [fromNeighborhood, fromCity, fromRegion]
+        .where((s) => s.isNotEmpty)
+        .join(", ");
+    to = [toNeighborhood, toCity, toRegion]
+        .where((s) => s.isNotEmpty)
+        .join(", ");
   }
-
-  List<PassengerInfoModel> passengersList = [];
 
   void _loadPassengers() {
     final bookings = widget.trip.bookings;
@@ -103,655 +81,832 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
     }
   }
 
+  Color get _seatsColor {
+    final s = widget.trip.availableSeats;
+    if (s <= 1) return AppTheme.red;
+    if (s <= 3) return AppTheme.yellow;
+    return AppTheme.green;
+  }
+
+  Color _statusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'active':
+      case 'in_progress':
+        return AppTheme.purple;
+      case 'completed':
+        return AppTheme.green;
+      case 'canceled':
+      case 'cancelled':
+        return AppTheme.red;
+      default:
+        return AppTheme.purple;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.light,
       appBar: AppBar(
         leading: const LeadingBack(),
         title: Text16h500w(title: translate("home.trip_details")),
         centerTitle: true,
         elevation: 0,
+        backgroundColor: Colors.white,
       ),
       body: Column(
         children: [
           Expanded(
             child: ListView(
-              shrinkWrap: true,
-              padding: const EdgeInsets.only(
-                top: 22,
-                left: 16,
-                right: 16,
-                bottom: 24,
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
               children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.dark.withOpacity(0.1),
-                        spreadRadius: 15,
-                        blurRadius: 25,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            "$h1:$m1 $t1",
-                            style: const TextStyle(
-                              color: AppTheme.black,
-                              fontSize: 14,
-                              fontFamily: AppTheme.fontFamily,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                          Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 8),
-                            width: 4,
-                            height: 4,
-                            decoration: const BoxDecoration(
-                              color: AppTheme.black,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          Text(
-                            "$weekDay, $month ${widget.trip.startTime.day}",
-                            style: const TextStyle(
-                              color: AppTheme.gray,
-                              fontSize: 14,
-                              fontFamily: AppTheme.fontFamily,
-                              fontWeight: FontWeight.normal,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text12h400w(
-                                  title: fromRegion,
-                                  color: AppTheme.gray,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  safeSubstring(fromNeighborhood, 3),
-                                  style: const TextStyle(
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontSize: 36,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.black,
-                                    letterSpacing: 1.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text12h400w(
-                                  title: fromCity,
-                                  color: AppTheme.gray,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: AppTheme.dark,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  DottedLine(
-                                    direction: Axis.horizontal,
-                                    lineThickness: 2,
-                                    lineLength:
-                                        ((MediaQuery.of(context).size.width -
-                                                        96) /
-                                                    3 -
-                                                40) /
-                                            2,
-                                    dashLength: 2,
-                                    dashColor: AppTheme.gray,
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.black,
-                                      borderRadius: BorderRadius.circular(24),
-                                    ),
-                                    child: SvgPicture.asset(
-                                      "assets/icons/car.svg",
-                                      height: 24, // Adjust size as needed
-                                      width: 24,
-                                      colorFilter: const ColorFilter.mode(
-                                        Colors.white,
-                                        BlendMode.srcIn,
-                                      ),
-                                    ),
-                                  ),
-                                  DottedLine(
-                                    direction: Axis.horizontal,
-                                    lineThickness: 2,
-                                    lineLength:
-                                        ((MediaQuery.of(context).size.width -
-                                                        96) /
-                                                    3 -
-                                                40) /
-                                            2,
-                                    dashLength: 2,
-                                    dashColor: AppTheme.gray,
-                                  ),
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: AppTheme.dark,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                widget.trip.vehicle.model,
-                                style: const TextStyle(
-                                  color: AppTheme.gray,
-                                  fontSize: 12,
-                                  fontFamily: AppTheme.fontFamily,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  toRegion,
-                                  style: const TextStyle(
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.normal,
-                                    height: 1.5,
-                                    color: AppTheme.gray,
-                                  ),
-                                  textAlign: TextAlign.end,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  safeSubstring(toNeighborhood, 3),
-                                  style: const TextStyle(
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontSize: 36,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.black,
-                                    letterSpacing: 1.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  toCity,
-                                  style: const TextStyle(
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.normal,
-                                    height: 1.5,
-                                    color: AppTheme.gray,
-                                  ),
-                                  textAlign: TextAlign.end,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text16h500w(title: translate("home.details")),
+                _buildRouteCard(),
                 const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.dark.withOpacity(0.1),
-                        spreadRadius: 15,
-                        blurRadius: 25,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text14h400w(
-                                  title: translate("home.travelling_from"),
-                                  color: AppTheme.gray,
-                                ),
-                                const SizedBox(height: 4),
-                                Text16h500w(
-                                  title: from,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => MapSingleScreen(
-                                    location: LatLng(
-                                      double.parse(widget.trip.startLat),
-                                      double.parse(widget.trip.startLong),
-                                    ),
-                                    place: from,
-                                  ),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              height: 40,
-                              width: 40,
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: AppTheme.light,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: SvgPicture.asset(
-                                "assets/icons/map_pin.svg",
-                                height: 24,
-                                width: 24,
-                                colorFilter: const ColorFilter.mode(
-                                  AppTheme.black,
-                                  BlendMode.srcIn,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text14h400w(
-                                  title: translate("home.where_to"),
-                                  color: AppTheme.gray,
-                                ),
-                                const SizedBox(height: 4),
-                                Text16h500w(
-                                  title: to,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => MapSingleScreen(
-                                    location: LatLng(
-                                      double.parse(widget.trip.endLat),
-                                      double.parse(widget.trip.endLong),
-                                    ),
-                                    place: to,
-                                  ),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              height: 40,
-                              width: 40,
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: AppTheme.light,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: SvgPicture.asset(
-                                "assets/icons/map_pin.svg",
-                                height: 24,
-                                width: 24,
-                                colorFilter: const ColorFilter.mode(
-                                  AppTheme.black,
-                                  BlendMode.srcIn,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text14h400w(
-                            title: translate("home.departure_date"),
-                            color: AppTheme.gray,
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text14h400w(
-                                title: Utils.scheduleDateFormat(
-                                    widget.trip.startTime),
-                                color: AppTheme.gray,
-                              ),
-                              const SizedBox(height: 4),
-                              Text16h500w(
-                                title:
-                                    "${widget.trip.startTime.hour}:${widget.trip.startTime.minute} ${widget.trip.startTime.hour < 13 ? 'AM' : 'PM'}",
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text14h400w(
-                            title: translate("home.arrival_date"),
-                            color: AppTheme.gray,
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text14h400w(
-                                title: Utils.scheduleDateFormat(
-                                    widget.trip.startTime),
-                                color: AppTheme.gray,
-                              ),
-                              const SizedBox(height: 4),
-                              Text16h500w(
-                                title:
-                                    "${widget.trip.endTime.hour}:${widget.trip.endTime.minute} ${widget.trip.endTime.hour < 13 ? 'AM' : 'PM'}",
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text14h400w(
-                                title: translate("home.available_seats"),
-                                color: AppTheme.gray,
-                              ),
-                              const SizedBox(height: 4),
-                              Text16h500w(
-                                  title: "${widget.trip.availableSeats}x"),
-                            ],
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text14h400w(
-                                title: translate("home.price_per_seat"),
-                                color: AppTheme.gray,
-                              ),
-                              const SizedBox(height: 4),
-                              Text16h500w(
-                                  title:
-                                      "${Utils.priceFormat(pricePerSeat)} ${translate("currency")}"),
-                            ],
-                          )
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      SecondaryButton(
-                        title: translate("home.view_route_map"),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) {
-                                return MapRouteScreen(
-                                  start: LatLng(
-                                      double.parse(widget.trip.startLat),
-                                      double.parse(widget.trip.startLong)),
-                                  end: LatLng(double.parse(widget.trip.endLat),
-                                      double.parse(widget.trip.endLong)),
-                                  startText: from,
-                                  endText: to,
-                                );
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text16h500w(title: translate("home.passenger_info")),
+                _buildDetailsCard(),
                 const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.dark.withOpacity(0.1),
-                        spreadRadius: 15,
-                        blurRadius: 25,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text14h400w(
-                              title: translate("home.number_passenger"),
-                              color: AppTheme.gray,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text16h500w(title: passengersNum.toString()),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: passengersList.length,
-                        padding: EdgeInsets.zero,
-                        itemBuilder: (context, index) {
-                          return Column(
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(24),
-                                    ),
-                                    child: const Icon(
-                                      Icons.person,
-                                      size: 24,
-                                      color: AppTheme.black,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text14h400w(
-                                        title: passengersList[index].fullName,
-                                        color: AppTheme.black,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text14h400w(
-                                        title: passengersList[index].phone,
-                                        color: AppTheme.gray,
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              index == passengersList.length - 1? const SizedBox(): const Divider(),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
+                _buildPassengersCard(),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.only(
-              bottom: 32,
-              top: 24,
-              left: 16,
-              right: 16,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.dark.withOpacity(0.1),
-                  spreadRadius: 15,
-                  blurRadius: 25,
-                  offset: const Offset(0, 5),
+          _buildBottomBar(),
+        ],
+      ),
+    );
+  }
+
+  // ── Route hero card ────────────────────────────────────────────────────────
+  Widget _buildRouteCard() {
+    final statusColor = _statusColor(widget.trip.status);
+    final vehicleModel = widget.trip.vehicle.model;
+    final vehicleNumber = widget.trip.vehicle.carNumber;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            offset: const Offset(0, 4),
+            blurRadius: 16,
+            color: AppTheme.black.withValues(alpha: 0.06),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Status badge + price row
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text16h500w(
-                      title: "${translate("home.total_price")}:",
-                      color: AppTheme.gray,
+                child: Text(
+                  widget.trip.status.toUpperCase(),
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: 11,
+                    fontFamily: AppTheme.fontFamily,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    "${Utils.priceFormat(pricePerSeat)} ${translate("currency")}",
+                    style: const TextStyle(
+                      color: AppTheme.black,
+                      fontSize: 17,
+                      fontFamily: AppTheme.fontFamily,
+                      fontWeight: FontWeight.w700,
                     ),
+                  ),
+                  Text(
+                    translate("home.per_passenger"),
+                    style: const TextStyle(
+                      color: AppTheme.gray,
+                      fontSize: 11,
+                      fontFamily: AppTheme.fontFamily,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          // Timeline + places + vehicle block
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Vertical timeline
+              Column(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                      border: Border.all(color: AppTheme.purple, width: 2),
+                    ),
+                  ),
+                  ...List.generate(
+                    4,
+                    (_) => Container(
+                      margin: const EdgeInsets.symmetric(vertical: 2),
+                      width: 2,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: AppTheme.border,
+                        borderRadius: BorderRadius.circular(1),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppTheme.purple,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 12),
+              // Times + places
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      "${Utils.priceFormat((int.parse(pricePerSeat) * passengersNum).toString())} ${translate("currency")}",
+                      Utils.timeFormat(widget.trip.startTime),
                       style: const TextStyle(
                         color: AppTheme.black,
-                        fontSize: 20,
+                        fontSize: 16,
                         fontFamily: AppTheme.fontFamily,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      from.isEmpty ? "—" : from,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppTheme.dark,
+                        fontSize: 13,
+                        fontFamily: AppTheme.fontFamily,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      Utils.timeFormat(widget.trip.endTime),
+                      style: const TextStyle(
+                        color: AppTheme.black,
+                        fontSize: 16,
+                        fontFamily: AppTheme.fontFamily,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      to.isEmpty ? "—" : to,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppTheme.dark,
+                        fontSize: 13,
+                        fontFamily: AppTheme.fontFamily,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                SecondaryButton(
-                  title: translate("ketamiz.edit_trip"),
-                  onTap: () {},
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 12),
+              // Vehicle block
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppTheme.purple.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.directions_car_rounded,
+                      color: AppTheme.purple,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _seatsColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      "${widget.trip.availableSeats} ${translate("home.seats_left")}",
+                      style: TextStyle(
+                        color: _seatsColor,
+                        fontSize: 11,
+                        fontFamily: AppTheme.fontFamily,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  if (vehicleModel.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 88),
+                      child: Text(
+                        vehicleModel.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: AppTheme.gray,
+                          fontSize: 11,
+                          fontFamily: AppTheme.fontFamily,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (vehicleNumber.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 88),
+                      child: Text(
+                        vehicleNumber,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: AppTheme.gray,
+                          fontSize: 10,
+                          fontFamily: AppTheme.fontFamily,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  initTimeState(DateTime time) {
-    m1 = time.minute < 10 ? '0${time.minute}' : time.minute.toString();
-    time.weekday == 1
-        ? weekDay = 'Monday'
-        : time.weekday == 2
-            ? weekDay = 'Tuesday'
-            : time.weekday == 3
-                ? weekDay = 'Wednesday'
-                : time.weekday == 4
-                    ? weekDay = 'Thursday'
-                    : time.weekday == 5
-                        ? weekDay = 'Friday'
-                        : time.weekday == 6
-                            ? weekDay = 'Saturday'
-                            : weekDay = 'Sunday';
-
-    time.month == 1
-        ? month = 'January'
-        : time.month == 2
-            ? month = 'February'
-            : time.month == 3
-                ? month = 'March'
-                : time.month == 4
-                    ? month = 'April'
-                    : time.month == 5
-                        ? month = 'May'
-                        : time.month == 6
-                            ? month = 'June'
-                            : time.month == 7
-                                ? month = 'July'
-                                : time.month == 8
-                                    ? month = 'August'
-                                    : time.month == 9
-                                        ? month = 'September'
-                                        : time.month == 10
-                                            ? month = 'October'
-                                            : time.month == 11
-                                                ? month = 'November'
-                                                : month = 'December';
-
-    time.hour < 13 ? t1 = 'AM' : t1 = 'PM';
-    h1 = time.hour < 13 ? time.hour.toString() : (time.hour - 12).toString();
+  // ── Details card ───────────────────────────────────────────────────────────
+  Widget _buildDetailsCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            offset: const Offset(0, 4),
+            blurRadius: 16,
+            color: AppTheme.black.withValues(alpha: 0.06),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text16h500w(title: translate("home.details")),
+          const SizedBox(height: 14),
+          _infoRow(
+            icon: Icons.radio_button_checked_rounded,
+            iconColor: AppTheme.purple,
+            label: translate("home.travelling_from"),
+            child: Expanded(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      from.isEmpty ? "—" : from,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                      style: const TextStyle(
+                        fontFamily: AppTheme.fontFamily,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: AppTheme.black,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _mapPinButton(() {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => MapSingleScreen(
+                          location: LatLng(
+                            double.parse(widget.trip.startLat),
+                            double.parse(widget.trip.startLong),
+                          ),
+                          place: from,
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+          _divider(),
+          _infoRow(
+            icon: Icons.location_on_rounded,
+            iconColor: AppTheme.red,
+            label: translate("home.where_to"),
+            child: Expanded(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      to.isEmpty ? "—" : to,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                      style: const TextStyle(
+                        fontFamily: AppTheme.fontFamily,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: AppTheme.black,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _mapPinButton(() {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => MapSingleScreen(
+                          location: LatLng(
+                            double.parse(widget.trip.endLat),
+                            double.parse(widget.trip.endLong),
+                          ),
+                          place: to,
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+          _divider(),
+          _infoRow(
+            icon: Icons.calendar_today_rounded,
+            iconColor: AppTheme.purple,
+            label: translate("home.departure_date"),
+            valueWidget: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  Utils.searchDateFormat(widget.trip.startTime),
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    color: AppTheme.gray,
+                  ),
+                ),
+                Text(
+                  Utils.timeFormat(widget.trip.startTime),
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.black,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _divider(),
+          _infoRow(
+            icon: Icons.flag_rounded,
+            iconColor: AppTheme.green,
+            label: translate("home.arrival_date"),
+            valueWidget: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  Utils.searchDateFormat(widget.trip.endTime),
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    color: AppTheme.gray,
+                  ),
+                ),
+                Text(
+                  Utils.timeFormat(widget.trip.endTime),
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.black,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _divider(),
+          Row(
+            children: [
+              Expanded(
+                child: _infoRow(
+                  icon: Icons.event_seat_rounded,
+                  iconColor: _seatsColor,
+                  label: translate("home.available_seats"),
+                  value: "${widget.trip.availableSeats}",
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _infoRow(
+                  icon: Icons.payments_rounded,
+                  iconColor: AppTheme.purple,
+                  label: translate("home.price_per_seat"),
+                  value:
+                      "${Utils.priceFormat(pricePerSeat)} ${translate("currency")}",
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _routeMapButton(),
+          if (widget.trip.googleMapUrl.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _OpenInMapsButton(url: widget.trip.googleMapUrl),
+          ],
+        ],
+      ),
+    );
   }
 
-  String safeSubstring(String text, int length) {
-    return text.length >= length
-        ? text.substring(0, length).toUpperCase()
-        : text.toUpperCase();
+  // ── Passengers card ────────────────────────────────────────────────────────
+  Widget _buildPassengersCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            offset: const Offset(0, 4),
+            blurRadius: 16,
+            color: AppTheme.black.withValues(alpha: 0.06),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                  child: Text16h500w(title: translate("home.passenger_info"))),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.purple.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  "${passengersList.length}",
+                  style: const TextStyle(
+                    color: AppTheme.purple,
+                    fontSize: 13,
+                    fontFamily: AppTheme.fontFamily,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (passengersList.isEmpty) ...[
+            const SizedBox(height: 16),
+            Center(
+              child: Text14h400w(
+                title: translate("home.no_passenger"),
+                color: AppTheme.gray,
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 12),
+            ...passengersList.asMap().entries.map((entry) {
+              final i = entry.key;
+              final p = entry.value;
+              return Column(
+                children: [
+                  if (i > 0) const Divider(height: 1, color: AppTheme.border),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppTheme.purple.withValues(alpha: 0.08),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.person_rounded,
+                            color: AppTheme.purple,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                p.fullName.isNotEmpty ? p.fullName : "—",
+                                style: const TextStyle(
+                                  fontFamily: AppTheme.fontFamily,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppTheme.black,
+                                ),
+                              ),
+                              if (p.phone.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  p.phone,
+                                  style: const TextStyle(
+                                    fontFamily: AppTheme.fontFamily,
+                                    fontSize: 12,
+                                    color: AppTheme.gray,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        if (p.numberOfSeats > 1)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppTheme.border,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              "${p.numberOfSeats}x",
+                              style: const TextStyle(
+                                fontFamily: AppTheme.fontFamily,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.dark,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ── Bottom bar ─────────────────────────────────────────────────────────────
+  Widget _buildBottomBar() {
+    return Container(
+      padding: EdgeInsets.only(
+        top: 16,
+        left: 16,
+        right: 16,
+        bottom: 16 + MediaQuery.of(context).padding.bottom,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: AppTheme.border)),
+        boxShadow: [
+          BoxShadow(
+            offset: const Offset(0, -4),
+            blurRadius: 16,
+            color: AppTheme.black.withValues(alpha: 0.05),
+          ),
+        ],
+      ),
+      child: Container(
+        height: 52,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppTheme.border, width: 1.5),
+        ),
+        child: Center(
+          child: Text(
+            translate("ketamiz.edit_trip"),
+            style: const TextStyle(
+              color: AppTheme.dark,
+              fontSize: 15,
+              fontFamily: AppTheme.fontFamily,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  Widget _infoRow({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    String? value,
+    Widget? valueWidget,
+    Widget? child,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: iconColor, size: 16),
+          ),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                fontSize: 13,
+                color: AppTheme.gray,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ),
+          if (child != null) ...[const SizedBox(width: 8), child],
+          if (valueWidget != null) ...[const Spacer(), valueWidget],
+          if (value != null) ...[
+            const Spacer(),
+            Text(
+              value,
+              style: const TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.black,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _divider() => const Divider(height: 1, color: AppTheme.border);
+
+  Widget _mapPinButton(VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppTheme.light,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppTheme.border),
+        ),
+        child: SvgPicture.asset(
+          "assets/icons/map_pin.svg",
+          colorFilter:
+              const ColorFilter.mode(AppTheme.purple, BlendMode.srcIn),
+        ),
+      ),
+    );
+  }
+
+  Widget _routeMapButton() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MapRouteScreen(
+              start: LatLng(double.parse(widget.trip.startLat),
+                  double.parse(widget.trip.startLong)),
+              end: LatLng(double.parse(widget.trip.endLat),
+                  double.parse(widget.trip.endLong)),
+              startText: from,
+              endText: to,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        decoration: BoxDecoration(
+          color: AppTheme.purple.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+              color: AppTheme.purple.withValues(alpha: 0.2), width: 1),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.route_rounded, color: AppTheme.purple, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              translate("home.view_route_map"),
+              style: const TextStyle(
+                color: AppTheme.purple,
+                fontSize: 14,
+                fontFamily: AppTheme.fontFamily,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OpenInMapsButton extends StatelessWidget {
+  const _OpenInMapsButton({required this.url});
+
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        final uri = Uri.parse(url);
+        try {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } catch (_) {
+          // No handler for external launch — fall back to in-app browser.
+          await launchUrl(uri, mode: LaunchMode.platformDefault);
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        decoration: BoxDecoration(
+          color: const Color(0xFF4285F4),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.map_outlined, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              translate("home.open_in_google_maps"),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontFamily: AppTheme.fontFamily,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

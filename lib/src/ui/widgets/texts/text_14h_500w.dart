@@ -3,16 +3,28 @@ import 'package:flutter/cupertino.dart';
 import '../../../theme/app_theme.dart';
 
 class Text14h500w extends StatelessWidget {
-  const Text14h500w(
-      {super.key, required this.title, this.color = AppTheme.black,});
+  const Text14h500w({
+    super.key,
+    required this.title,
+    this.color = AppTheme.black,
+    this.maxLines,
+    this.overflow,
+    this.textAlign,
+  });
 
   final String title;
   final Color color;
+  final int? maxLines;
+  final TextOverflow? overflow;
+  final TextAlign? textAlign;
 
   @override
   Widget build(BuildContext context) {
     return Text(
       title,
+      maxLines: maxLines,
+      overflow: overflow,
+      textAlign: textAlign,
       style: TextStyle(
         fontFamily: AppTheme.fontFamily,
         fontSize: 18,
