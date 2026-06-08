@@ -156,23 +156,45 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
                   ],
                 ),
               if (widget.approximate)
-                // Privacy circles — exact points fully obscured until booked.
+                // Two-layer privacy circles: opaque white base erases the
+                // map tiles and route line beneath; colored layer on top
+                // gives the visual approximate-area indicator.
                 CircleLayer(
                   circles: [
+                    // White base — start
                     CircleMarker(
                       point: widget.start,
                       radius: _approxRadiusMeters,
                       useRadiusInMeter: true,
-                      color: AppTheme.green.withOpacity(0.18),
-                      borderColor: AppTheme.green.withOpacity(0.6),
+                      color: Colors.white.withOpacity(0.92),
+                      borderColor: Colors.transparent,
+                      borderStrokeWidth: 0,
+                    ),
+                    // Colored indicator — start
+                    CircleMarker(
+                      point: widget.start,
+                      radius: _approxRadiusMeters,
+                      useRadiusInMeter: true,
+                      color: AppTheme.green.withOpacity(0.22),
+                      borderColor: AppTheme.green.withOpacity(0.7),
                       borderStrokeWidth: 2,
                     ),
+                    // White base — end
                     CircleMarker(
                       point: widget.end,
                       radius: _approxRadiusMeters,
                       useRadiusInMeter: true,
-                      color: AppTheme.red.withOpacity(0.18),
-                      borderColor: AppTheme.red.withOpacity(0.6),
+                      color: Colors.white.withOpacity(0.92),
+                      borderColor: Colors.transparent,
+                      borderStrokeWidth: 0,
+                    ),
+                    // Colored indicator — end
+                    CircleMarker(
+                      point: widget.end,
+                      radius: _approxRadiusMeters,
+                      useRadiusInMeter: true,
+                      color: AppTheme.red.withOpacity(0.22),
+                      borderColor: AppTheme.red.withOpacity(0.7),
                       borderStrokeWidth: 2,
                     ),
                   ],
