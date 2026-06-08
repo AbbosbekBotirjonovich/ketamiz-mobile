@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:ketamiz/src/theme/app_theme.dart';
 
+const _kBorderColor = Color(0xFFDDD5C8);
+const _kFillColor   = Color(0xFFFFFBF7);
+
 class AppDropdownItem<T> {
   final T value;
   final String label;
@@ -42,10 +45,10 @@ class _AppDropdownState<T> extends State<AppDropdown<T>>
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 180),
     );
     _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
-    _scale = Tween<double>(begin: 0.92, end: 1.0).animate(
+    _scale = Tween<double>(begin: 0.94, end: 1.0).animate(
       CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
     );
   }
@@ -100,17 +103,21 @@ class _AppDropdownState<T> extends State<AppDropdown<T>>
     return GestureDetector(
       key: _key,
       onTap: _isOpen ? _close : _open,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(32),
+          color: _kFillColor,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: _isOpen ? AppTheme.purple : _kBorderColor,
+            width: _isOpen ? 1.5 : 1,
+          ),
           boxShadow: [
             BoxShadow(
-              offset: const Offset(0, 5),
-              blurRadius: 100,
-              spreadRadius: 0,
-              color: Colors.black.withOpacity(0.12),
+              offset: const Offset(0, 3),
+              blurRadius: 12,
+              color: Colors.black.withOpacity(0.06),
             ),
           ],
         ),
@@ -129,21 +136,21 @@ class _AppDropdownState<T> extends State<AppDropdown<T>>
             Expanded(
               child: Text(
                 _current.label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: AppTheme.fontFamily,
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: AppTheme.black,
+                  color: _isOpen ? AppTheme.purple : AppTheme.black,
                 ),
               ),
             ),
             AnimatedRotation(
               turns: _isOpen ? 0.5 : 0,
-              duration: const Duration(milliseconds: 200),
-              child: const Icon(
+              duration: const Duration(milliseconds: 180),
+              child: Icon(
                 Icons.keyboard_arrow_down_rounded,
-                color: AppTheme.dark,
-                size: 20,
+                color: _isOpen ? AppTheme.purple : AppTheme.gray,
+                size: 18,
               ),
             ),
           ],
@@ -176,12 +183,11 @@ class _DropdownOverlay<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const panelPad = 8.0;
-    const gap = 6.0;
+    const panelPad = 6.0;
+    const gap = 5.0;
 
     return Stack(
       children: [
-        // Dismiss tap catcher
         Positioned.fill(
           child: GestureDetector(
             onTap: onDismiss,
@@ -203,12 +209,13 @@ class _DropdownOverlay<T> extends StatelessWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: _kBorderColor, width: 1),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.12),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
+                        color: Colors.black.withOpacity(0.09),
+                        blurRadius: 20,
+                        offset: const Offset(0, 6),
                       ),
                     ],
                   ),
@@ -267,24 +274,25 @@ class _DropdownOptionState<T> extends State<_DropdownOption<T>> {
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 100),
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: widget.isSelected
-              ? AppTheme.black.withOpacity(0.06)
+              ? AppTheme.purple.withOpacity(0.08)
               : _pressed
-                  ? AppTheme.black.withOpacity(0.03)
+                  ? const Color(0xFFF5F0EB)
                   : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
           children: [
             Container(
-              width: 10,
-              height: 10,
+              width: 8,
+              height: 8,
               margin: const EdgeInsets.only(right: 10),
               decoration: BoxDecoration(
-                color: widget.item.color ?? AppTheme.gray,
+                color: widget.item.color ??
+                    (widget.isSelected ? AppTheme.purple : AppTheme.gray),
                 shape: BoxShape.circle,
               ),
             ),
@@ -293,19 +301,19 @@ class _DropdownOptionState<T> extends State<_DropdownOption<T>> {
                 widget.item.label,
                 style: TextStyle(
                   fontFamily: AppTheme.fontFamily,
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: widget.isSelected
                       ? FontWeight.w600
                       : FontWeight.w400,
-                  color: widget.isSelected ? AppTheme.black : AppTheme.dark,
+                  color: widget.isSelected ? AppTheme.purple : AppTheme.dark,
                 ),
               ),
             ),
             if (widget.isSelected)
               const Icon(
                 Icons.check_rounded,
-                size: 18,
-                color: AppTheme.black,
+                size: 16,
+                color: AppTheme.purple,
               ),
           ],
         ),

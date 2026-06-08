@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../../../theme/app_theme.dart';
 
 class SecondaryButton extends StatelessWidget {
@@ -10,25 +9,34 @@ class SecondaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
       child: Container(
-        height: 48,
+        height: 52,
         decoration: BoxDecoration(
-          color: AppTheme.black,
-          borderRadius: BorderRadius.circular(24),
+          gradient: const LinearGradient(
+            colors: [AppTheme.purple, Color(0xFF6366F1)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.purple.withOpacity(0.32),
+              blurRadius: 20,
+              offset: const Offset(0, 7),
+            ),
+          ],
         ),
         child: Center(
           child: Text(
-            title.toUpperCase(),
+            title,
             style: const TextStyle(
               fontFamily: AppTheme.fontFamily,
-              fontSize: 14,
+              fontSize: 15,
               fontWeight: FontWeight.w600,
-              height: 1.5,
               color: Colors.white,
-              letterSpacing: 1,
+              letterSpacing: 0.3,
             ),
           ),
         ),
