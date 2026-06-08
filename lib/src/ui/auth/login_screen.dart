@@ -107,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Center(
                         child: Image.asset(
-                          'assets/logos/logo-square.png',
+                          'assets/logos/ketamiz-logo-small.png',
                           height: 80,
                           width: 80,
                         ),
@@ -176,7 +176,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         if (!isLogin) ...[
                           Center(
                             child: Image.asset(
-                              'assets/logos/logo-square.png',
+                              'assets/logos/ketamiz-logo-small.png',
                               height: 72,
                               width: 72,
                             ),
