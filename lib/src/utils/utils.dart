@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter_translate/flutter_translate.dart';
 
 class Utils {
@@ -13,6 +15,23 @@ class Utils {
   /// 24h "HH:mm" format used on trip cards.
   static String timeFormat(DateTime t) {
     return '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+  }
+
+  /// Localized "8 June" day+month format shown next to trip times.
+  static String dateFormat(DateTime t) {
+    return '${t.day} ${translate('date.m_${t.month}')}';
+  }
+
+  /// Parses a hex color string (e.g. "#FF0000", "FF0000", "AARRGGBB") into a
+  /// [Color]. Returns [fallback] when the value is empty or unparseable.
+  static Color colorFromHex(String code,
+      {Color fallback = const Color(0xFFCBD5E1)}) {
+    var hex = code.trim().replaceAll('#', '');
+    if (hex.isEmpty) return fallback;
+    if (hex.length == 6) hex = 'FF$hex';
+    if (hex.length != 8) return fallback;
+    final value = int.tryParse(hex, radix: 16);
+    return value == null ? fallback : Color(value);
   }
 
   static String tripDateFormat(DateTime time) {

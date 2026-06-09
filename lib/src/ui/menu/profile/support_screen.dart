@@ -218,12 +218,14 @@ class _SupportScreenState extends State<SupportScreen> {
             color: AppTheme.dark.withOpacity(0.6),
           ),
           alignLabelWithHint: true,
+          filled: true,
+          fillColor: AppTheme.inputFill,
           contentPadding:
               const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
           border: const OutlineInputBorder(),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: AppTheme.border),
+            borderSide: const BorderSide(color: AppTheme.inputBorder),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),

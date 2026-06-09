@@ -379,13 +379,17 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
         decoration: InputDecoration(
           labelText: label,
           filled: true,
-          prefixIcon: Icon(icon, color: AppTheme.black),
+          fillColor: AppTheme.inputFill,
+          prefixIcon: Icon(icon, color: AppTheme.gray),
           suffix: suffix,
           contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-          border: const OutlineInputBorder(),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: AppTheme.inputBorder),
+          ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: AppTheme.border),
+            borderSide: const BorderSide(color: AppTheme.inputBorder),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),

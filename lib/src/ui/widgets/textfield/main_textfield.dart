@@ -3,9 +3,9 @@ import 'package:flutter/services.dart';
 
 import '../../../theme/app_theme.dart';
 
-// Warm cream border used across all input fields.
-const _kBorderColor = Color(0xFFDDD5C8);
-const _kFillColor  = Color(0xFFFFFBF7);
+// Warm cream colors shared by every input field (see AppTheme).
+const _kBorderColor = AppTheme.inputBorder;
+const _kFillColor = AppTheme.inputFill;
 
 class MainTextField extends StatefulWidget {
   const MainTextField({
@@ -15,6 +15,7 @@ class MainTextField extends StatefulWidget {
     required this.controller,
     this.pass = false,
     this.phone = false,
+    this.prefixText,
     this.inputFormatters = const [],
     this.scrollPadding = const EdgeInsets.all(20),
     this.textInputAction,
@@ -25,6 +26,7 @@ class MainTextField extends StatefulWidget {
   final TextEditingController controller;
   final bool pass;
   final bool phone;
+  final String? prefixText;
   final List<TextInputFormatter> inputFormatters;
   final TextInputAction? textInputAction;
   final EdgeInsets scrollPadding;
@@ -93,6 +95,13 @@ class _MainTextFieldState extends State<MainTextField> {
             fontSize: 12,
             fontWeight: FontWeight.w400,
             color: AppTheme.gray,
+          ),
+          prefixText: widget.prefixText,
+          prefixStyle: const TextStyle(
+            fontFamily: AppTheme.fontFamily,
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: AppTheme.black,
           ),
           prefixIcon: Icon(widget.icon, size: 18),
           prefixIconColor: WidgetStateColor.resolveWith(

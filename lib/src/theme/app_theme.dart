@@ -26,6 +26,10 @@ class AppTheme {
   static const Color text = Color(0xFF9C9A9A);
   static const Color border = Color(0xFFE2E8F0);
 
+  /// Input field colors (unified across all text fields)
+  static const Color inputBorder = Color(0xFFDDD5C8);  // warm cream border
+  static const Color inputFill = Color(0xFFFFFBF7);    // warm cream fill
+
   /// Utility colors
   static const Color shadow = Color(0xFFE0EEFF);
   static const Color baseColor = Color(0xFFEBEBF4);

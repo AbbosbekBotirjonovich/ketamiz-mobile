@@ -669,14 +669,17 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                       color: AppTheme.purple.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
-                      Icons.person_rounded,
+                    child: Icon(
+                      widget.isBooked
+                          ? Icons.person_rounded
+                          : Icons.directions_car_rounded,
                       color: AppTheme.purple,
                       size: 24,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  if (driverName.isNotEmpty)
+                  // Driver name is only revealed once the trip is booked.
+                  if (widget.isBooked && driverName.isNotEmpty) ...[
+                    const SizedBox(height: 6),
                     SizedBox(
                       width: 92,
                       child: Text(
@@ -692,18 +695,46 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                         ),
                       ),
                     ),
+                  ],
                   if (vehicleModel.isNotEmpty) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 6),
+                    SizedBox(
+                      width: 92,
+                      child: Text(
+                        vehicleModel.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: AppTheme.black,
+                          fontSize: 12,
+                          fontFamily: AppTheme.fontFamily,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (widget.trip.vehicle.color.titleEn.isNotEmpty) ...[
+                    const SizedBox(height: 4),
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.directions_car_rounded,
-                            size: 12, color: AppTheme.gray),
-                        const SizedBox(width: 3),
+                        Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: Utils.colorFromHex(
+                                widget.trip.vehicle.color.code),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppTheme.border),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
                         ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 76),
                           child: Text(
-                            vehicleModel.toUpperCase(),
+                            widget.trip.vehicle.color.titleEn,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -711,7 +742,6 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                               fontSize: 11,
                               fontFamily: AppTheme.fontFamily,
                               fontWeight: FontWeight.w500,
-                              letterSpacing: 0.3,
                             ),
                           ),
                         ),

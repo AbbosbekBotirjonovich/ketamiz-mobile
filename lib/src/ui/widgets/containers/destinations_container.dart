@@ -193,14 +193,30 @@ class DestinationsContainer extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      Utils.timeFormat(trip.startTime),
-                      style: const TextStyle(
-                        color: AppTheme.black,
-                        fontSize: 16,
-                        fontFamily: AppTheme.fontFamily,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          Utils.timeFormat(trip.startTime),
+                          style: const TextStyle(
+                            color: AppTheme.black,
+                            fontSize: 16,
+                            fontFamily: AppTheme.fontFamily,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          Utils.dateFormat(trip.startTime),
+                          style: const TextStyle(
+                            color: AppTheme.gray,
+                            fontSize: 13,
+                            fontFamily: AppTheme.fontFamily,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                     Text(
                       _fromPlace,
@@ -214,14 +230,30 @@ class DestinationsContainer extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Text(
-                      Utils.timeFormat(trip.endTime),
-                      style: const TextStyle(
-                        color: AppTheme.black,
-                        fontSize: 16,
-                        fontFamily: AppTheme.fontFamily,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          Utils.timeFormat(trip.endTime),
+                          style: const TextStyle(
+                            color: AppTheme.black,
+                            fontSize: 16,
+                            fontFamily: AppTheme.fontFamily,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          Utils.dateFormat(trip.endTime),
+                          style: const TextStyle(
+                            color: AppTheme.gray,
+                            fontSize: 13,
+                            fontFamily: AppTheme.fontFamily,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                     Text(
                       _toPlace,
@@ -238,7 +270,7 @@ class DestinationsContainer extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Driver info
+              // Vehicle info — driver details stay hidden until the trip is booked.
               Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -250,42 +282,49 @@ class DestinationsContainer extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
-                      Icons.person_rounded,
+                      Icons.directions_car_rounded,
                       color: AppTheme.purple,
                       size: 24,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  SizedBox(
-                    width: 92,
-                    child: Text(
-                      trip.driver.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: AppTheme.black,
-                        fontSize: 12,
-                        fontFamily: AppTheme.fontFamily,
-                        fontWeight: FontWeight.w500,
+                  if (trip.vehicle.model.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    SizedBox(
+                      width: 92,
+                      child: Text(
+                        trip.vehicle.model.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: AppTheme.black,
+                          fontSize: 12,
+                          fontFamily: AppTheme.fontFamily,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.3,
+                        ),
                       ),
                     ),
-                  ),
-                  if (trip.vehicle.model.isNotEmpty) ...[
-                    const SizedBox(height: 2),
+                  ],
+                  if (trip.vehicle.color.titleEn.isNotEmpty) ...[
+                    const SizedBox(height: 4),
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
-                          Icons.directions_car_rounded,
-                          color: AppTheme.gray,
-                          size: 14,
+                        Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: Utils.colorFromHex(trip.vehicle.color.code),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppTheme.border),
+                          ),
                         ),
                         const SizedBox(width: 4),
                         ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 74),
                           child: Text(
-                            trip.vehicle.model.toUpperCase(),
+                            trip.vehicle.color.titleEn,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -293,7 +332,6 @@ class DestinationsContainer extends StatelessWidget {
                               fontSize: 11,
                               fontFamily: AppTheme.fontFamily,
                               fontWeight: FontWeight.w500,
-                              letterSpacing: 0.3,
                             ),
                           ),
                         ),
