@@ -43,14 +43,25 @@ class BookModel {
   });
 
   factory BookModel.fromJson(Map<String, dynamic> json) => BookModel(
-        bookingId: _asInt(json["booking_id"]),
+        // /client/trips/get-*-trips return trip items without a booking_id;
+        // fall back to the item's own id so navigation still has an identifier.
+        bookingId: json["booking_id"] != null
+            ? _asInt(json["booking_id"])
+            : _asInt(json["id"]),
         seatsBooked: _asInt(json["seats_booked"]),
-        totalPrice: json["total_price"]?.toString() ?? "",
+        // Booking responses carry "total_price"; trip responses only have
+        // "price_per_seat" — fall back so the card never shows a blank price.
+        totalPrice: (json["total_price"]?.toString().isNotEmpty ?? false)
+            ? json["total_price"].toString()
+            : (json["price_per_seat"]?.toString() ?? ""),
         status: json["status"]?.toString() ?? "",
         createdAt: _parseDate(json["created_at"]),
+        // /client/booking nests trip details under "trip"; the
+        // /client/trips/get-*-trips endpoints flatten them onto the item
+        // itself, so fall back to the top-level json when "trip" is absent.
         trip: json["trip"] is Map<String, dynamic>
             ? BookedTrip.fromJson(json["trip"])
-            : BookedTrip.empty(),
+            : BookedTrip.fromJson(json),
         passengers: json["passengers"] is List
             ? (json["passengers"] as List)
                 .whereType<Map>()
