@@ -763,6 +763,34 @@ class ApiProvider {
     return await getRequest(url);
   }
 
+  /// Download a single transaction receipt as PDF bytes.
+  /// Returns the raw bytes on success, or null on any failure.
+  Future<List<int>?> fetchTransactionPdfBytes(int transactionId) async {
+    try {
+      final headers = await _getReqHeader();
+      headers["Accept"] = "application/pdf";
+      final response = await _dio.get<List<int>>(
+        '$baseUrl/user/balance-transactions/pdf/$transactionId',
+        options: Options(
+          headers: headers,
+          responseType: ResponseType.bytes,
+        ),
+      );
+      if (response.statusCode != null &&
+          response.statusCode! >= 200 &&
+          response.statusCode! <= 299) {
+        return response.data;
+      }
+      return null;
+    } catch (e) {
+      assert(() {
+        debugPrint("fetchTransactionPdfBytes error: $e");
+        return true;
+      }());
+      return null;
+    }
+  }
+
   /// Get My Withdraw Requests
   Future<HttpResult> fetchWithdrawList() async {
     String url = '$baseUrl/withdraw';

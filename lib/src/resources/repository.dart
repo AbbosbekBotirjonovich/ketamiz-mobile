@@ -243,6 +243,9 @@ class Repository {
   Future<HttpResult> fetchTransactionList() =>
       apiProvider.fetchTransactionList();
 
+  Future<List<int>?> fetchTransactionPdfBytes(int id) =>
+      apiProvider.fetchTransactionPdfBytes(id);
+
   Future<HttpResult> fetchWithdrawList() => apiProvider.fetchWithdrawList();
 
   Future<HttpResult> fetchWithdraw(String amount) =>
