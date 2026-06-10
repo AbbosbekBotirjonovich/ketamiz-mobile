@@ -12,8 +12,8 @@ import '../../widgets/buttons/primary_button.dart';
 /// Routing uses the public OSRM server; falls back to a straight line.
 ///
 /// In [approximate] mode (client hasn't booked yet) the exact start/end are
-/// hidden — only 25 km circles are drawn so the rough area is visible but
-/// the precise pickup/drop-off points are not revealed.
+/// hidden — only 1 km fully-opaque circles are drawn so the rough area is
+/// visible but the precise pickup/drop-off points are not revealed.
 class MapRouteScreen extends StatefulWidget {
   final LatLng start;
   final LatLng end;
@@ -36,7 +36,7 @@ class MapRouteScreen extends StatefulWidget {
 
 class _MapRouteScreenState extends State<MapRouteScreen> {
   // Radius (metres) of the privacy circle drawn around unbooked trips.
-  static const double _approxRadiusMeters = 25000;
+  static const double _approxRadiusMeters = 1000;
 
   List<LatLng> _routePoints = [];
   bool isLoading = true;
@@ -50,19 +50,41 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
   }
 
   Future<void> _fetchRoute() async {
+    final s = widget.start;
+    final e = widget.end;
+    // Skip routing for clearly invalid coordinates (0,0 or identical points) —
+    // otherwise OSRM returns no route and we'd draw a bogus straight line.
+    final invalid = (s.latitude == 0 && s.longitude == 0) ||
+        (e.latitude == 0 && e.longitude == 0) ||
+        (s.latitude == e.latitude && s.longitude == e.longitude);
+    if (invalid) {
+      if (mounted) setState(() => isLoading = false);
+      return;
+    }
+
+    // GeoJSON geometry returns coordinates directly ([lon, lat] pairs), which
+    // avoids any polyline-decoding mismatch.
     final url = 'https://router.project-osrm.org/route/v1/driving/'
-        '${widget.start.longitude},${widget.start.latitude};'
-        '${widget.end.longitude},${widget.end.latitude}'
-        '?overview=full&geometries=polyline';
+        '${s.longitude},${s.latitude};${e.longitude},${e.latitude}'
+        '?overview=full&geometries=geojson';
 
     try {
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(
+        Uri.parse(url),
+        headers: const {'User-Agent': 'uz.ketamiz.app'},
+      ).timeout(const Duration(seconds: 12));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['code'] == 'Ok' && (data['routes'] as List).isNotEmpty) {
-          final points = data['routes'][0]['geometry'] as String;
-          final decoded = _decodePolyline(points);
-          if (decoded.isNotEmpty && mounted) {
+          final coords =
+              data['routes'][0]['geometry']['coordinates'] as List;
+          final decoded = coords
+              .map((c) => LatLng(
+                    (c[1] as num).toDouble(),
+                    (c[0] as num).toDouble(),
+                  ))
+              .toList();
+          if (decoded.length >= 2 && mounted) {
             setState(() => _routePoints = decoded);
           }
         }
@@ -75,44 +97,14 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
     if (mounted) setState(() => isLoading = false);
   }
 
-  List<LatLng> _decodePolyline(String encoded) {
-    List<LatLng> points = [];
-    int index = 0, len = encoded.length;
-    int lat = 0, lng = 0;
-
-    while (index < len) {
-      int b, shift = 0, result = 0;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-      lat += dlat;
-
-      shift = 0;
-      result = 0;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-      lng += dlng;
-
-      points.add(LatLng(lat / 1E5, lng / 1E5));
-    }
-    return points;
-  }
-
-  /// Bounds that include the full 25 km circles when in approximate mode,
+  /// Bounds that include the full 1 km circles when in approximate mode,
   /// so neither circle is clipped at the screen edge.
   LatLngBounds get _cameraBounds {
     if (!widget.approximate) {
       return LatLngBounds(widget.start, widget.end);
     }
-    // ~0.25° latitude ≈ 27 km — enough padding to show both circles.
-    const pad = 0.27;
+    // ~0.02° latitude ≈ 2 km — enough padding to show the ~1 km circles.
+    const pad = 0.02;
     final lats = [widget.start.latitude, widget.end.latitude];
     final lngs = [widget.start.longitude, widget.end.longitude];
     return LatLngBounds(
@@ -166,7 +158,7 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
                       point: widget.start,
                       radius: _approxRadiusMeters,
                       useRadiusInMeter: true,
-                      color: Colors.white.withOpacity(0.92),
+                      color: Colors.white,
                       borderColor: Colors.transparent,
                       borderStrokeWidth: 0,
                     ),
@@ -184,7 +176,7 @@ class _MapRouteScreenState extends State<MapRouteScreen> {
                       point: widget.end,
                       radius: _approxRadiusMeters,
                       useRadiusInMeter: true,
-                      color: Colors.white.withOpacity(0.92),
+                      color: Colors.white,
                       borderColor: Colors.transparent,
                       borderStrokeWidth: 0,
                     ),

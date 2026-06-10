@@ -1585,10 +1585,10 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
           context,
           MaterialPageRoute(
             builder: (_) => MapRouteScreen(
-              start: LatLng(double.parse(widget.trip.startLat),
-                  double.parse(widget.trip.startLong)),
-              end: LatLng(double.parse(widget.trip.endLat),
-                  double.parse(widget.trip.endLong)),
+              start: LatLng(double.tryParse(widget.trip.startLat) ?? 0,
+                  double.tryParse(widget.trip.startLong) ?? 0),
+              end: LatLng(double.tryParse(widget.trip.endLat) ?? 0,
+                  double.tryParse(widget.trip.endLong) ?? 0),
               startText: from,
               endText: to,
               approximate: !showExact,
