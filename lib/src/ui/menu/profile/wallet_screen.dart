@@ -10,6 +10,7 @@ import '../../../utils/utils.dart';
 import '../../widgets/texts/text_14h_400w.dart';
 import '../../widgets/texts/text_16h_500w.dart';
 import 'top_up_screen.dart';
+import 'transaction_details.dart';
 import 'withdraw_screen.dart';
 
 class WalletScreen extends StatefulWidget {
@@ -128,7 +129,12 @@ class _WalletScreenState extends State<WalletScreen> {
                 _transactions.length,
                 (i) => Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: _TransactionItem(transaction: _transactions[i]),
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () =>
+                        showTransactionDetailsSheet(context, _transactions[i]),
+                    child: _TransactionItem(transaction: _transactions[i]),
+                  ),
                 ),
               ),
           ],
