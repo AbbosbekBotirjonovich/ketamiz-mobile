@@ -19,6 +19,7 @@ class MainTextField extends StatefulWidget {
     this.inputFormatters = const [],
     this.scrollPadding = const EdgeInsets.all(20),
     this.textInputAction,
+    this.fillColor,
   });
 
   final String hintText;
@@ -30,6 +31,9 @@ class MainTextField extends StatefulWidget {
   final List<TextInputFormatter> inputFormatters;
   final TextInputAction? textInputAction;
   final EdgeInsets scrollPadding;
+
+  /// Overrides the default cream fill when set (e.g. white inputs on a form).
+  final Color? fillColor;
 
   @override
   State<MainTextField> createState() => _MainTextFieldState();
@@ -46,10 +50,11 @@ class _MainTextFieldState extends State<MainTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final fill = widget.fillColor ?? _kFillColor;
     return Container(
       height: 58,
       decoration: BoxDecoration(
-        color: _kFillColor,
+        color: fill,
         borderRadius: BorderRadius.circular(14),
       ),
       child: TextFormField(
@@ -72,7 +77,7 @@ class _MainTextFieldState extends State<MainTextField> {
         inputFormatters: widget.inputFormatters,
         decoration: InputDecoration(
           filled: true,
-          fillColor: _kFillColor,
+          fillColor: fill,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: const BorderSide(color: _kBorderColor),

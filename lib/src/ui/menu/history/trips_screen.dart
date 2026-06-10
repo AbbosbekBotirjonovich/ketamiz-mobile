@@ -587,6 +587,7 @@ class _TripsScreenState extends State<TripsScreen> {
   TripListModel _toTripListModel(DriverTripModel t) {
     return TripListModel(
       id: t.id,
+      googleMapUrl: t.googleMapUrl,
       fromWhere: [t.fromVillage, t.fromCity, t.fromRegion]
           .where((s) => s.isNotEmpty)
           .join(', '),

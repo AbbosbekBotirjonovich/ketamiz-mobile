@@ -5,6 +5,7 @@ import 'package:ketamiz/src/model/api/book_model.dart';
 import 'package:ketamiz/src/ui/dialogs/center_dialog.dart';
 import 'package:ketamiz/src/ui/dialogs/snack_bar.dart';
 import 'package:ketamiz/src/ui/menu/home/map_route_screen.dart';
+import 'package:ketamiz/src/ui/menu/new_ketamiz/map_select_screen.dart';
 import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_14h_400w.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
@@ -27,6 +28,9 @@ class BookedTripDetailsScreen extends StatefulWidget {
 class _BookedTripDetailsScreenState extends State<BookedTripDetailsScreen> {
   final Repository _repository = Repository();
   bool _isCancelling = false;
+
+  /// Id of the passenger whose pickup is currently being updated (0 = none).
+  int _updatingId = 0;
 
   BookedTrip get _trip => widget.booking.trip;
 
@@ -429,6 +433,36 @@ class _BookedTripDetailsScreenState extends State<BookedTripDetailsScreen> {
                       ],
                     ),
                   ),
+                  if (_canCancel) ...[
+                    const SizedBox(width: 8),
+                    _updatingId == p.id
+                        ? const SizedBox(
+                            width: 38,
+                            height: 38,
+                            child: Padding(
+                              padding: EdgeInsets.all(9),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.4,
+                                color: AppTheme.purple,
+                              ),
+                            ),
+                          )
+                        : GestureDetector(
+                            onTap: () => _editPassengerPickup(p),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              child: const Icon(
+                                Icons.edit_location_alt_outlined,
+                                size: 20,
+                                color: AppTheme.purple,
+                              ),
+                            ),
+                          ),
+                  ],
                 ],
               ),
             );
@@ -436,6 +470,50 @@ class _BookedTripDetailsScreenState extends State<BookedTripDetailsScreen> {
         ],
       ),
     );
+  }
+
+  /// Let the passenger pick a new pickup point on the map and persist it via
+  /// PUT /client/trips/{tripId}/booking.
+  Future<void> _editPassengerPickup(Passenger p) async {
+    final picked = await Navigator.push<LatLng>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapSelectScreen(
+          place: _from,
+          onSelected: (_) {},
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() => _updatingId = p.id);
+    final response = await _repository.fetchUpdatePassengerAddress(
+      _trip.id.toString(),
+      [
+        {
+          "id": p.id,
+          "latitude": picked.latitude.toString(),
+          "longitude": picked.longitude.toString(),
+        }
+      ],
+    );
+    if (!mounted) return;
+    setState(() => _updatingId = 0);
+
+    if (response.isSuccess) {
+      setState(() {
+        p.latitude = picked.latitude.toString();
+        p.longitude = picked.longitude.toString();
+      });
+      CustomSnackBar().showSnackBar(
+          context, translate("home.pickup_updated"), 1);
+    } else {
+      final msg =
+          response.result is Map && response.result.containsKey('message')
+              ? response.result['message'].toString()
+              : translate("home.pickup_update_failed");
+      CustomSnackBar().showSnackBar(context, msg, 2);
+    }
   }
 
   // ── Cancel bar ──────────────────────────────────────────────────────────
@@ -631,8 +709,6 @@ class _BookedTripDetailsScreenState extends State<BookedTripDetailsScreen> {
           Expanded(
             child: Text(
               value,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.end,
               style: const TextStyle(
                 fontFamily: AppTheme.fontFamily,
