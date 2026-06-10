@@ -177,14 +177,30 @@ class HistoryContainer extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      Utils.timeFormat(booking.trip.startTime),
-                      style: const TextStyle(
-                        color: AppTheme.black,
-                        fontSize: 16,
-                        fontFamily: AppTheme.fontFamily,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          Utils.timeFormat(booking.trip.startTime),
+                          style: const TextStyle(
+                            color: AppTheme.black,
+                            fontSize: 16,
+                            fontFamily: AppTheme.fontFamily,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          Utils.dateFormat(booking.trip.startTime),
+                          style: const TextStyle(
+                            color: AppTheme.gray,
+                            fontSize: 13,
+                            fontFamily: AppTheme.fontFamily,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                     Text(
                       _fromPlace,
@@ -198,14 +214,30 @@ class HistoryContainer extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Text(
-                      Utils.timeFormat(booking.trip.endTime),
-                      style: const TextStyle(
-                        color: AppTheme.black,
-                        fontSize: 16,
-                        fontFamily: AppTheme.fontFamily,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          Utils.timeFormat(booking.trip.endTime),
+                          style: const TextStyle(
+                            color: AppTheme.black,
+                            fontSize: 16,
+                            fontFamily: AppTheme.fontFamily,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          Utils.dateFormat(booking.trip.endTime),
+                          style: const TextStyle(
+                            color: AppTheme.gray,
+                            fontSize: 13,
+                            fontFamily: AppTheme.fontFamily,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                     Text(
                       _toPlace,

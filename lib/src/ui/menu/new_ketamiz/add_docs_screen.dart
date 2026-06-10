@@ -328,6 +328,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
             fontFamily: AppTheme.fontFamily,
           ),
           filled: true,
+          fillColor: AppTheme.inputFill,
           prefixIcon: const Icon(
             Icons.date_range_outlined,
             color: AppTheme.black,
@@ -339,7 +340,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
           border: const OutlineInputBorder(),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: AppTheme.border),
+            borderSide: const BorderSide(color: AppTheme.inputBorder),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
@@ -745,13 +746,14 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
         decoration: InputDecoration(
           labelText: label,
           filled: true,
+          fillColor: AppTheme.inputFill,
           prefixIcon: Icon(icon, color: AppTheme.black),
           suffix: suffix,
            contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
            border: const OutlineInputBorder(),
            enabledBorder: OutlineInputBorder(
              borderRadius: BorderRadius.circular(16),
-             borderSide: const BorderSide(color: AppTheme.border),
+             borderSide: const BorderSide(color: AppTheme.inputBorder),
            ),
            focusedBorder: OutlineInputBorder(
              borderRadius: BorderRadius.circular(16),

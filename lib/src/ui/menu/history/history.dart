@@ -133,13 +133,19 @@ class _HistoryState extends State<History> {
                       ),
                     ],
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildTab(0, translate('history.in_progress')),
-                      _buildTab(1, translate('history.completed')),
-                      _buildTab(2, translate('history.canceled')),
-                    ],
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildTab(0, translate('history.all')),
+                        const SizedBox(width: 8),
+                        _buildTab(1, translate('history.in_progress')),
+                        const SizedBox(width: 8),
+                        _buildTab(2, translate('history.completed')),
+                        const SizedBox(width: 8),
+                        _buildTab(3, translate('history.canceled')),
+                      ],
+                    ),
                   ),
                 ),
               ),

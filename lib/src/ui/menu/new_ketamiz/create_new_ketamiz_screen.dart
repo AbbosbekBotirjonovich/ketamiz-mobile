@@ -391,6 +391,7 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
                                       fontFamily: AppTheme.fontFamily,
                                     ),
                                     filled: true,
+                                    fillColor: AppTheme.inputFill,
                                     contentPadding: const EdgeInsets.symmetric(
                                       vertical: 20,
                                       horizontal: 16,
@@ -399,7 +400,7 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(16),
                                       borderSide: const BorderSide(
-                                          color: AppTheme.border),
+                                          color: AppTheme.inputBorder),
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(16),
@@ -514,11 +515,12 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
                                       horizontal: 16,
                                     ),
                                     filled: true,
+                                    fillColor: AppTheme.inputFill,
                                     border: const OutlineInputBorder(),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(16),
                                       borderSide: const BorderSide(
-                                          color: AppTheme.border),
+                                          color: AppTheme.inputBorder),
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(16),
@@ -690,10 +692,11 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
                       horizontal: 16,
                     ),
                     filled: true,
+                    fillColor: AppTheme.inputFill,
                     border: const OutlineInputBorder(),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: AppTheme.border),
+                      borderSide: const BorderSide(color: AppTheme.inputBorder),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -752,10 +755,11 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
                       horizontal: 16,
                     ),
                     filled: true,
+                    fillColor: AppTheme.inputFill,
                     border: const OutlineInputBorder(),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: AppTheme.border),
+                      borderSide: const BorderSide(color: AppTheme.inputBorder),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
