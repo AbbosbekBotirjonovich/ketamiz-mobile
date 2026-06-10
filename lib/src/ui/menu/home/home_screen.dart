@@ -18,6 +18,7 @@ import 'package:lottie/lottie.dart';
 import '../../../bloc/profile_bloc.dart';
 import '../../../theme/app_theme.dart';
 import '../../widgets/containers/destinations_container.dart';
+import '../../widgets/language_button.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -381,28 +382,39 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.light,
-      body: SafeArea(
-        bottom: false,
-        child: RefreshIndicator(
-          color: AppTheme.purple,
-          onRefresh: _onRefresh,
-          child: ListView(
-            padding: const EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 8,
-              bottom: kNavBarTotalPadding,
+      body: Column(
+        children: [
+          Container(
+            color: AppTheme.cream,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: _buildHeader(),
+              ),
             ),
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 16),
-              _buildSearchCard(),
-              const SizedBox(height: 24),
-              if (activeBookedId != "0") _buildActiveTrip(),
-              _buildRecommendedTrips(),
-            ],
           ),
-        ),
+          Expanded(
+            child: RefreshIndicator(
+              color: AppTheme.purple,
+              onRefresh: _onRefresh,
+              child: ListView(
+                padding: const EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 16,
+                  bottom: kNavBarTotalPadding,
+                ),
+                children: [
+                  _buildSearchCard(),
+                  const SizedBox(height: 24),
+                  if (activeBookedId != "0") _buildActiveTrip(),
+                  _buildRecommendedTrips(),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -410,16 +422,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHeader() {
     return Row(
       children: [
-        Text(
-          translate("home.title"),
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            fontFamily: AppTheme.fontFamily,
-            color: AppTheme.black,
-          ),
+        Image.asset(
+          'assets/logos/ketamiz-logo-small.png',
+          height: 36,
+          fit: BoxFit.contain,
         ),
         const Spacer(),
+        const LanguageButton(),
+        const SizedBox(width: 12),
         Stack(
           children: [
             Container(

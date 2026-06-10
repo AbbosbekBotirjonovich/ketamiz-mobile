@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart';
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../model/event_bus/http_result.dart';
 import '../model/passenger_model.dart';
 import '../utils/secure_storage.dart';
@@ -38,6 +39,14 @@ class ApiProvider {
     if (token != null && token.isNotEmpty) {
       headers["Authorization"] = "Bearer $token";
     }
+
+    // Tell the backend which language to localize server-side strings in
+    // (region/district/quarter names, messages, etc.) so they match the UI.
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      headers["Accept-Language"] = prefs.getString('language') ?? 'uz';
+    } catch (_) {}
+
     return headers;
   }
 
@@ -150,7 +159,31 @@ class ApiProvider {
     }
   }
 
-  // Legacy postRequest shim (deprecating but keeping if internal usage exists, 
+  static Future<HttpResult> putRequest(
+      String url, Map<String, dynamic> body) async {
+    final dio = _dio;
+    final headers = await _getReqHeader();
+
+    try {
+      Response response = await dio.put(
+        url,
+        data: body,
+        options: Options(
+          headers: headers,
+          sendTimeout: durationTimeout,
+          receiveTimeout: durationTimeout,
+          validateStatus: (status) => true,
+        ),
+      );
+      return _processResponse(response);
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return _handleGenericError(e);
+    }
+  }
+
+  // Legacy postRequest shim (deprecating but keeping if internal usage exists,
   // though we will replace all calls)
   // Replaced by postFormRequest or postJsonRequest usage below.
 
@@ -379,6 +412,15 @@ class ApiProvider {
   Future<HttpResult> fetchCancelBooking(String bookingId) async {
     String url = '$baseUrl/client/booking/$bookingId';
     return await deleteRequest(url);
+  }
+
+  /// Update booked passengers' pickup coordinates for a trip.
+  /// [passengers] is a list of {id, latitude, longitude} maps.
+  Future<HttpResult> fetchUpdatePassengerAddress(
+      String tripId, List<Map<String, dynamic>> passengers) async {
+    String url = '$baseUrl/client/trips/$tripId/booking';
+    final data = {"passengers": passengers};
+    return await putRequest(url, data);
   }
 
   /// Get In-Progress Trips
@@ -761,6 +803,34 @@ class ApiProvider {
   Future<HttpResult> fetchTransactionList() async {
     String url = '$baseUrl/user/balance-transactions';
     return await getRequest(url);
+  }
+
+  /// Download a single transaction receipt as PDF bytes.
+  /// Returns the raw bytes on success, or null on any failure.
+  Future<List<int>?> fetchTransactionPdfBytes(int transactionId) async {
+    try {
+      final headers = await _getReqHeader();
+      headers["Accept"] = "application/pdf";
+      final response = await _dio.get<List<int>>(
+        '$baseUrl/user/balance-transactions/pdf/$transactionId',
+        options: Options(
+          headers: headers,
+          responseType: ResponseType.bytes,
+        ),
+      );
+      if (response.statusCode != null &&
+          response.statusCode! >= 200 &&
+          response.statusCode! <= 299) {
+        return response.data;
+      }
+      return null;
+    } catch (e) {
+      assert(() {
+        debugPrint("fetchTransactionPdfBytes error: $e");
+        return true;
+      }());
+      return null;
+    }
   }
 
   /// Get My Withdraw Requests

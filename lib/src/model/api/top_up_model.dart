@@ -36,6 +36,10 @@ class TransactionModel {
   String amount;
   String balanceBefore;
   String balanceAfter;
+  String? reason;
+  String? status;
+  int? seatsBooked;
+  String? totalPrice;
   DateTime? createdAt;
 
   TransactionModel({
@@ -44,19 +48,30 @@ class TransactionModel {
     required this.amount,
     required this.balanceBefore,
     required this.balanceAfter,
+    this.reason,
+    this.status,
+    this.seatsBooked,
+    this.totalPrice,
     this.createdAt,
   });
 
-  factory TransactionModel.fromJson(Map<String, dynamic> json) => TransactionModel(
-    id: json["id"] ?? 0,
-    type: json["type"] ?? "",
-    amount: json["amount"] ?? "",
-    balanceBefore: json["balance_before"] ?? "",
-    balanceAfter: json["balance_after"] ?? "",
-    createdAt: json["created_at"] != null
-        ? DateTime.tryParse(json["created_at"].toString())
-        : null,
-  );
+  factory TransactionModel.fromJson(Map<String, dynamic> json) {
+    final booking = json["booking"] is Map ? json["booking"] as Map : null;
+    return TransactionModel(
+      id: json["id"] ?? 0,
+      type: json["type"] ?? "",
+      amount: json["amount"] ?? "",
+      balanceBefore: json["balance_before"] ?? "",
+      balanceAfter: json["balance_after"] ?? "",
+      reason: json["reason"]?.toString(),
+      status: json["status"]?.toString(),
+      seatsBooked: (booking?["seats_booked"] as num?)?.toInt(),
+      totalPrice: booking?["total_price"]?.toString(),
+      createdAt: json["created_at"] != null
+          ? DateTime.tryParse(json["created_at"].toString())
+          : null,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     "id": id,
@@ -64,6 +79,8 @@ class TransactionModel {
     "amount": amount,
     "balance_before": balanceBefore,
     "balance_after": balanceAfter,
+    "reason": reason,
+    "status": status,
     "created_at": createdAt?.toIso8601String(),
   };
 }

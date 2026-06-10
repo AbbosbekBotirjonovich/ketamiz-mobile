@@ -10,15 +10,17 @@ class HistoryContainer extends StatelessWidget {
   final BookModel booking;
 
   String get _fromPlace {
-    if (booking.trip.startDistrict.isNotEmpty) return booking.trip.startDistrict;
-    if (booking.trip.startRegion.isNotEmpty) return booking.trip.startRegion;
-    return '—';
+    final parts = [booking.trip.startDistrict, booking.trip.startRegion]
+        .where((s) => s.isNotEmpty)
+        .toList();
+    return parts.isEmpty ? '—' : parts.join(', ');
   }
 
   String get _toPlace {
-    if (booking.trip.endDistrict.isNotEmpty) return booking.trip.endDistrict;
-    if (booking.trip.endRegion.isNotEmpty) return booking.trip.endRegion;
-    return '—';
+    final parts = [booking.trip.endDistrict, booking.trip.endRegion]
+        .where((s) => s.isNotEmpty)
+        .toList();
+    return parts.isEmpty ? '—' : parts.join(', ');
   }
 
   Color _statusColor(String status) {

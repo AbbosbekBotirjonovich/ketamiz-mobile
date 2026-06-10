@@ -15,8 +15,9 @@ import '../../theme/app_theme.dart';
 import '../widgets/picker/custom_birth_date_picker.dart';
 import '../widgets/picker/custom_date_picker.dart';
 import '../widgets/textfield/main_textfield.dart';
-
-enum PassengerStep { fullName, phoneNumber }
+import '../menu/new_ketamiz/map_select_screen.dart';
+import 'snack_bar.dart';
+import 'package:latlong2/latlong.dart';
 
 class BottomDialog {
   static void showSelectLocation(
@@ -322,20 +323,20 @@ class BottomDialog {
   static void showAddPassenger(
     BuildContext context,
     PassengerModel passenger,
-    Function(PassengerModel data) onAdd,
-  ) {
-    TextEditingController fullNameController = TextEditingController();
-    TextEditingController phoneController = TextEditingController();
+    Function(PassengerModel data) onAdd, {
+    String place = '',
+    LatLng? sharedLocation,
+  }) {
+    final fullNameController = TextEditingController(text: passenger.fullName);
+    final phoneController = TextEditingController(text: passenger.phoneNumber);
+    String lat = passenger.latitude;
+    String lng = passenger.longitude;
 
-    PassengerModel selectedPassenger = PassengerModel(
-      fullName: passenger.fullName,
-      phoneNumber: passenger.phoneNumber,
-    );
-
-    // Determine initial step based on whether editing or adding
-    PassengerStep currentStep = passenger.fullName.isNotEmpty
-        ? PassengerStep.phoneNumber
-        : PassengerStep.fullName;
+    final bool hasShared = sharedLocation != null;
+    final String sharedLatStr =
+        sharedLocation != null ? sharedLocation.latitude.toString() : '';
+    final String sharedLngStr =
+        sharedLocation != null ? sharedLocation.longitude.toString() : '';
 
     showModalBottomSheet(
       barrierColor: AppTheme.black.withOpacity(0.45),
@@ -343,199 +344,227 @@ class BottomDialog {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        // Initialize controllers with existing passenger data
-        fullNameController.text = selectedPassenger.fullName;
-        phoneController.text = selectedPassenger.phoneNumber;
-
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
-            // Helper to get the title based on the current step
-            String getTitle() {
-              switch (currentStep) {
-                case PassengerStep.fullName:
-                  return translate("home.write_full_name");
-                case PassengerStep.phoneNumber:
-                  return translate("home.write_phone_number");
+            final bool hasLoc = lat.isNotEmpty && lng.isNotEmpty;
+            final bool isSame =
+                hasLoc && hasShared && lat == sharedLatStr && lng == sharedLngStr;
+            final bool isMapSel = hasLoc && !isSame;
+
+            Widget optionTile({
+              required IconData icon,
+              required String title,
+              required bool selected,
+              required VoidCallback onTap,
+              bool showChevron = false,
+            }) {
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onTap,
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? AppTheme.purple.withOpacity(0.08)
+                        : AppTheme.light,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: selected ? AppTheme.purple : AppTheme.border,
+                      width: selected ? 1.5 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(icon,
+                          size: 20,
+                          color: selected ? AppTheme.purple : AppTheme.gray),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: TextStyle(
+                            fontFamily: AppTheme.fontFamily,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color:
+                                selected ? AppTheme.purple : AppTheme.black,
+                          ),
+                        ),
+                      ),
+                      if (selected)
+                        const Icon(Icons.check_circle,
+                            size: 20, color: AppTheme.purple)
+                      else if (showChevron)
+                        const Icon(Icons.chevron_right,
+                            size: 20, color: AppTheme.gray),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            Future<void> pickOnMap() async {
+              final picked = await Navigator.push<LatLng>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => MapSelectScreen(
+                    place: place,
+                    onSelected: (_) {},
+                  ),
+                ),
+              );
+              if (picked != null) {
+                setState(() {
+                  lat = picked.latitude.toString();
+                  lng = picked.longitude.toString();
+                });
               }
             }
 
-            // Helper to get the hint text based on the current step
-            String getHintText() {
-              switch (currentStep) {
-                case PassengerStep.fullName:
-                  return translate("home.full_name");
-                case PassengerStep.phoneNumber:
-                  return translate("home.phone_number");
+            void submit() {
+              final name = fullNameController.text.trim();
+              final phone = phoneController.text.trim();
+              if (name.isEmpty || phone.isEmpty) {
+                CustomSnackBar().showSnackBar(
+                    context, translate("home.fill_passenger_details"), 2);
+                return;
               }
-            }
-
-            // Helper to get the icon based on the current step
-            IconData getIcon() {
-              switch (currentStep) {
-                case PassengerStep.fullName:
-                  return Icons.person;
-                case PassengerStep.phoneNumber:
-                  return Icons.phone;
+              if (lat.isEmpty || lng.isEmpty) {
+                CustomSnackBar().showSnackBar(
+                    context, translate("home.set_pickup_location"), 2);
+                return;
               }
-            }
-
-            // Helper to get the current controller
-            TextEditingController getController() {
-              switch (currentStep) {
-                case PassengerStep.fullName:
-                  return fullNameController;
-                case PassengerStep.phoneNumber:
-                  return phoneController;
-              }
+              Navigator.pop(context);
+              onAdd(PassengerModel(
+                fullName: name,
+                phoneNumber: phone,
+                latitude: lat,
+                longitude: lng,
+              ));
             }
 
             return Padding(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    decoration: const BoxDecoration(
-                      borderRadius: BorderRadius.only(
-                        topRight: Radius.circular(24),
-                        topLeft: Radius.circular(24),
-                      ),
-                      color: Colors.white,
-                    ),
-                    padding: const EdgeInsets.only(top: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            height: 5,
-                            width: 80,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(5),
-                              color: AppTheme.gray,
-                            ),
+              child: Container(
+                decoration: const BoxDecoration(
+                  borderRadius: BorderRadius.only(
+                    topRight: Radius.circular(24),
+                    topLeft: Radius.circular(24),
+                  ),
+                  color: Colors.white,
+                ),
+                padding: const EdgeInsets.only(top: 16),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Center(
+                        child: Container(
+                          height: 5,
+                          width: 80,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(5),
+                            color: AppTheme.gray,
                           ),
-                        ],
+                        ),
                       ),
                       const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text18h500w(
-                            title: getTitle(),
-                          ),
-                        ],
+                      Center(
+                        child: Text18h500w(
+                          title: translate("home.passenger_info"),
+                        ),
                       ),
-                      const SizedBox(height: 24),
-                      Container(
+                      const SizedBox(height: 20),
+                      Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: MainTextField(
-                          hintText: getHintText(),
-                          icon: getIcon(),
-                          controller: getController(),
-                          phone: currentStep == PassengerStep.phoneNumber
-                              ? true
-                              : false,
+                          hintText: translate("home.full_name"),
+                          icon: Icons.person,
+                          controller: fullNameController,
+                          fillColor: Colors.white,
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.only(
-                          top: 12,
-                          left: 16,
-                          right: 16,
-                          bottom: 32,
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: MainTextField(
+                          hintText: translate("home.phone_number"),
+                          icon: Icons.phone,
+                          controller: phoneController,
+                          phone: true,
+                          fillColor: Colors.white,
                         ),
-                        child: Row(
+                      ),
+                      const SizedBox(height: 18),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text14h500w(
+                          title: translate("home.pickup_location"),
+                          color: AppTheme.gray,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
                           children: [
-                            GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  if (currentStep ==
-                                      PassengerStep.phoneNumber) {
-                                    phoneController.text = '';
-                                    selectedPassenger.phoneNumber = '';
-                                    currentStep = PassengerStep.fullName;
-                                  } else if (currentStep ==
-                                      PassengerStep.fullName) {
-                                    fullNameController.text = '';
-                                    selectedPassenger.fullName = '';
-                                    Navigator.pop(context);
-                                  }
-                                });
-                              },
-                              child: Container(
-                                height: 56,
-                                width: 72,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(16),
-                                  color: AppTheme.purple.withOpacity(0.1),
-                                ),
-                                child: Center(
-                                  child: SvgPicture.asset(
-                                    height: 24,
-                                    width: 24,
-                                    'assets/icons/left.svg',
-                                    colorFilter: const ColorFilter.mode(
-                                      AppTheme.purple,
-                                      BlendMode.srcIn,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: GestureDetector(
+                            if (hasShared)
+                              optionTile(
+                                icon: Icons.groups_outlined,
+                                title:
+                                    translate("home.pickup_same_as_others"),
+                                selected: isSame,
                                 onTap: () {
-                                  if (currentStep == PassengerStep.fullName &&
-                                      fullNameController.text.isNotEmpty) {
-                                    setState(() {
-                                      selectedPassenger.fullName =
-                                          fullNameController.text;
-                                      currentStep = PassengerStep.phoneNumber;
-                                    });
-                                  } else if (currentStep ==
-                                          PassengerStep.phoneNumber &&
-                                      phoneController.text.isNotEmpty) {
-                                    setState(() {
-                                      selectedPassenger.phoneNumber =
-                                          phoneController.text;
-                                      Navigator.pop(context);
-                                      onAdd(selectedPassenger);
-                                    });
-                                  }
+                                  setState(() {
+                                    lat = sharedLatStr;
+                                    lng = sharedLngStr;
+                                  });
                                 },
-                                child: Container(
-                                  height: 56,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.purple,
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Center(
-                                    child: Text16h500w(
-                                      title: translate("home.apply"),
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
                               ),
+                            optionTile(
+                              icon: isMapSel
+                                  ? Icons.location_on
+                                  : Icons.add_location_alt_outlined,
+                              title: isMapSel
+                                  ? translate("home.pickup_location_set")
+                                  : translate("home.pickup_choose_on_map"),
+                              selected: isMapSel,
+                              showChevron: true,
+                              onTap: pickOnMap,
                             ),
                           ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Padding(
+                        padding: const EdgeInsets.only(
+                            left: 16, right: 16, bottom: 32),
+                        child: GestureDetector(
+                          onTap: submit,
+                          child: Container(
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: AppTheme.purple,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Center(
+                              child: Text16h500w(
+                                title: translate("home.add_passenger"),
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
+              ),
             );
           },
         );

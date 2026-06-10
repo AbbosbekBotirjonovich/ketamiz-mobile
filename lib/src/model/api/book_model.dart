@@ -132,23 +132,35 @@ class Passenger {
   int id;
   String name;
   String phone;
+  String latitude;
+  String longitude;
+  String status;
 
   Passenger({
     required this.id,
     required this.name,
     required this.phone,
+    this.latitude = "",
+    this.longitude = "",
+    this.status = "",
   });
 
   factory Passenger.fromJson(Map<String, dynamic> json) => Passenger(
         id: _asInt(json["id"]),
         name: json["name"]?.toString() ?? "",
         phone: json["phone"]?.toString() ?? "",
+        latitude: json["latitude"]?.toString() ?? "",
+        longitude: json["longitude"]?.toString() ?? "",
+        status: json["status"]?.toString() ?? "",
       );
 
   Map<String, dynamic> toJson() => {
         "id": id,
         "name": name,
         "phone": phone,
+        "latitude": latitude,
+        "longitude": longitude,
+        "status": status,
       };
 }
 

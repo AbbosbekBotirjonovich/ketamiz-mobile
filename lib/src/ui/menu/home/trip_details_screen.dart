@@ -25,14 +25,19 @@ import 'map_route_screen.dart';
 /// How a passenger's pickup point is chosen when others already have one.
 enum _PickupChoice { same, map }
 
+/// Who the booking is being made for.
+enum _BookingMode { self, withOthers, other }
+
 /// A passenger on a driver's own trip — shown read-only in the driver view.
 class _BookedPassenger {
   final String name;
   final String phone;
   final String lat;
   final String lng;
+  final String status;
 
-  _BookedPassenger(this.name, this.phone, this.lat, this.lng);
+  _BookedPassenger(this.name, this.phone, this.lat, this.lng,
+      {this.status = ''});
 
   bool get hasLocation =>
       lat.isNotEmpty &&
@@ -87,6 +92,12 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
   List<PassengerModel> passengers = [];
   bool _isCancelling = false;
 
+  /// The current user as a passenger (null if we have no cached identity).
+  PassengerModel? _me;
+
+  /// Who the booking is for: just me, me + others, or someone else entirely.
+  _BookingMode _mode = _BookingMode.self;
+
   /// True when the logged-in user is the driver of this trip — they can't
   /// book their own trip, so no passenger form should appear.
   bool _isOwnTrip = false;
@@ -127,6 +138,7 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
         pick(m, ['phone', 'phone_number', 'phoneNumber']),
         pick(m, ['latitude', 'lat']),
         pick(m, ['longitude', 'long', 'lng']),
+        status: pick(m, ['status']),
       ));
     }
 
@@ -155,41 +167,92 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
       return;
     }
     final fullName = "${user.firstName} ${user.lastName}".trim();
-    // Nothing cached to prefill — start with an empty list so the user
-    // adds passenger details (name + phone) explicitly.
+    // Nothing cached to prefill — booking must be for someone else, entered
+    // manually, so start in "other" mode with an empty list.
     if (fullName.isEmpty && user.phone.isEmpty) {
       setState(() {
+        _me = null;
+        _mode = _BookingMode.other;
         passengers = [];
         passengersNum = 0;
       });
       return;
     }
     setState(() {
-      passengers = [
-        PassengerModel(
-          fullName: fullName,
-          phoneNumber: user.phone,
-        ),
-      ];
+      _me = PassengerModel(fullName: fullName, phoneNumber: user.phone);
+      _mode = _BookingMode.self;
+      passengers = [_me!];
+      passengersNum = 1;
     });
   }
 
-  /// Booking needs at least one passenger, each with name, phone AND a pickup
-  /// location — that's what the booking API sends per seat.
-  bool _validatePassengers() {
-    final incomplete = passengers.isEmpty ||
+  /// Switch who the booking is for, rebuilding the passenger list accordingly.
+  void _setMode(_BookingMode mode) {
+    if (_mode == mode) return;
+    setState(() {
+      _mode = mode;
+      switch (mode) {
+        case _BookingMode.self:
+          passengers = _me != null ? [_me!] : [];
+          break;
+        case _BookingMode.withOthers:
+          if (_me != null && !passengers.any((p) => identical(p, _me))) {
+            passengers.insert(0, _me!);
+          }
+          break;
+        case _BookingMode.other:
+          passengers.removeWhere((p) => identical(p, _me));
+          break;
+      }
+      passengersNum = passengers.length;
+    });
+  }
+
+  /// Validate and proceed to payment. Booking needs at least one passenger,
+  /// each with name, phone AND a pickup location. If only the pickup point is
+  /// missing, prompt for it on the map instead of showing a blocking error —
+  /// that's the common case for the pre-filled current user.
+  Future<void> _onBookTap() async {
+    if (passengers.isEmpty ||
         passengers.any((p) =>
-            p.fullName.trim().isEmpty ||
-            p.phoneNumber.trim().isEmpty ||
-            !p.hasLocation);
-    if (incomplete) {
+            p.fullName.trim().isEmpty || p.phoneNumber.trim().isEmpty)) {
       CenterDialog.showActionFailed(
         context,
         translate("home.passenger_info"),
         translate("home.fill_passenger_details"),
       );
+      return;
     }
-    return !incomplete;
+
+    // Prompt for each passenger still missing a pickup point.
+    var idx = passengers.indexWhere((p) => !p.hasLocation);
+    while (idx != -1) {
+      await _setPassengerLocation(idx);
+      if (!mounted) return;
+      final next = passengers.indexWhere((p) => !p.hasLocation);
+      if (next == idx) {
+        // User backed out of the picker — pickup is required, so stop here.
+        CenterDialog.showActionFailed(
+          context,
+          translate("home.passenger_info"),
+          translate("home.set_pickup_location"),
+        );
+        return;
+      }
+      idx = next;
+    }
+
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PaymentScreen(
+          trip: widget.trip,
+          passengersNum: passengers.length,
+          passengers: passengers,
+        ),
+      ),
+    );
   }
 
   /// Add a passenger: collect name + phone, then a pickup location.
@@ -202,12 +265,19 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
       );
       return;
     }
+    // Offer the first existing passenger's pickup as a "same location" option.
+    LatLng? shared;
+    for (final p in passengers) {
+      if (p.hasLocation) {
+        shared = LatLng(double.parse(p.latitude), double.parse(p.longitude));
+        break;
+      }
+    }
     BottomDialog.showAddPassenger(
       context,
       PassengerModel(fullName: ""),
-      (data) async {
-        final exists =
-            passengers.any((p) => p.fullName == data.fullName);
+      (data) {
+        final exists = passengers.any((p) => p.fullName == data.fullName);
         if (exists || data.fullName.isEmpty) {
           CenterDialog.showActionFailed(
             context,
@@ -220,9 +290,9 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
           passengers.add(data);
           passengersNum++;
         });
-        // Immediately prompt for this passenger's pickup point.
-        await _setPassengerLocation(passengers.length - 1);
       },
+      place: from,
+      sharedLocation: shared,
     );
   }
 
@@ -784,8 +854,6 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
             child: Expanded(
               child: Text(
                 from.isEmpty ? "—" : from,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.end,
                 style: const TextStyle(
                   fontFamily: AppTheme.fontFamily,
@@ -804,8 +872,6 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
             child: Expanded(
               child: Text(
                 to.isEmpty ? "—" : to,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.end,
                 style: const TextStyle(
                   fontFamily: AppTheme.fontFamily,
@@ -821,58 +887,14 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
             icon: Icons.calendar_today_rounded,
             iconColor: AppTheme.purple,
             label: translate("home.departure_date"),
-            valueWidget: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  Utils.searchDateFormat(widget.trip.startTime),
-                  style: const TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                    color: AppTheme.gray,
-                  ),
-                ),
-                Text(
-                  Utils.timeFormat(widget.trip.startTime),
-                  style: const TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.black,
-                  ),
-                ),
-              ],
-            ),
+            value: Utils.searchDateFormat(widget.trip.startTime),
           ),
           _divider(),
           _infoRow(
             icon: Icons.flag_rounded,
             iconColor: AppTheme.green,
             label: translate("home.arrival_date"),
-            valueWidget: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  Utils.searchDateFormat(widget.trip.endTime),
-                  style: const TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                    color: AppTheme.gray,
-                  ),
-                ),
-                Text(
-                  Utils.timeFormat(widget.trip.endTime),
-                  style: const TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.black,
-                  ),
-                ),
-              ],
-            ),
+            value: Utils.searchDateFormat(widget.trip.endTime),
           ),
           _divider(),
           if (_isActive) ...[
@@ -952,7 +974,35 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                 ),
               ),
             )
-          else
+          else ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: AppTheme.purple.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.info_outline,
+                      size: 18, color: AppTheme.purple),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      translate("home.driver_pickup_note"),
+                      style: const TextStyle(
+                        fontFamily: AppTheme.fontFamily,
+                        fontSize: 12.5,
+                        height: 1.45,
+                        fontWeight: FontWeight.w400,
+                        color: AppTheme.black,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             ...List.generate(_bookedPassengers.length, (i) {
               final p = _bookedPassengers[i];
               return Container(
@@ -984,6 +1034,10 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                           if (p.phone.isNotEmpty) ...[
                             const SizedBox(height: 2),
                             Text14h400w(title: p.phone, color: AppTheme.gray),
+                          ],
+                          if (p.status.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            _passengerStatusBadge(p.status),
                           ],
                         ],
                       ),
@@ -1022,7 +1076,48 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                 ),
               );
             }),
+          ],
         ],
+      ),
+    );
+  }
+
+  Widget _passengerStatusBadge(String status) {
+    final s = status.toLowerCase();
+    String label;
+    Color color;
+    switch (s) {
+      case 'confirmed':
+        label = translate("home.passenger_confirmed");
+        color = AppTheme.green;
+        break;
+      case 'pending':
+        label = translate("home.passenger_pending");
+        color = AppTheme.yellow;
+        break;
+      case 'cancelled':
+      case 'canceled':
+        label = translate("home.passenger_cancelled");
+        color = AppTheme.red;
+        break;
+      default:
+        label = status;
+        color = AppTheme.gray;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontFamily: AppTheme.fontFamily,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
       ),
     );
   }
@@ -1047,6 +1142,49 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
   }
 
   // ── Passenger card (client view) ───────────────────────────────────────────
+  Widget _buildModeSelector() {
+    Widget chip(_BookingMode mode, String label) {
+      final active = _mode == mode;
+      return Expanded(
+        child: GestureDetector(
+          onTap: () => _setMode(mode),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
+            decoration: BoxDecoration(
+              color: active ? AppTheme.purple : AppTheme.light,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: active ? AppTheme.purple : AppTheme.border,
+              ),
+            ),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w500,
+                height: 1.2,
+                color: active ? Colors.white : AppTheme.dark,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        chip(_BookingMode.self, translate("home.book_for_self")),
+        chip(_BookingMode.withOthers, translate("home.book_with_others")),
+        chip(_BookingMode.other, translate("home.book_for_other")),
+      ],
+    );
+  }
+
   Widget _buildPassengerCard() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1077,24 +1215,30 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                   color: AppTheme.purple,
                 ),
               ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: _onAddPassenger,
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: AppTheme.purple.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Icon(
-                    Icons.add,
-                    color: AppTheme.purple,
-                    size: 20,
+              if (_mode != _BookingMode.self) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _onAddPassenger,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppTheme.purple.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Icon(
+                      Icons.add,
+                      color: AppTheme.purple,
+                      size: 20,
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
+          if (_me != null) ...[
+            const SizedBox(height: 12),
+            _buildModeSelector(),
+          ],
           const SizedBox(height: 12),
           if (passengers.isEmpty)
             Padding(
@@ -1117,11 +1261,14 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
             itemBuilder: (context, index) => PassengersContainer(
               passenger: passengers[index],
               onEdit: (data) {
-                // Preserve the already-chosen pickup point across name/phone edits.
                 if (data.fullName.isNotEmpty) {
                   setState(() {
                     passengers[index].fullName = data.fullName;
                     passengers[index].phoneNumber = data.phoneNumber;
+                    if (data.hasLocation) {
+                      passengers[index].latitude = data.latitude;
+                      passengers[index].longitude = data.longitude;
+                    }
                   });
                 }
               },
@@ -1186,19 +1333,7 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
           const SizedBox(width: 16),
           Expanded(
             child: GestureDetector(
-              onTap: () {
-                if (!_validatePassengers()) return;
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => PaymentScreen(
-                      trip: widget.trip,
-                      passengersNum: passengers.length,
-                      passengers: passengers,
-                    ),
-                  ),
-                );
-              },
+              onTap: _onBookTap,
               child: Container(
                 height: 52,
                 decoration: BoxDecoration(
@@ -1338,7 +1473,7 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
           // When an Expanded value (child) follows, the label must NOT take a
           // flex share — otherwise label and value split the row 50/50 and the
           // value right-aligns to the middle, leaving empty space on the right.
-          child != null
+          (child != null || value != null)
               ? Text(
                   label,
                   style: const TextStyle(
@@ -1362,14 +1497,19 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
           if (child != null) ...[const SizedBox(width: 8), child],
           if (valueWidget != null) ...[const Spacer(), valueWidget],
           if (value != null) ...[
-            const Spacer(),
-            Text(
-              value,
-              style: const TextStyle(
-                fontFamily: AppTheme.fontFamily,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppTheme.black,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                value,
+                textAlign: TextAlign.end,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.black,
+                ),
               ),
             ),
           ],
@@ -1445,10 +1585,10 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
           context,
           MaterialPageRoute(
             builder: (_) => MapRouteScreen(
-              start: LatLng(double.parse(widget.trip.startLat),
-                  double.parse(widget.trip.startLong)),
-              end: LatLng(double.parse(widget.trip.endLat),
-                  double.parse(widget.trip.endLong)),
+              start: LatLng(double.tryParse(widget.trip.startLat) ?? 0,
+                  double.tryParse(widget.trip.startLong) ?? 0),
+              end: LatLng(double.tryParse(widget.trip.endLat) ?? 0,
+                  double.tryParse(widget.trip.endLong) ?? 0),
               startText: from,
               endText: to,
               approximate: !showExact,

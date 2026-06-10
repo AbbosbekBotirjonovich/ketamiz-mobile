@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:ketamiz/src/model/api/created_trip_model.dart';
 import 'package:ketamiz/src/model/api/driver_trips_list_model.dart';
 import 'package:ketamiz/src/ui/widgets/buttons/primary_button.dart';
 import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../lan_localization/load_places.dart';
 import '../../../model/api/vehicles_list_model.dart';
@@ -20,10 +22,15 @@ import '../../dialogs/bottom_dialog.dart';
 import '../../dialogs/center_dialog.dart';
 import '../../dialogs/snack_bar.dart';
 import '../../widgets/containers/car_container.dart';
-import '../../widgets/textfield/main_textfield.dart';
+import '../../widgets/texts/text_12h_400w.dart';
 import '../../widgets/texts/text_14h_400w.dart';
 import '../../widgets/texts/text_16h_500w.dart';
+import '../../widgets/info_tooltip.dart';
+import '../profile/add_vehicle_screen.dart';
 import 'map_select_screen.dart';
+
+// Cream border on white-filled input fields.
+const _kBorderColor = Color(0xFFDDD5C8);
 
 class CreateNewKetamizScreen extends StatefulWidget {
   const CreateNewKetamizScreen({
@@ -51,6 +58,12 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
 
   final Repository _repository = Repository();
 
+  final MapController _fromMapController = MapController();
+  final MapController _toMapController = MapController();
+
+  // Default map center (Tashkent) shown until a point is picked.
+  static const LatLng _defaultPosition = LatLng(41.2995, 69.2401);
+
   String vehicleId = "0";
   bool isLoading = false;
 
@@ -69,8 +82,6 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
 
   VehicleModel selectedVehicle = VehicleModel(id: 0, vehicleName: '');
 
-  bool isCarOpen = false;
-
   int passengersNum = 1;
 
   List<VehicleModel> myVehicles = [];
@@ -85,7 +96,8 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
     super.dispose();
   }
 
-  static final _unknownLocation = LocationModel(id: "0", text: "—", parentID: "0");
+  static final _unknownLocation =
+      LocationModel(id: "0", text: "—", parentID: "0");
 
   void setLocations() {
     fromRegion = LocationData.regions.firstWhere(
@@ -216,7 +228,8 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
       return;
     }
 
-    if (endDate.isBefore(departureDate) || endDate.isAtSameMomentAs(departureDate)) {
+    if (endDate.isBefore(departureDate) ||
+        endDate.isAtSameMomentAs(departureDate)) {
       CustomSnackBar().showSnackBar(
         context,
         translate("ketamiz.end_date_after_departure"),
@@ -312,672 +325,798 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
     );
   }
 
+  LatLng? get _fromPoint => _parsePoint(startLat, startLong);
+  LatLng? get _toPoint => _parsePoint(endLat, endLong);
+
+  LatLng? _parsePoint(String lat, String lng) {
+    if (lat.isEmpty || lng.isEmpty) return null;
+    final dLat = double.tryParse(lat);
+    final dLng = double.tryParse(lng);
+    if (dLat == null || dLng == null) return null;
+    return LatLng(dLat, dLng);
+  }
+
+  void _recenter(MapController controller, LatLng point) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        controller.move(point, 15);
+      } catch (_) {}
+    });
+  }
+
+  void _openFromPicker() {
+    BottomDialog.showSelectLocation(
+      context,
+      fromRegion,
+      fromCity,
+      fromNeighborhood,
+      (r, c, n) {
+        setState(() {
+          fromRegion = r;
+          fromCity = c;
+          fromNeighborhood = n;
+          fromController.text =
+              "${fromNeighborhood.text}, ${fromCity.text}, ${fromRegion.text}";
+        });
+      },
+    );
+  }
+
+  void _openToPicker() {
+    BottomDialog.showSelectLocation(
+      context,
+      toRegion,
+      toCity,
+      toNeighborhood,
+      (r, c, n) {
+        setState(() {
+          toRegion = r;
+          toCity = c;
+          toNeighborhood = n;
+          toController.text =
+              "${toNeighborhood.text}, ${toCity.text}, ${toRegion.text}";
+        });
+      },
+    );
+  }
+
+  void _openFromMap() {
+    if (fromController.text.isEmpty) {
+      CustomSnackBar().showSnackBar(
+          context, translate("ketamiz.select_location_first"), 2);
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapSelectScreen(
+          place: fromController.text,
+          onSelected: (data) {
+            setState(() {
+              startLat = data.latitude.toString();
+              startLong = data.longitude.toString();
+            });
+            _recenter(_fromMapController, data);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _openToMap() {
+    if (toController.text.isEmpty) {
+      CustomSnackBar().showSnackBar(
+          context, translate("ketamiz.select_location_first"), 2);
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapSelectScreen(
+          place: toController.text,
+          onSelected: (data) {
+            setState(() {
+              endLat = data.latitude.toString();
+              endLong = data.longitude.toString();
+            });
+            _recenter(_toMapController, data);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _openVehicleSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                height: 5,
+                width: 80,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(5),
+                  color: AppTheme.gray,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text16h500w(title: translate("ketamiz.select_car")),
+              const SizedBox(height: 8),
+              if (myVehicles.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 24, horizontal: 16),
+                  child: Text14h400w(
+                    title: translate("profile.no_vehicles_found"),
+                    color: AppTheme.gray,
+                  ),
+                )
+              else
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    itemCount: myVehicles.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (c, i) => GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          selectedVehicle = myVehicles[i];
+                          passengersNum = selectedVehicle.capacity;
+                        });
+                        Navigator.pop(sheetContext);
+                      },
+                      child: CarContainer(car: myVehicles[i]),
+                    ),
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _openAddVehicle();
+                  },
+                  child: Container(
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: AppTheme.light,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: _kBorderColor),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.add, size: 20, color: AppTheme.purple),
+                        const SizedBox(width: 8),
+                        Text14h400w(
+                          title: translate("profile.add_vehicle"),
+                          color: AppTheme.purple,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openAddVehicle() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AddVehicleScreen()),
+    );
+    await getVehicles();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bool isEdit = widget.driverTrip.id != 0;
     return Scaffold(
+      backgroundColor: AppTheme.light,
       appBar: AppBar(
         leading: const LeadingBack(),
-        title: const Text16h500w(title: "New Qadam"),
+        backgroundColor: Colors.white,
+        title: Text16h500w(
+          title: isEdit
+              ? translate("ketamiz.edit_trip")
+              : translate("ketamiz.new_order"),
+        ),
         centerTitle: true,
         elevation: 0,
       ),
       body: Stack(
         children: [
           ListView(
-            shrinkWrap: true,
-            padding: const EdgeInsets.only(
-              top: 22,
-              left: 16,
-              right: 16,
-              bottom: 92,
-            ),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 150),
             children: [
-              SizedBox(
-                height: 144,
-                child: Stack(
-                  alignment: Alignment.centerLeft,
-                  children: [
-                    Column(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                height: 66,
-                                decoration: BoxDecoration(
-                                  color: Colors.transparent,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      offset: const Offset(0, 4),
-                                      blurRadius: 100,
-                                      spreadRadius: 0,
-                                      color: AppTheme.black.withOpacity(0.05),
-                                    ),
-                                  ],
-                                ),
-                                child: TextField(
-                                  onTap: () {
-                                    BottomDialog.showSelectLocation(
-                                      context,
-                                      fromRegion,
-                                      fromCity,
-                                      fromNeighborhood,
-                                      (r, c, n) {
-                                        setState(() {
-                                          fromRegion = r;
-                                          fromCity = c;
-                                          fromNeighborhood = n;
-                                          fromController.text =
-                                              "${fromNeighborhood.text}, ${fromCity.text}, ${fromRegion.text}";
-                                        });
-                                      },
-                                    );
-                                  },
-                                  readOnly: true,
-                                  controller: fromController,
-                                  cursorColor: AppTheme.purple,
-                                  style: const TextStyle(
-                                    color: AppTheme.black,
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    letterSpacing: 1,
-                                    height: 1.5,
-                                  ),
-                                  decoration: InputDecoration(
-                                    labelText: translate("home.from"),
-                                    labelStyle: const TextStyle(
-                                      color: AppTheme.text,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
-                                    filled: true,
-                                    fillColor: AppTheme.inputFill,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      vertical: 20,
-                                      horizontal: 16,
-                                    ),
-                                    border: const OutlineInputBorder(),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      borderSide: const BorderSide(
-                                          color: AppTheme.inputBorder),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      borderSide: const BorderSide(
-                                        color: AppTheme.purple,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            GestureDetector(
-                              onTap: () {
-                                if (fromController.text.isNotEmpty) {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => MapSelectScreen(
-                                        place: fromController.text,
-                                        onSelected: (data) {
-                                          debugPrint(
-                                              "${data.latitude} ${data.longitude}");
-                                          setState(() {
-                                            startLat = data.latitude.toString();
-                                            startLong =
-                                                data.longitude.toString();
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                  );
-                                } else {
-                                  CustomSnackBar().showSnackBar(
-                                      context,
-                                      translate("ketamiz.select_location_first"),
-                                      2);
-                                }
-                              },
-                              child: Container(
-                                height: 40,
-                                width: 40,
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.light,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: SvgPicture.asset(
-                                  "assets/icons/map_pin.svg",
-                                  height: 24,
-                                  width: 24,
-                                  colorFilter: const ColorFilter.mode(
-                                    AppTheme.black,
-                                    BlendMode.srcIn,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                height: 66,
-                                decoration: BoxDecoration(
-                                  boxShadow: [
-                                    BoxShadow(
-                                      offset: const Offset(0, 4),
-                                      blurRadius: 100,
-                                      spreadRadius: 0,
-                                      color: AppTheme.black.withOpacity(0.05),
-                                    ),
-                                  ],
-                                ),
-                                child: TextField(
-                                  onTap: () {
-                                    BottomDialog.showSelectLocation(
-                                        context,
-                                        toRegion,
-                                        toCity,
-                                        toNeighborhood, (r, c, n) {
-                                      setState(() {
-                                        toRegion = r;
-                                        toCity = c;
-                                        toNeighborhood = n;
-                                        toController.text =
-                                            "${toNeighborhood.text}, ${toCity.text}, ${toRegion.text}";
-                                      });
-                                    });
-                                  },
-                                  readOnly: true,
-                                  controller: toController,
-                                  cursorColor: AppTheme.purple,
-                                  style: const TextStyle(
-                                    color: AppTheme.black,
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    letterSpacing: 1,
-                                    height: 1.5,
-                                  ),
-                                  decoration: InputDecoration(
-                                    labelText: translate("home.to"),
-                                    labelStyle: const TextStyle(
-                                      color: AppTheme.text,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      vertical: 20,
-                                      horizontal: 16,
-                                    ),
-                                    filled: true,
-                                    fillColor: AppTheme.inputFill,
-                                    border: const OutlineInputBorder(),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      borderSide: const BorderSide(
-                                          color: AppTheme.inputBorder),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      borderSide: const BorderSide(
-                                        color: AppTheme.purple,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            GestureDetector(
-                              onTap: () {
-                                if (toController.text.isNotEmpty) {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => MapSelectScreen(
-                                        place: toController.text,
-                                        onSelected: (data) {
-                                          debugPrint(
-                                              "${data.latitude} ${data.longitude}");
-                                          setState(() {
-                                            endLat = data.latitude.toString();
-                                            endLong = data.longitude.toString();
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                  );
-                                } else {
-                                  CustomSnackBar().showSnackBar(
-                                      context,
-                                      translate("ketamiz.select_location_first"),
-                                      2);
-                                }
-                              },
-                              child: Container(
-                                height: 40,
-                                width: 40,
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.light,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: SvgPicture.asset(
-                                  "assets/icons/map_pin.svg",
-                                  height: 24,
-                                  width: 24,
-                                  colorFilter: const ColorFilter.mode(
-                                    AppTheme.black,
-                                    BlendMode.srcIn,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    Positioned(
-                      right: 68,
-                      top: 48,
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            /// Swap from and to fields
-                            String tempText = fromController.text;
-                            fromController.text = toController.text;
-                            toController.text = tempText;
-
-                            /// Swap from and to regions
-                            LocationModel tempRegion = fromRegion;
-                            fromRegion = toRegion;
-                            toRegion = tempRegion;
-
-                            /// Swap from and to cities
-                            LocationModel tempCity = fromCity;
-                            fromCity = toCity;
-                            toCity = tempCity;
-
-                            /// Swap from and to neighborhoods
-                            LocationModel tempNeighbourhood = fromNeighborhood;
-                            fromNeighborhood = toNeighborhood;
-                            toNeighborhood = tempNeighbourhood;
-
-                            /// Swap coordinates
-                            String tempLat = startLat;
-                            startLat = endLat;
-                            endLat = tempLat;
-
-                            String tempLong = startLong;
-                            startLong = endLong;
-                            endLong = tempLong;
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            color: AppTheme.purple,
-                            shape: BoxShape.circle,
-                          ),
-                          child: SvgPicture.asset(
-                            height: 20,
-                            'assets/icons/swap_vertical.svg',
-                            colorFilter: const ColorFilter.mode(
-                              Colors.white,
-                              BlendMode.srcIn,
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
-                  ],
-                ),
+              _routeCard(
+                dotColor: AppTheme.purple,
+                title: translate("home.from"),
+                controller: fromController,
+                onAddressTap: _openFromPicker,
+                onMapTap: _openFromMap,
+                mapController: _fromMapController,
+                point: _fromPoint,
+                pinColor: AppTheme.purple,
               ),
-              const SizedBox(height: 16),
-              Container(
-                height: 66,
-                decoration: BoxDecoration(
-                  boxShadow: [
-                    BoxShadow(
-                      offset: const Offset(0, 4),
-                      blurRadius: 100,
-                      spreadRadius: 0,
-                      color: AppTheme.black.withOpacity(0.05),
-                    ),
-                  ],
-                ),
-                child: TextField(
-                  controller: departureController,
-                  readOnly: true,
-                  cursorColor: AppTheme.purple,
-                  style: const TextStyle(
-                    color: AppTheme.black,
-                    fontFamily: AppTheme.fontFamily,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 1,
-                    height: 1.5,
-                  ),
-                  onTap: () {
-                    BottomDialog.showTripDateTime(
-                      context,
-                      (date) {
-                        setState(() {
-                          departureDate = date;
-                          departureController.text =
-                              Utils.tripDateFormat(departureDate);
-                          if (endDate.isBefore(departureDate)) {
-                            endDate =
-                                departureDate.add(const Duration(hours: 3));
-                            endController.text = Utils.tripDateFormat(endDate);
-                          }
-                        });
-                      },
-                      departureDate,
-                    );
-                  },
-                  decoration: InputDecoration(
-                    labelText: translate("home.departure_date"),
-                    labelStyle: const TextStyle(
-                      color: AppTheme.text,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 20,
-                      horizontal: 16,
-                    ),
-                    filled: true,
-                    fillColor: AppTheme.inputFill,
-                    border: const OutlineInputBorder(),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: AppTheme.inputBorder),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: AppTheme.purple,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                height: 66,
-                decoration: BoxDecoration(
-                  boxShadow: [
-                    BoxShadow(
-                      offset: const Offset(0, 4),
-                      blurRadius: 100,
-                      spreadRadius: 0,
-                      color: AppTheme.black.withOpacity(0.05),
-                    ),
-                  ],
-                ),
-                child: TextField(
-                  controller: endController,
-                  readOnly: true,
-                  cursorColor: AppTheme.purple,
-                  style: const TextStyle(
-                    color: AppTheme.black,
-                    fontFamily: AppTheme.fontFamily,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 1,
-                    height: 1.5,
-                  ),
-                  onTap: () {
-                    BottomDialog.showTripDateTime(
-                      context,
-                      (date) {
-                        setState(() {
-                          endDate = date;
+              const SizedBox(height: 12),
+              _dateField(
+                icon: Icons.calendar_today_outlined,
+                label: translate("ketamiz.start_time"),
+                value: departureController.text,
+                onTap: () {
+                  BottomDialog.showTripDateTime(
+                    context,
+                    (date) {
+                      setState(() {
+                        departureDate = date;
+                        departureController.text =
+                            Utils.tripDateFormat(departureDate);
+                        if (endDate.isBefore(departureDate)) {
+                          endDate =
+                              departureDate.add(const Duration(hours: 3));
                           endController.text = Utils.tripDateFormat(endDate);
-                        });
-                      },
-                      endDate,
-                    );
-                  },
-                  decoration: InputDecoration(
-                    labelText: translate("ketamiz.end_date"),
-                    labelStyle: const TextStyle(
-                      color: AppTheme.text,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 20,
-                      horizontal: 16,
-                    ),
-                    filled: true,
-                    fillColor: AppTheme.inputFill,
-                    border: const OutlineInputBorder(),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: AppTheme.inputBorder),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: AppTheme.purple,
+                        }
+                      });
+                    },
+                    departureDate,
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              _routeCard(
+                dotColor: AppTheme.red,
+                title: translate("home.to"),
+                controller: toController,
+                onAddressTap: _openToPicker,
+                onMapTap: _openToMap,
+                mapController: _toMapController,
+                point: _toPoint,
+                pinColor: AppTheme.red,
+              ),
+              const SizedBox(height: 12),
+              _dateField(
+                icon: Icons.event_available_outlined,
+                label: translate("ketamiz.est_arrival_time"),
+                value: endController.text,
+                onTap: () {
+                  BottomDialog.showTripDateTime(
+                    context,
+                    (date) {
+                      setState(() {
+                        endDate = date;
+                        endController.text = Utils.tripDateFormat(endDate);
+                      });
+                    },
+                    endDate,
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(child: _vehicleCell()),
+                  const SizedBox(width: 12),
+                  Expanded(child: _passengersCell()),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _priceCard(),
+            ],
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              color: AppTheme.light,
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  PrimaryButton(
+                    title: isEdit
+                        ? translate("ketamiz.edit_trip")
+                        : translate("ketamiz.create_trip"),
+                    isLoading: isLoading,
+                    onTap: _onCreateTrip,
+                  ),
+                  const SizedBox(height: 12),
+                  _footer(),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // UI helpers
+  // ---------------------------------------------------------------------------
+
+  BoxDecoration _cardDecoration() => BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.border),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.black.withOpacity(0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      );
+
+  BoxDecoration _fieldDecoration() => BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _kBorderColor),
+      );
+
+  Widget _routeCard({
+    required Color dotColor,
+    required String title,
+    required TextEditingController controller,
+    required VoidCallback onAddressTap,
+    required VoidCallback onMapTap,
+    required MapController mapController,
+    required LatLng? point,
+    required Color pinColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 8),
+              Text16h500w(title: title),
+            ],
+          ),
+          const SizedBox(height: 14),
+          GestureDetector(
+            onTap: onAddressTap,
+            child: Container(
+              height: 56,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: _fieldDecoration(),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      controller.text.isEmpty
+                          ? translate("ketamiz.enter_address")
+                          : controller.text,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: AppTheme.fontFamily,
+                        fontSize: 14,
+                        fontWeight: controller.text.isEmpty
+                            ? FontWeight.w400
+                            : FontWeight.w500,
+                        color: controller.text.isEmpty
+                            ? AppTheme.gray
+                            : AppTheme.black,
                       ),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text16h500w(title: translate("ketamiz.select_car_title")),
-              const SizedBox(height: 16),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.dark.withOpacity(0.1),
-                      spreadRadius: 15,
-                      blurRadius: 25,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        selectedVehicle.vehicleName.isEmpty
-                            ? Text14h400w(
-                                title: translate("ketamiz.select_car"),
-                                color: AppTheme.gray,
-                              )
-                            : Text16h500w(
-                                title: selectedVehicle.vehicleName,
-                              ),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              isCarOpen = !isCarOpen;
-                            });
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppTheme.light,
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            child: Icon(
-                              isCarOpen
-                                  ? Icons.keyboard_arrow_up_outlined
-                                  : Icons.keyboard_arrow_down_outlined,
-                              color: AppTheme.black,
-                              size: 24,
-                            ),
-                          ),
-                        )
-                      ],
-                    ),
-                    if (isCarOpen)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 12),
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: myVehicles.length,
-                            padding: EdgeInsets.zero,
-                            itemBuilder: (BuildContext context, int index) {
-                              return Column(
-                                children: [
-                                  GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        selectedVehicle = myVehicles[index];
-                                        passengersNum =
-                                            selectedVehicle.capacity;
-                                        isCarOpen = false;
-                                      });
-                                    },
-                                    child: CarContainer(car: myVehicles[index]),
-                                  ),
-                                  index == myVehicles.length - 1
-                                      ? const SizedBox()
-                                      : const Divider(),
-                                ],
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text16h500w(title: translate("home.passenger_info")),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.dark.withOpacity(0.1),
-                      spreadRadius: 15,
-                      blurRadius: 25,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text14h400w(
-                        title: translate("home.number_passenger"),
-                        color: AppTheme.gray,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        if (passengersNum > 1) {
-                          setState(() {
-                            passengersNum--;
-                          });
-                        } else {
-                          CenterDialog.showActionFailed(
-                            context,
-                            translate("ketamiz.min_passengers_reached"),
-                            translate("ketamiz.min_passengers_reached_msg"),
-                          );
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppTheme.light,
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: const Icon(
-                          Icons.remove,
-                          color: AppTheme.black,
-                          size: 24,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text16h500w(title: passengersNum.toString()),
-                    const SizedBox(width: 12),
-                    GestureDetector(
-                      onTap: () {
-                        if (passengersNum < selectedVehicle.capacity) {
-                          setState(() {
-                            passengersNum++;
-                          });
-                        } else {
-                          CenterDialog.showActionFailed(
-                            context,
-                            translate("ketamiz.max_passengers_reached"),
-                            translate("ketamiz.max_passengers_reached_msg"),
-                          );
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppTheme.light,
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: const Icon(
-                          Icons.add,
-                          color: AppTheme.black,
-                          size: 24,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              MainTextField(
-                hintText: translate("ketamiz.price_per_seat"),
-                icon: Icons.currency_exchange_outlined,
-                controller: priceController,
-                phone: true,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  PriceInputFormatter(maxDigits: 10),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.gps_fixed, size: 18, color: AppTheme.gray),
                 ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: onMapTap,
+            child: Container(
+              height: 48,
+              decoration: _fieldDecoration(),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SvgPicture.asset(
+                    "assets/icons/map_pin.svg",
+                    height: 18,
+                    width: 18,
+                    colorFilter: const ColorFilter.mode(
+                      AppTheme.purple,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text14h400w(
+                    title: translate("ketamiz.select_from_map"),
+                    color: AppTheme.black,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _mapPreview(
+            controller: mapController,
+            point: point,
+            pinColor: pinColor,
+            onTap: onMapTap,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _mapPreview({
+    required MapController controller,
+    required LatLng? point,
+    required Color pinColor,
+    required VoidCallback onTap,
+  }) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: SizedBox(
+        height: 150,
+        child: Stack(
+          children: [
+            FlutterMap(
+              mapController: controller,
+              options: MapOptions(
+                initialCenter: point ?? _defaultPosition,
+                initialZoom: point != null ? 15 : 12,
+                onTap: (_, __) => onTap(),
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.none,
+                ),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'uz.ketamiz.app',
+                ),
+                if (point != null)
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: point,
+                        width: 40,
+                        height: 40,
+                        alignment: Alignment.topCenter,
+                        child: Icon(
+                          Icons.location_on,
+                          color: pinColor,
+                          size: 40,
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+            Positioned(
+              right: 10,
+              bottom: 10,
+              child: GestureDetector(
+                onTap: onTap,
+                child: Container(
+                  height: 38,
+                  width: 38,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.black.withOpacity(0.12),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.my_location,
+                    color: AppTheme.purple,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _dateField({
+    required IconData icon,
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    final bool hasValue = value.isNotEmpty;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 56,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: _fieldDecoration(),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: AppTheme.gray),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                hasValue ? value : label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 14,
+                  fontWeight: hasValue ? FontWeight.w500 : FontWeight.w400,
+                  color: hasValue ? AppTheme.black : AppTheme.gray,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _vehicleCell() {
+    return GestureDetector(
+      onTap: _openVehicleSheet,
+      child: Container(
+        height: 72,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: _cardDecoration(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text12h400w(
+              title: translate("ketamiz.select_car"),
+              color: AppTheme.gray,
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.directions_car_outlined,
+                    size: 18, color: AppTheme.purple),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    selectedVehicle.vehicleName.isEmpty
+                        ? "—"
+                        : selectedVehicle.vehicleName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppTheme.black,
+                    ),
+                  ),
+                ),
+                const Icon(Icons.keyboard_arrow_down,
+                    size: 20, color: AppTheme.gray),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _passengersCell() {
+    return Container(
+      height: 72,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Row(
+            children: [
+              Flexible(
+                child: Text(
+                  translate("home.number_passenger"),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    height: 1.5,
+                    color: AppTheme.gray,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              InfoTooltip(
+                message: translate("ketamiz.seats_tooltip"),
+                size: 14,
               ),
             ],
           ),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.end,
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                margin: EdgeInsets.only(
-                  left: 16,
-                  right: 16,
-                  bottom: 32,
+              _counterButton(
+                icon: Icons.remove,
+                onTap: () {
+                  if (passengersNum > 1) {
+                    setState(() => passengersNum--);
+                  } else {
+                    CenterDialog.showActionFailed(
+                      context,
+                      translate("ketamiz.min_passengers_reached"),
+                      translate("ketamiz.min_passengers_reached_msg"),
+                    );
+                  }
+                },
+              ),
+              Text(
+                passengersNum.toString(),
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.black,
                 ),
-                child: PrimaryButton(
-                  title: translate("ketamiz.create_trip"),
-                  isLoading: isLoading,
-                  onTap: _onCreateTrip,
-                ),
+              ),
+              _counterButton(
+                icon: Icons.add,
+                onTap: () {
+                  if (passengersNum < selectedVehicle.capacity) {
+                    setState(() => passengersNum++);
+                  } else {
+                    CenterDialog.showActionFailed(
+                      context,
+                      translate("ketamiz.max_passengers_reached"),
+                      translate("ketamiz.max_passengers_reached_msg"),
+                    );
+                  }
+                },
               ),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _counterButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: AppTheme.light,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Icon(icon, color: AppTheme.black, size: 20),
+      ),
+    );
+  }
+
+  Widget _priceCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.payments_outlined,
+                  size: 18, color: AppTheme.purple),
+              const SizedBox(width: 8),
+              Text16h500w(title: translate("ketamiz.price_label")),
+              const SizedBox(width: 6),
+              InfoTooltip(message: translate("ketamiz.price_tooltip")),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            height: 56,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: _fieldDecoration(),
+            alignment: Alignment.center,
+            child: TextField(
+              controller: priceController,
+              keyboardType: TextInputType.phone,
+              cursorColor: AppTheme.purple,
+              style: const TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.black,
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                PriceInputFormatter(maxDigits: 10),
+              ],
+              decoration: InputDecoration(
+                isCollapsed: true,
+                border: InputBorder.none,
+                hintText: translate("ketamiz.enter_price"),
+                hintStyle: const TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: AppTheme.gray,
+                ),
+                suffixText: translate("ketamiz.som"),
+                suffixStyle: const TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.purple,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _footer() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.lock_outline, size: 12, color: AppTheme.gray),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text.rich(
+            TextSpan(
+              text: "${translate("ketamiz.footer_safe")} ",
+              style: const TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                color: AppTheme.gray,
+              ),
+              children: const [
+                TextSpan(
+                  text: "ketamiz.com",
+                  style: TextStyle(
+                    color: AppTheme.purple,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 

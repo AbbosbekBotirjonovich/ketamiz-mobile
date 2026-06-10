@@ -10,14 +10,16 @@ class DestinationsContainer extends StatelessWidget {
   final TripListModel trip;
 
   String get _fromPlace {
-    if (trip.fromCity.isNotEmpty) return trip.fromCity;
-    if (trip.fromRegion.isNotEmpty) return trip.fromRegion;
+    final parts =
+        [trip.fromCity, trip.fromRegion].where((s) => s.isNotEmpty).toList();
+    if (parts.isNotEmpty) return parts.join(', ');
     return trip.fromWhere;
   }
 
   String get _toPlace {
-    if (trip.toCity.isNotEmpty) return trip.toCity;
-    if (trip.toRegion.isNotEmpty) return trip.toRegion;
+    final parts =
+        [trip.toCity, trip.toRegion].where((s) => s.isNotEmpty).toList();
+    if (parts.isNotEmpty) return parts.join(', ');
     return trip.toWhere;
   }
 

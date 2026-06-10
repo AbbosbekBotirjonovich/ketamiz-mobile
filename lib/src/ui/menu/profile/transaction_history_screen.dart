@@ -7,6 +7,7 @@ import '../../../theme/app_theme.dart';
 import '../../../utils/utils.dart';
 import '../../widgets/texts/text_14h_400w.dart';
 import '../../widgets/texts/text_16h_500w.dart';
+import 'transaction_details.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
   const TransactionHistoryScreen({super.key});
@@ -87,8 +88,11 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                     itemCount: _transactions.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
+                      final t = _transactions[index];
                       return _TransactionCard(
-                          transaction: _transactions[index]);
+                        transaction: t,
+                        onTap: () => showTransactionDetailsSheet(context, t),
+                      );
                     },
                   ),
       ),
@@ -97,102 +101,85 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
 }
 
 class _TransactionCard extends StatelessWidget {
-  const _TransactionCard({required this.transaction});
+  const _TransactionCard({required this.transaction, required this.onTap});
   final TransactionModel transaction;
-
-  String _typeLabel(String type) {
-    const knownTypes = [
-      'top_up', 'credit', 'refund', 'debit', 'booking', 'withdrawal'
-    ];
-    if (knownTypes.contains(type)) {
-      return translate('profile.transaction_type_$type');
-    }
-    return type;
-  }
-
-  bool get _isCredit =>
-      transaction.type == 'top_up' ||
-      transaction.type == 'credit' ||
-      transaction.type == 'refund';
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final isCredit = _isCredit;
+    final isCredit = txnIsCredit(transaction.type);
     final color = isCredit ? AppTheme.green : AppTheme.red;
     final icon =
         isCredit ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded;
     final sign = isCredit ? '+' : '-';
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.border),
-        boxShadow: [
-          BoxShadow(
-            offset: const Offset(0, 4),
-            blurRadius: 100,
-            color: AppTheme.black.withOpacity(0.05),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.border),
+          boxShadow: [
+            BoxShadow(
+              offset: const Offset(0, 4),
+              blurRadius: 100,
+              color: AppTheme.black.withOpacity(0.05),
             ),
-            child: Icon(icon, color: color, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text16h500w(
+                    title: txnTypeLabel(transaction.type),
+                  ),
+                  const SizedBox(height: 4),
+                  if (transaction.createdAt != null)
+                    Text14h400w(
+                      title: formatTxnDate(transaction.createdAt!),
+                      color: AppTheme.gray,
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text16h500w(
-                  title: _typeLabel(transaction.type),
+                Text(
+                  '$sign ${Utils.priceFormat(transaction.amount)} UZS',
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
                 ),
                 const SizedBox(height: 4),
-                if (transaction.createdAt != null)
-                  Text14h400w(
-                    title: _formatDate(transaction.createdAt!),
-                    color: AppTheme.gray,
-                  ),
+                Text14h400w(
+                  title: '${Utils.priceFormat(transaction.balanceAfter)} UZS',
+                  color: AppTheme.gray,
+                ),
               ],
             ),
-          ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '$sign ${Utils.priceFormat(transaction.amount)} UZS',
-                style: TextStyle(
-                  fontFamily: AppTheme.fontFamily,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text14h400w(
-                title:
-                    '${Utils.priceFormat(transaction.balanceAfter)} UZS',
-                color: AppTheme.gray,
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
-  }
-
-  String _formatDate(DateTime date) {
-    final d = date.toLocal();
-    return '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}  ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
   }
 }

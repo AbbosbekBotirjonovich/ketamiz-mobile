@@ -24,7 +24,9 @@ class PassengersContainer extends StatefulWidget {
 }
 
 class _PassengersContainerState extends State<PassengersContainer> {
-  bool isTapped = false;
+  // Expanded by default so the phone number and pickup-location controls are
+  // visible for every passenger without needing to tap the chevron.
+  bool isTapped = true;
 
   @override
   Widget build(BuildContext context) {

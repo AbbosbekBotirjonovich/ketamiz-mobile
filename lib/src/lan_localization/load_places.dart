@@ -33,7 +33,7 @@ class LocationData {
       }
 
       final prefs = await SharedPreferences.getInstance();
-      final lang = prefs.getString('lan') ?? 'uz';
+      final lang = prefs.getString('language') ?? 'uz';
       final nameKey = lang == 'en'
           ? 'name_en'
           : lang == 'ru'
