@@ -19,6 +19,7 @@ import '../../../bloc/profile_bloc.dart';
 import '../../../theme/app_theme.dart';
 import '../../widgets/containers/destinations_container.dart';
 import '../../widgets/language_button.dart';
+import '../../widgets/notification_button.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -430,37 +431,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const Spacer(),
         const LanguageButton(),
         const SizedBox(width: 12),
-        Stack(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppTheme.border),
-              ),
-              child: const Icon(
-                Icons.notifications_none_rounded,
-                color: AppTheme.black,
-                size: 24,
-              ),
-            ),
-            if (notificationNumber > 0)
-              Positioned(
-                right: 10,
-                top: 10,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: AppTheme.purple,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-          ],
-        ),
+        NotificationButton(hasUnread: notificationNumber > 0),
       ],
     );
   }

@@ -423,6 +423,33 @@ class ApiProvider {
     return await putRequest(url, data);
   }
 
+  /// Get a single booking (with its passengers) by booking id.
+  Future<HttpResult> fetchBookingById(String bookingId) async {
+    String url = '$baseUrl/client/booking/$bookingId';
+    return await getRequest(url);
+  }
+
+  /// Add a passenger to an existing booking.
+  Future<HttpResult> fetchAddPassengerToBooking(String bookingId, String name,
+      String phone, String latitude, String longitude) async {
+    String url = '$baseUrl/client/booking/$bookingId/add-passenger';
+    final data = {
+      "name": name,
+      "phone": phone,
+      "latitude": latitude,
+      "longitude": longitude,
+    };
+    return await postRequest(url, data);
+  }
+
+  /// Remove a passenger from an existing booking.
+  Future<HttpResult> fetchRemovePassengerFromBooking(
+      String bookingId, String passengerId) async {
+    String url =
+        '$baseUrl/client/booking/$bookingId/remove-passenger/$passengerId';
+    return await postRequest(url, {});
+  }
+
   /// Get In-Progress Trips
   Future<HttpResult> fetchInProgressTrips() async {
     String url = '$baseUrl/client/trips/get-inprogress-trips';

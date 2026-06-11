@@ -8,11 +8,13 @@ import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
 class VerifyCardDialog extends StatefulWidget {
   final Function(String) onVerify;
   final Future<void> Function()? onResend;
+  final String? subtitle;
 
   const VerifyCardDialog({
     Key? key,
     required this.onVerify,
     this.onResend,
+    this.subtitle,
   }) : super(key: key);
 
   @override
@@ -44,6 +46,19 @@ class _VerifyCardDialogState extends State<VerifyCardDialog> {
               title: translate("auth.enter_code"),
               color: AppTheme.black,
             ),
+            if (widget.subtitle != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                widget.subtitle!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  color: AppTheme.gray,
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             TextField(
               controller: _codeController,

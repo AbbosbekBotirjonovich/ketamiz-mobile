@@ -194,43 +194,74 @@ class _MainScreenState extends State<MainScreen>
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(4, 8, 4, 10),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            _navItem(
-              index: 0,
-              activeIcon: const Icon(Icons.home_rounded,
-                  color: AppTheme.purple, size: 22),
-              inactiveIcon: const Icon(Icons.home_outlined,
-                  color: AppTheme.gray, size: 22),
-              label: translate('nav.home'),
-            ),
-            _navItem(
-              index: 1,
-              activeIcon: const Icon(Icons.library_books_rounded,
-                  color: AppTheme.purple, size: 22),
-              inactiveIcon: const Icon(Icons.library_books_outlined,
-                  color: AppTheme.gray, size: 22),
-              label: translate('nav.bookings'),
-            ),
-            _createButton(),
-            _navItem(
-              index: 3,
-              activeIcon: const Icon(Icons.account_balance_wallet_rounded,
-                  color: AppTheme.purple, size: 22),
-              inactiveIcon: const Icon(Icons.account_balance_wallet_outlined,
-                  color: AppTheme.gray, size: 22),
-              label: translate('nav.wallet'),
-            ),
-            _navItem(
-              index: 4,
-              activeIcon: const Icon(Icons.person_rounded,
-                  color: AppTheme.purple, size: 22),
-              inactiveIcon: const Icon(Icons.person_outline_rounded,
-                  color: AppTheme.gray, size: 22),
-              label: translate('nav.profile'),
-            ),
-          ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            const indicatorSize = 44.0;
+            final slotWidth = constraints.maxWidth / 5;
+            final indicatorLeft =
+                _selectedIndex * slotWidth + (slotWidth - indicatorSize) / 2;
+            return Stack(
+              children: [
+                // Sliding pill that glides to the active tab.
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 340),
+                  curve: Curves.easeOutCubic,
+                  left: indicatorLeft,
+                  top: 0,
+                  width: indicatorSize,
+                  height: indicatorSize,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.purple.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    _navItem(
+                      index: 0,
+                      activeIcon: const Icon(Icons.home_rounded,
+                          color: AppTheme.purple, size: 22),
+                      inactiveIcon: const Icon(Icons.home_outlined,
+                          color: AppTheme.gray, size: 22),
+                      label: translate('nav.home'),
+                    ),
+                    _navItem(
+                      index: 1,
+                      activeIcon: const Icon(Icons.library_books_rounded,
+                          color: AppTheme.purple, size: 22),
+                      inactiveIcon: const Icon(Icons.library_books_outlined,
+                          color: AppTheme.gray, size: 22),
+                      label: translate('nav.bookings'),
+                    ),
+                    _createButton(),
+                    _navItem(
+                      index: 3,
+                      activeIcon: const Icon(
+                          Icons.account_balance_wallet_rounded,
+                          color: AppTheme.purple,
+                          size: 22),
+                      inactiveIcon: const Icon(
+                          Icons.account_balance_wallet_outlined,
+                          color: AppTheme.gray,
+                          size: 22),
+                      label: translate('nav.wallet'),
+                    ),
+                    _navItem(
+                      index: 4,
+                      activeIcon: const Icon(Icons.person_rounded,
+                          color: AppTheme.purple, size: 22),
+                      inactiveIcon: const Icon(Icons.person_outline_rounded,
+                          color: AppTheme.gray, size: 22),
+                      label: translate('nav.profile'),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -258,17 +289,9 @@ class _MainScreenState extends State<MainScreen>
               duration: const Duration(milliseconds: 420),
               curve: isActive ? Curves.elasticOut : Curves.easeOut,
               scale: isActive ? 1.0 : 0.88,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
+              child: SizedBox(
                 width: 44,
                 height: 44,
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? AppTheme.purple.withOpacity(0.1)
-                      : Colors.transparent,
-                  shape: BoxShape.circle,
-                ),
                 child: Center(
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 220),

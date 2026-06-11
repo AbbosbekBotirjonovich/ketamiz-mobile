@@ -46,12 +46,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _loadCurrentInfo() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
+    final localAvatar = prefs.getString('local_avatar') ?? '';
     setState(() {
       firstNameController.text = prefs.getString('first_name') ?? '';
       lastNameController.text = prefs.getString('last_name') ?? '';
       fatherController.text = prefs.getString('father_name') ?? '';
       emailController.text = prefs.getString('email') ?? '';
       phoneController.text = prefs.getString('phone') ?? '';
+      avatar = localAvatar.isNotEmpty ? XFile(localAvatar) : XFile("");
     });
   }
 
@@ -118,382 +120,76 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.light,
       appBar: AppBar(
+        backgroundColor: AppTheme.light,
+        elevation: 0,
         leading: const LeadingBack(),
         title: Text16h500w(title: translate("profile.account_details")),
         centerTitle: true,
       ),
       body: GestureDetector(
-        onTap: () {
-          FocusScope.of(context).unfocus();
-        },
+        onTap: () => FocusScope.of(context).unfocus(),
         child: Stack(
           children: [
-            Column(
+            ListView(
+              keyboardDismissBehavior:
+                  ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 110),
               children: [
-                Expanded(
-                  child: ListView(
-                    shrinkWrap: true,
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: const EdgeInsets.only(
-                        top: 22, bottom: 92, left: 16, right: 16),
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          color: Colors.white,
-                          boxShadow: [
-                            BoxShadow(
-                              offset: const Offset(0, 5),
-                              blurRadius: 25,
-                              spreadRadius: 0,
-                              color: AppTheme.dark.withOpacity(0.2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              height: 96,
-                              width: 96,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(20),
-                                child: isLoadingImage
-                                    ? Container(
-                                        padding: const EdgeInsets.all(16),
-                                        child: const Center(
-                                          child: CircularProgressIndicator(
-                                            valueColor:
-                                                AlwaysStoppedAnimation<Color>(
-                                                    AppTheme.purple),
-                                          ),
-                                        ),
-                                      )
-                                    : avatar.path.isNotEmpty
-                                        ? Container(
-                                            width: 96,
-                                            decoration: BoxDecoration(
-                                              borderRadius: BorderRadius.circular(20),
-                                              image: DecorationImage(
-                                                image: FileImage(
-                                                    File(avatar.path)),
-                                                fit: BoxFit.cover,
-                                              ),
-                                            ),
-                                          )
-                                        : Container(
-                                            width: 96,
-                                            height: 96,
-                                            decoration: BoxDecoration(
-                                              borderRadius: BorderRadius.circular(20),
-                                            ),
-                                            child: ClipRRect(
-                                              borderRadius: BorderRadius.circular(20),
-                                              child: Image.asset(
-                                                "assets/images/avatar.jpg",
-                                                fit: BoxFit.cover,
-                                              ),
-                                            ),
-                                          ),
-                              ),
-                            ),
-                            const SizedBox(width: 24),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text18h500w(
-                                  title: translate("profile.your_image"),
-                                ),
-                                const SizedBox(height: 12),
-                                Row(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () {
-                                        // BottomDialog.showUploadImage(
-                                        //   context,
-                                        //   onGallery: () {
-                                        //     // final pickedFile = await picker.pickImage(
-                                        //     //   source: ImageSource.gallery,
-                                        //     // );
-                                        //     // if (pickedFile != null) {
-                                        //     //   setState(() {
-                                        //     //     isLoadingImage = true;
-                                        //     //   });
-                                        //     //   var response = await Repository()
-                                        //     //       .fetchProfileImageSend(
-                                        //     //     pickedFile.path,
-                                        //     //   );
-                                        //     //   if (response.isSuccess) {
-                                        //     //     setState(() {
-                                        //     //       isLoadingImage = false;
-                                        //     //     });
-                                        //     //     var result = ProfileModel.fromJson(
-                                        //     //         response.result);
-                                        //     //     if (result.status == 1) {
-                                        //     //       setState(() {
-                                        //     //         isLoadingImage = false;
-                                        //     //         snapshot.data!.avatar =
-                                        //     //             result.user.avatar;
-                                        //     //         avatar = result.user.avatar;
-                                        //     //       });
-                                        //     //       SharedPreferences prefs =
-                                        //     //           await SharedPreferences
-                                        //     //               .getInstance();
-                                        //     //       prefs.setString(
-                                        //     //         "avatar",
-                                        //     //         result.user.avatar,
-                                        //     //       );
-                                        //     //       blocProfile.fetchMe();
-                                        //     //     } else {
-                                        //     //       setState(() {
-                                        //     //         isLoadingImage = false;
-                                        //     //       });
-                                        //     //       if (response.status == -1) {
-                                        //     //         BottomDialog.showAction(
-                                        //     //           context,
-                                        //     //           'Connection Failed',
-                                        //     //           'You do not have internet connection, please try again',
-                                        //     //           'assets/icons/alert.svg',
-                                        //     //         );
-                                        //     //       } else {
-                                        //     //         BottomDialog.showAction(
-                                        //     //           context,
-                                        //     //           'Action Failed',
-                                        //     //           'Uploading Image Failed, Please try again after sometime',
-                                        //     //           'assets/icons/alert.svg',
-                                        //     //         );
-                                        //     //       }
-                                        //     //     }
-                                        //     //   } else {
-                                        //     //     BottomDialog.showAction(
-                                        //     //       context,
-                                        //     //       'Action Failed',
-                                        //     //       'Could not upload the image, please try again',
-                                        //     //       'assets/icons/alert.svg',
-                                        //     //     );
-                                        //     //     setState(() {
-                                        //     //       isLoadingImage = false;
-                                        //     //     });
-                                        //     //   }
-                                        //     // }
-                                        //   },
-                                        //   onCamera: () {
-                                        //     // final pickedFile = await picker.pickImage(
-                                        //     //   source: ImageSource.camera,
-                                        //     // );
-                                        //     // if (pickedFile != null) {
-                                        //     //   setState(() {
-                                        //     //     isLoadingImage = true;
-                                        //     //   });
-                                        //     //   var response = await Repository()
-                                        //     //       .fetchProfileImageSend(
-                                        //     //     pickedFile.path,
-                                        //     //   );
-                                        //     //   if (response.isSuccess) {
-                                        //     //     setState(() {
-                                        //     //       isLoadingImage = false;
-                                        //     //     });
-                                        //     //     var result = ProfileModel.fromJson(
-                                        //     //         response.result);
-                                        //     //     if (result.status == 1) {
-                                        //     //       setState(() {
-                                        //     //         isLoadingImage = false;
-                                        //     //         snapshot.data!.avatar =
-                                        //     //             result.user.avatar;
-                                        //     //         avatar = result.user.avatar;
-                                        //     //       });
-                                        //     //       SharedPreferences prefs =
-                                        //     //           await SharedPreferences
-                                        //     //               .getInstance();
-                                        //     //       prefs.setString(
-                                        //     //         "avatar",
-                                        //     //         result.user.avatar,
-                                        //     //       );
-                                        //     //       blocProfile.fetchMe();
-                                        //     //     } else {
-                                        //     //       setState(() {
-                                        //     //         isLoadingImage = false;
-                                        //     //       });
-                                        //     //       if (response.status == -1) {
-                                        //     //         BottomDialog.showAction(
-                                        //     //           context,
-                                        //     //           'Connection Failed',
-                                        //     //           'You do not have internet connection, please try again',
-                                        //     //           'assets/icons/alert.svg',
-                                        //     //         );
-                                        //     //       } else {
-                                        //     //         BottomDialog.showAction(
-                                        //     //           context,
-                                        //     //           'Action Failed',
-                                        //     //           'Uploading Image Failed, Please try again after sometime',
-                                        //     //           'assets/icons/alert.svg',
-                                        //     //         );
-                                        //     //       }
-                                        //     //     }
-                                        //     //   } else {
-                                        //     //     BottomDialog.showAction(
-                                        //     //       context,
-                                        //     //       'Action Failed',
-                                        //     //       'Could not upload the image, please try again',
-                                        //     //       'assets/icons/alert.svg',
-                                        //     //     );
-                                        //     //   }
-                                        //     // }
-                                        //   },
-                                        // );
-                                        BottomDialog.showUploadImage(
-                                          context,
-                                          onGallery: () =>
-                                              _pickImage(ImageSource.gallery),
-                                          onCamera: () =>
-                                              _pickImage(ImageSource.camera),
-                                        );
-                                      },
-                                      child: Container(
-                                        height: 32,
-                                        width:
-                                            (MediaQuery.of(context).size.width -
-                                                    192) /
-                                                2,
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.light,
-                                          borderRadius: const BorderRadius.only(
-                                            topLeft: Radius.circular(12),
-                                            bottomLeft: Radius.circular(12),
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              offset: const Offset(0, 5),
-                                              blurRadius: 25,
-                                              spreadRadius: 0,
-                                              color: AppTheme.shadow
-                                                  .withOpacity(0.2),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            translate("edit"),
-                                            style: const TextStyle(
-                                              fontFamily: AppTheme.fontFamily,
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w500,
-                                              height: 1.375,
-                                              color: AppTheme.black,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        _deleteImage();
-                                      },
-                                      child: Container(
-                                        height: 32,
-                                        width:
-                                            (MediaQuery.of(context).size.width -
-                                                    192) /
-                                                2,
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.orange,
-                                          borderRadius: const BorderRadius.only(
-                                            topRight: Radius.circular(12),
-                                            bottomRight: Radius.circular(12),
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              offset: const Offset(0, 10),
-                                              blurRadius: 75,
-                                              spreadRadius: 0,
-                                              color: const Color(0xFF939393)
-                                                  .withOpacity(0.07),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            translate("delete"),
-                                            style: const TextStyle(
-                                              fontFamily: AppTheme.fontFamily,
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                              height: 1.375,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      MainTextField(
-                        hintText: translate("profile.first_name"),
-                        icon: Icons.person,
-                        controller: firstNameController,
-                      ),
-                      const SizedBox(height: 16),
-                      MainTextField(
-                        hintText: translate("profile.father_name"),
-                        icon: Icons.person,
-                        controller: fatherController,
-                      ),
-                      const SizedBox(height: 16),
-                      MainTextField(
-                        hintText: translate("profile.last_name"),
-                        icon: Icons.person,
-                        controller: lastNameController,
-                      ),
-                      const SizedBox(height: 16),
-                      MainTextField(
-                        hintText: translate("profile.email_address"),
-                        icon: Icons.email,
-                        controller: emailController,
-                      ),
-                      const SizedBox(height: 16),
-                      AbsorbPointer(
-                        child: Opacity(
-                          opacity: 0.6,
-                          child: MainTextField(
-                            hintText: translate("profile.phone_number"),
-                            icon: Icons.phone,
-                            controller: phoneController,
-                          ),
-                        ),
-                      ),
-                    ],
+                _buildAvatarSection(),
+                const SizedBox(height: 20),
+                MainTextField(
+                  hintText: translate("profile.first_name"),
+                  icon: Icons.person_outline,
+                  controller: firstNameController,
+                  fillColor: Colors.white,
+                ),
+                const SizedBox(height: 12),
+                MainTextField(
+                  hintText: translate("profile.last_name"),
+                  icon: Icons.person_outline,
+                  controller: lastNameController,
+                  fillColor: Colors.white,
+                ),
+                const SizedBox(height: 12),
+                MainTextField(
+                  hintText: translate("profile.father_name"),
+                  icon: Icons.person_outline,
+                  controller: fatherController,
+                  fillColor: Colors.white,
+                ),
+                const SizedBox(height: 12),
+                MainTextField(
+                  hintText: translate("profile.email_address"),
+                  icon: Icons.email_outlined,
+                  controller: emailController,
+                  fillColor: Colors.white,
+                ),
+                const SizedBox(height: 12),
+                AbsorbPointer(
+                  child: Opacity(
+                    opacity: 0.6,
+                    child: MainTextField(
+                      hintText: translate("profile.phone_number"),
+                      icon: Icons.phone_outlined,
+                      controller: phoneController,
+                      fillColor: Colors.white,
+                    ),
                   ),
                 ),
               ],
             ),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Row(
-                  children: [
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: SecondaryButton(
-                        title: translate("profile.save_changes"),
-                        onTap: isSaving ? () {} : _saveChanges,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                  ],
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                color: AppTheme.light,
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                child: SecondaryButton(
+                  title: translate("profile.save_changes"),
+                  onTap: isSaving ? () {} : _saveChanges,
                 ),
-                const SizedBox(height: 32),
-              ],
+              ),
             ),
             if (isSaving)
               Container(
@@ -521,6 +217,169 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  // ── Avatar section ────────────────────────────────────────────────────────
+  Widget _buildAvatarSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.border),
+      ),
+      child: Row(
+        children: [
+          _buildAvatar(),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text18h500w(title: translate("profile.your_image")),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _imageActionButton(
+                        icon: Icons.edit_outlined,
+                        label: translate("edit"),
+                        color: AppTheme.purple,
+                        onTap: _openImagePicker,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _imageActionButton(
+                        icon: Icons.delete_outline,
+                        label: translate("delete"),
+                        color: AppTheme.red,
+                        onTap: _deleteImage,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAvatar() {
+    final hasImage =
+        avatar.path.isNotEmpty && File(avatar.path).existsSync();
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: 88,
+          height: 88,
+          alignment: Alignment.center,
+          clipBehavior: Clip.antiAlias,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: [AppTheme.purple, AppTheme.primaryDark],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: isLoadingImage
+              ? const Padding(
+                  padding: EdgeInsets.all(28),
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    strokeWidth: 2.5,
+                  ),
+                )
+              : hasImage
+                  ? Image.file(File(avatar.path),
+                      width: 88, height: 88, fit: BoxFit.cover)
+                  : _initialsText(),
+        ),
+        Positioned(
+          right: -2,
+          bottom: -2,
+          child: GestureDetector(
+            onTap: _openImagePicker,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppTheme.light, width: 1.5),
+              ),
+              child: const Icon(Icons.camera_alt_rounded,
+                  size: 14, color: AppTheme.purple),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _initialsText() {
+    final f = firstNameController.text.trim();
+    final l = lastNameController.text.trim();
+    var initials = '';
+    if (f.isNotEmpty) initials += f.substring(0, 1);
+    if (l.isNotEmpty) initials += l.substring(0, 1);
+    if (initials.isEmpty) initials = 'U';
+    return Center(
+      child: Text(
+        initials.toUpperCase(),
+        style: const TextStyle(
+          fontFamily: AppTheme.fontFamily,
+          fontSize: 28,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  Widget _imageActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 40,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openImagePicker() {
+    BottomDialog.showUploadImage(
+      context,
+      onGallery: () => _pickImage(ImageSource.gallery),
+      onCamera: () => _pickImage(ImageSource.camera),
+    );
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? image = await ImageHelper.pick(source).timeout(
@@ -535,9 +394,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         },
       );
       if (image != null && mounted) {
-        setState(() {
-          avatar = image;
-        });
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('local_avatar', image.path);
+        if (!mounted) return;
+        setState(() => avatar = image);
       } else if (mounted) {
         final Permission permission = source == ImageSource.camera
             ? Permission.camera
@@ -549,7 +409,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           builder: (context) => AlertDialog(
             title: const Text('Permission Required'),
             content: Text(
-              'This app needs ${source == ImageSource.camera ? "camera" : "photo library"} access to upload car images.',
+              'This app needs ${source == ImageSource.camera ? "camera" : "photo library"} access to upload your image.',
             ),
             actions: [
               TextButton(
@@ -589,12 +449,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  void _deleteImage() {
-    if (mounted) {
-      setState(() {
-        avatar = XFile("");
-      });
-    }
+  Future<void> _deleteImage() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('local_avatar');
+    if (mounted) setState(() => avatar = XFile(""));
   }
-
 }

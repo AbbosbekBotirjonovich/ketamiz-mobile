@@ -6,6 +6,9 @@ class CreditCardModel {
     required this.cardHolderName,
     required this.cvvCode,
     this.isDefault = false,
+    this.status = "",
+    this.cardKey = "",
+    this.phone = "",
     this.balance,
   });
 
@@ -15,6 +18,13 @@ class CreditCardModel {
   String cardHolderName;
   String cvvCode;
   bool isDefault;
+  String status;
+
+  /// The card's verification key (the API's `card_id`), used to verify it.
+  String cardKey;
+
+  /// Phone number linked to the card (where the SMS code is sent).
+  String phone;
   double? balance;
 
   factory CreditCardModel.fromJson(Map<String, dynamic> json) => CreditCardModel(

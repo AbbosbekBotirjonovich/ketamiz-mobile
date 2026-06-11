@@ -5,6 +5,7 @@ import 'package:ketamiz/src/model/api/my_registered_cards_model.dart' as model;
 import 'package:ketamiz/src/theme/app_theme.dart';
 import 'package:ketamiz/src/ui/dialogs/snack_bar.dart';
 import 'package:ketamiz/src/ui/dialogs/verify_card_dialog.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../model/credit_card_model.dart';
 import '../../../resources/repository.dart';
@@ -12,14 +13,10 @@ import '../../../utils/text_formatters.dart';
 import '../../../utils/utils.dart';
 import '../../dialogs/center_dialog.dart';
 import '../../widgets/buttons/primary_button.dart';
-import '../../widgets/buttons/secondary_button.dart';
-import '../../widgets/containers/card_container.dart';
 import '../../widgets/containers/leading_back.dart';
-import '../../widgets/textfield/main_textfield.dart';
-import '../../widgets/texts/text_14h_400w.dart';
-import '../../widgets/texts/text_14h_500w.dart';
 import '../../widgets/texts/text_16h_500w.dart';
 import '../home/add_credit_card_screen.dart';
+import 'secure_payment_info_screen.dart';
 
 class TopUpScreen extends StatefulWidget {
   const TopUpScreen({super.key});
@@ -32,18 +29,25 @@ class _TopUpScreenState extends State<TopUpScreen> {
   TextEditingController amountController = TextEditingController();
 
   bool isLoading = false;
+  String _balance = "0";
 
   final Repository _repository = Repository();
 
+  static const List<int> _presets = [50000, 100000, 200000, 500000];
+
   CreditCardModel? selectedCard;
-  String selectedCardNumber = '';
-  bool isCardSelectOpen = false;
   List<CreditCardModel> cards = [];
 
   @override
   void initState() {
     super.initState();
+    _loadBalance();
     _fetchCards();
+  }
+
+  Future<void> _loadBalance() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) setState(() => _balance = prefs.getString('balance') ?? "0");
   }
 
   Future<void> _fetchCards() async {
@@ -69,19 +73,57 @@ class _TopUpScreenState extends State<TopUpScreen> {
                   cardHolderName: e.label,
                   cvvCode: "",
                   isDefault: e.isDefault == 1,
+                  status: e.status,
+                  cardKey: e.cardId,
+                  phone: e.phone,
                 ))
             .toList();
 
-        // Auto-select default or first card if available
         if (cards.isNotEmpty) {
           selectedCard = cards.firstWhere((element) => element.isDefault,
               orElse: () => cards.first);
           selectedCard!.isDefault = true;
-          selectedCardNumber = selectedCard!.cardNumber;
+        } else {
+          selectedCard = null;
         }
         setState(() {});
       }
     }
+  }
+
+  void _selectCard(int index) {
+    setState(() {
+      for (final c in cards) {
+        c.isDefault = false;
+      }
+      selectedCard = cards[index];
+      cards[index].isDefault = true;
+    });
+  }
+
+  void _setAmount(int amount) {
+    final text = Utils.priceFormat(amount.toString());
+    setState(() {
+      amountController.text = text;
+      amountController.selection =
+          TextSelection.collapsed(offset: text.length);
+    });
+  }
+
+  Future<void> _openAddCard() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddCreditCardScreen(
+          onAdded: (data, msg) {
+            Future.delayed(const Duration(milliseconds: 100), () {
+              if (mounted) CustomSnackBar().showSnackBar(context, msg, 1);
+            });
+          },
+        ),
+      ),
+    );
+    if (result == true && mounted) _fetchCards();
   }
 
   Future<void> _deleteCard(int index) async {
@@ -158,11 +200,7 @@ class _TopUpScreenState extends State<TopUpScreen> {
         _showConfirmDialog(
           payId,
           (message) {
-            CustomSnackBar().showSnackBar(
-              context,
-              message,
-              1,
-            );
+            CustomSnackBar().showSnackBar(context, message, 1);
           },
         );
       } else {
@@ -233,338 +271,575 @@ class _TopUpScreenState extends State<TopUpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.light,
       appBar: AppBar(
+        backgroundColor: AppTheme.light,
         leading: const LeadingBack(),
         title: Text16h500w(title: translate("profile.top_up")),
         centerTitle: true,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline_rounded,
+                color: AppTheme.purple),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => const SecurePaymentInfoScreen()),
+            ),
+          ),
+        ],
       ),
       body: GestureDetector(
-        onTap: () {
-          FocusScopeNode currentFocus = FocusScope.of(context);
-          if (!currentFocus.hasPrimaryFocus) {
-            currentFocus.unfocus();
-          }
-        },
+        onTap: () => FocusScope.of(context).unfocus(),
         child: Stack(
           children: [
-            Column(
+            ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 110),
               children: [
-                Expanded(
-                  child: ListView(
-                    shrinkWrap: true,
-                    padding: const EdgeInsets.only(
-                      top: 22,
-                      left: 16,
-                      right: 16,
-                      bottom: 100,
-                    ),
-                    children: [
-                      MainTextField(
-                        hintText: translate("profile.enter_top_up_amount"),
-                        icon: Icons.currency_exchange_outlined,
-                        controller: amountController,
-                        phone: true,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                          PriceInputFormatter(maxDigits: 10),
-                        ],
-                      ),
-                      const SizedBox(height: 32),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 270),
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.dark.withOpacity(0.1),
-                                spreadRadius: 15,
-                                blurRadius: 25,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
-                          ),
-                          child: cards.isEmpty
-                              ? Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text14h400w(
-                                          title:
-                                              translate("home.no_cards_added")),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    GestureDetector(
-                                      onTap: () async {
-                                        final result = await Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) {
-                                              return AddCreditCardScreen(
-                                                onAdded: (data, msg) {
-                                                  Future.delayed(
-                                                      const Duration(
-                                                          milliseconds: 100),
-                                                      () {
-                                                    CustomSnackBar()
-                                                        .showSnackBar(
-                                                      context,
-                                                      msg,
-                                                      1,
-                                                    );
-                                                  });
-                                                },
-                                              );
-                                            },
-                                          ),
-                                        );
-
-                                        if (result == true) {
-                                          setState(() {
-                                            _fetchCards();
-                                          });
-                                        }
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 8,
-                                          horizontal: 12,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.purple,
-                                          borderRadius:
-                                              BorderRadius.circular(16),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Text14h400w(
-                                              title: translate("home.add_card"),
-                                              color: Colors.white,
-                                            ),
-                                            const SizedBox(width: 8),
-                                            const Icon(
-                                              Icons.add,
-                                              color: Colors.white,
-                                              size: 16,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : Column(
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: AppTheme.light,
-                                            borderRadius:
-                                                BorderRadius.circular(24),
-                                          ),
-                                          child: const Icon(
-                                            Icons.credit_card,
-                                            color: AppTheme.black,
-                                            size: 24,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Text14h500w(
-                                              title: Utils().formatCardNumber(
-                                                  selectedCard!.cardNumber)),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              isCardSelectOpen =
-                                                  !isCardSelectOpen;
-                                            });
-                                          },
-                                          child: Container(
-                                            padding: const EdgeInsets.all(8),
-                                            decoration: BoxDecoration(
-                                              color: AppTheme.light,
-                                              borderRadius:
-                                                  BorderRadius.circular(24),
-                                            ),
-                                            child: Icon(
-                                              isCardSelectOpen == false
-                                                  ? Icons
-                                                      .keyboard_arrow_down_outlined
-                                                  : Icons
-                                                      .keyboard_arrow_up_outlined,
-                                              color: AppTheme.black,
-                                              size: 24,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    isCardSelectOpen == true
-                                        ? Column(
-                                            children: [
-                                              const SizedBox(height: 16),
-                                              ListView.builder(
-                                                itemCount: cards.length,
-                                                padding: EdgeInsets.zero,
-                                                shrinkWrap: true,
-                                                itemBuilder: (context, index) {
-                                                  return Column(
-                                                    children: [
-                                                      CardContainer(
-                                                        card: cards[index],
-                                                        onDelete: () =>
-                                                            _deleteCard(index),
-                                                        onTapped: () {
-                                                          setState(() {
-                                                            isCardSelectOpen =
-                                                                false;
-                                                          });
-                                                          if (cards[index]
-                                                                  .isDefault ==
-                                                              false) {
-                                                            for (int i = 0;
-                                                                i <
-                                                                    cards
-                                                                        .length;
-                                                                i++) {
-                                                              if (cards[i]
-                                                                      .isDefault ==
-                                                                  true) {
-                                                                setState(() {
-                                                                  cards[i].isDefault =
-                                                                      false;
-                                                                });
-                                                              }
-                                                            }
-                                                            setState(() {
-                                                              selectedCard =
-                                                                  cards[index];
-                                                              cards[index]
-                                                                      .isDefault =
-                                                                  true;
-                                                              selectedCardNumber =
-                                                                  cards[index]
-                                                                      .cardNumber;
-                                                            });
-                                                          }
-                                                        },
-                                                      ),
-                                                      index != cards.length - 1
-                                                          ? Container(
-                                                              height: 1,
-                                                              color: AppTheme
-                                                                  .border,
-                                                            )
-                                                          : const SizedBox(),
-                                                    ],
-                                                  );
-                                                },
-                                              ),
-                                              const SizedBox(height: 12),
-                                              SecondaryButton(
-                                                  title: translate(
-                                                      "home.add_new_card"),
-                                                  onTap: () async {
-                                                    final result =
-                                                        await Navigator.push(
-                                                      context,
-                                                      MaterialPageRoute(
-                                                        builder: (context) {
-                                                          return AddCreditCardScreen(
-                                                            onAdded:
-                                                                (data, msg) {
-                                                              Future.delayed(
-                                                                  const Duration(
-                                                                      milliseconds:
-                                                                          100),
-                                                                  () {
-                                                                CustomSnackBar()
-                                                                    .showSnackBar(
-                                                                  context,
-                                                                  msg,
-                                                                  1,
-                                                                );
-                                                              });
-                                                            },
-                                                          );
-                                                        },
-                                                      ),
-                                                    );
-
-                                                    if (result == true) {
-                                                      _fetchCards();
-                                                    }
-                                                  })
-                                            ],
-                                          )
-                                        : const SizedBox(),
-                                  ],
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildBalanceCard(),
+                const SizedBox(height: 20),
+                _sectionLabel(translate("profile.enter_top_up_amount")),
+                const SizedBox(height: 10),
+                _buildAmountField(),
+                const SizedBox(height: 10),
+                _buildAmountChips(),
+                const SizedBox(height: 20),
+                _sectionLabel(translate("home.select_payment_card")),
+                const SizedBox(height: 10),
+                ...List.generate(cards.length, _buildCardRow),
+                _buildAddCardButton(),
+                const SizedBox(height: 16),
+                _buildSecureBanner(),
               ],
             ),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(
-                    left: 16,
-                    right: 16,
-                    bottom: 32,
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                color: AppTheme.light,
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+                child: GestureDetector(
+                  onTap: _createPayment,
+                  child: PrimaryButton(
+                    title: translate("home.confirm_payment"),
                   ),
-                  child: GestureDetector(
-                    onTap: _createPayment,
-                    child: PrimaryButton(
-                      title: translate("home.confirm_payment"),
+                ),
+              ),
+            ),
+            if (isLoading)
+              Container(
+                color: AppTheme.black.withOpacity(0.45),
+                child: Center(
+                  child: Container(
+                    height: 96,
+                    width: 96,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(AppTheme.purple),
+                      ),
                     ),
                   ),
                 ),
-              ],
-            ),
-            isLoading == true
-                ? Container(
-                    color: AppTheme.black.withOpacity(0.45),
-                    child: Center(
-                      child: Container(
-                        height: 96,
-                        width: 96,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              offset: const Offset(0, 5),
-                              blurRadius: 25,
-                              spreadRadius: 0,
-                              color: AppTheme.dark.withOpacity(0.2),
-                            ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(AppTheme.purple),
-                          ),
-                        ),
-                      ),
-                    ),
-                  )
-                : Container()
+              ),
           ],
         ),
       ),
     );
+  }
+
+  // ── Balance ────────────────────────────────────────────────────────────────
+  Widget _buildBalanceCard() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: _cardDecoration(),
+      child: Row(
+        children: [
+          _iconBox(Icons.account_balance_wallet_outlined),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  translate("home.current_balance"),
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: AppTheme.gray,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "${Utils.priceFormat(_balance)} ${translate("ketamiz.som")}",
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.black,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right_rounded,
+              color: AppTheme.gray, size: 22),
+        ],
+      ),
+    );
+  }
+
+  // ── Amount ─────────────────────────────────────────────────────────────────
+  Widget _buildAmountField() {
+    return Container(
+      height: 62,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: _cardDecoration(),
+      child: Row(
+        children: [
+          const Icon(Icons.payments_outlined, color: AppTheme.purple, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: TextField(
+              controller: amountController,
+              keyboardType: TextInputType.phone,
+              cursorColor: AppTheme.purple,
+              onChanged: (_) => setState(() {}),
+              style: const TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.black,
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                PriceInputFormatter(maxDigits: 10),
+              ],
+              decoration: const InputDecoration(
+                isCollapsed: true,
+                border: InputBorder.none,
+                hintText: "0",
+                hintStyle: TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.gray,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            translate("ketamiz.som"),
+            style: const TextStyle(
+              fontFamily: AppTheme.fontFamily,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.gray,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAmountChips() {
+    final current =
+        int.tryParse(amountController.text.replaceAll(RegExp(r'[^0-9]'), '')) ??
+            0;
+    return Row(
+      children: _presets.map((amount) {
+        final selected = current == amount;
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3),
+            child: GestureDetector(
+              onTap: () => _setAmount(amount),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? AppTheme.purple.withOpacity(0.08)
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: selected ? AppTheme.purple : AppTheme.border,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    Utils.priceFormat(amount.toString()),
+                    style: TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: selected ? AppTheme.purple : AppTheme.black,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // ── Cards ──────────────────────────────────────────────────────────────────
+  Widget _buildCardRow(int index) {
+    final card = cards[index];
+    final selected = selectedCard?.id == card.id;
+    final brand = _cardBrand(card.cardNumber);
+    final logo = _brandLogo(brand);
+    return GestureDetector(
+      onTap: () => _selectCard(index),
+      onLongPress: () => _deleteCard(index),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected ? AppTheme.purple : AppTheme.border,
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            _radio(selected),
+            const SizedBox(width: 12),
+            Container(
+              width: 48,
+              height: 32,
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: AppTheme.light,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: AppTheme.border),
+              ),
+              child: logo != null
+                  ? Image.asset(logo, fit: BoxFit.contain)
+                  : const Icon(Icons.credit_card,
+                      color: AppTheme.gray, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _maskedNumber(card.cardNumber),
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.black,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  if (card.cardHolderName.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      card.cardHolderName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: AppTheme.fontFamily,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: AppTheme.gray,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      if (card.isDefault)
+                        _badge(translate("home.main_card"), AppTheme.green),
+                      _statusBadge(card.status),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            if (_needsVerify(card.status)) ...[
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => _verifyCard(card),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: AppTheme.purple,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    translate("auth.verify"),
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool _needsVerify(String status) {
+    final s = status.toLowerCase();
+    return s == 'not_verified' || s == 'unverified' || s == 'pending';
+  }
+
+  void _verifyCard(CreditCardModel card) {
+    if (card.id == null) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => VerifyCardDialog(
+        subtitle: card.phone.isNotEmpty
+            ? "${translate("home.code_sent_to")} ${card.phone}"
+            : null,
+        onVerify: (code) async {
+          Navigator.pop(dialogContext);
+          if (!mounted) return;
+          setState(() => isLoading = true);
+          final response =
+              await _repository.fetchVerifyCard(card.id!, card.cardKey, code);
+          if (!mounted) return;
+          setState(() => isLoading = false);
+          if (response.isSuccess) {
+            CustomSnackBar().showSnackBar(
+              context,
+              response.result is Map && response.result['message'] != null
+                  ? response.result['message']
+                  : translate("home.card_verified_success"),
+              1,
+            );
+            await _fetchCards();
+          } else {
+            CenterDialog.showActionFailed(
+              context,
+              translate("home.verification_failed"),
+              response.result is Map && response.result['message'] != null
+                  ? response.result['message']
+                  : translate("home.verification_failed_msg"),
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _badge(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontFamily: AppTheme.fontFamily,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Widget _statusBadge(String status) {
+    final s = status.toLowerCase();
+    if (s == 'verified' || s == 'active' || s == 'success') {
+      return _badge(translate("home.card_verified"), AppTheme.green);
+    }
+    if (s == 'not_verified' || s == 'unverified' || s == 'pending') {
+      return _badge(translate("home.card_not_verified"), AppTheme.orange);
+    }
+    if (status.isEmpty) return const SizedBox.shrink();
+    return _badge(status, AppTheme.gray);
+  }
+
+  Widget _radio(bool selected) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: selected ? AppTheme.purple : AppTheme.gray,
+          width: 2,
+        ),
+      ),
+      child: selected
+          ? Center(
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                  color: AppTheme.purple,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            )
+          : null,
+    );
+  }
+
+  Widget _buildAddCardButton() {
+    return GestureDetector(
+      onTap: _openAddCard,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: AppTheme.purple.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppTheme.purple.withOpacity(0.4)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: AppTheme.purple.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.add, color: AppTheme.purple, size: 16),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              translate("home.add_new_card"),
+              style: const TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.purple,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Secure banner ──────────────────────────────────────────────────────────
+  Widget _buildSecureBanner() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.purple.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.verified_user_rounded,
+              color: AppTheme.purple, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  translate("home.secure_payment"),
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.black,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  translate("home.secure_payment_desc"),
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    height: 1.35,
+                    color: AppTheme.gray,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  BoxDecoration _cardDecoration() => BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.border),
+      );
+
+  Widget _iconBox(IconData icon) => Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: AppTheme.purple.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, size: 22, color: AppTheme.purple),
+      );
+
+  Widget _sectionLabel(String title) => Padding(
+        padding: const EdgeInsets.only(left: 4),
+        child: Text(
+          title,
+          style: const TextStyle(
+            fontFamily: AppTheme.fontFamily,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.black,
+          ),
+        ),
+      );
+
+  String _maskedNumber(String raw) {
+    final digits = raw.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length < 8) return raw;
+    final first4 = digits.substring(0, 4);
+    final last4 = digits.substring(digits.length - 4);
+    return '$first4 **** **** $last4';
+  }
+
+  String _cardBrand(String raw) {
+    final d = raw.replaceAll(RegExp(r'[^0-9]'), '');
+    if (d.startsWith('8600')) return 'Uzcard';
+    if (d.startsWith('9860')) return 'Humo';
+    return 'Card';
+  }
+
+  String? _brandLogo(String brand) {
+    switch (brand) {
+      case 'Uzcard':
+        return 'assets/logos/uzcard.png';
+      case 'Humo':
+        return 'assets/logos/humo-logo-more.png';
+      default:
+        return null;
+    }
   }
 }

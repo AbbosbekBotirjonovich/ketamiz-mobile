@@ -22,6 +22,7 @@ import '../../../theme/app_theme.dart';
 import '../../../utils/nav_constants.dart';
 import '../../../utils/utils.dart';
 import '../../widgets/containers/settings_container.dart';
+import '../../widgets/notification_button.dart';
 import '../../widgets/texts/text_14h_400w.dart';
 
 const _kLanguages = [
@@ -232,40 +233,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // ── Top bar ─────────────────────────────────────────────────────────────
   Widget _buildNotificationBell() {
-    return Padding(
-      padding: const EdgeInsets.only(right: 12),
-      child: GestureDetector(
-        onTap: () {},
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppTheme.border),
-              ),
-              child: const Icon(Icons.notifications_none_rounded,
-                  color: AppTheme.purple, size: 22),
-            ),
-            Positioned(
-              right: 9,
-              top: 9,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: AppTheme.red,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return const Padding(
+      padding: EdgeInsets.only(right: 12),
+      child: NotificationButton(),
     );
   }
 

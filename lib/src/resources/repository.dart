@@ -213,6 +213,18 @@ class Repository {
           String tripId, List<Map<String, dynamic>> passengers) =>
       apiProvider.fetchUpdatePassengerAddress(tripId, passengers);
 
+  Future<HttpResult> fetchBookingById(String bookingId) =>
+      apiProvider.fetchBookingById(bookingId);
+
+  Future<HttpResult> fetchAddPassengerToBooking(String bookingId, String name,
+          String phone, String latitude, String longitude) =>
+      apiProvider.fetchAddPassengerToBooking(
+          bookingId, name, phone, latitude, longitude);
+
+  Future<HttpResult> fetchRemovePassengerFromBooking(
+          String bookingId, String passengerId) =>
+      apiProvider.fetchRemovePassengerFromBooking(bookingId, passengerId);
+
   Future<HttpResult> fetchCardList() => apiProvider.fetchCardList();
 
   Future<HttpResult> fetchAddCreditCard(

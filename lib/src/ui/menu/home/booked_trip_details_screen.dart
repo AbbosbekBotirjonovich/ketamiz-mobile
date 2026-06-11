@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ketamiz/src/model/api/book_model.dart';
+import 'package:ketamiz/src/model/passenger_model.dart';
+import 'package:ketamiz/src/ui/dialogs/bottom_dialog.dart';
 import 'package:ketamiz/src/ui/dialogs/center_dialog.dart';
 import 'package:ketamiz/src/ui/dialogs/snack_bar.dart';
 import 'package:ketamiz/src/ui/menu/home/map_route_screen.dart';
@@ -31,6 +33,19 @@ class _BookedTripDetailsScreenState extends State<BookedTripDetailsScreen> {
 
   /// Id of the passenger whose pickup is currently being updated (0 = none).
   int _updatingId = 0;
+
+  /// Local, mutable copy of the booking's passengers so add/remove reflect
+  /// immediately on screen.
+  late List<Passenger> _passengers;
+  bool _isAddingPassenger = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _passengers = List<Passenger>.from(widget.booking.passengers);
+  }
+
+  String get _bookingId => widget.booking.bookingId.toString();
 
   BookedTrip get _trip => widget.booking.trip;
 
@@ -388,7 +403,7 @@ class _BookedTripDetailsScreenState extends State<BookedTripDetailsScreen> {
                 child: Text16h500w(title: translate("home.booked_passengers")),
               ),
               Text(
-                "${widget.booking.passengers.length}",
+                "${_passengers.length}",
                 style: const TextStyle(
                   fontFamily: AppTheme.fontFamily,
                   fontSize: 16,
@@ -396,14 +411,41 @@ class _BookedTripDetailsScreenState extends State<BookedTripDetailsScreen> {
                   color: AppTheme.purple,
                 ),
               ),
+              if (_canCancel) ...[
+                const SizedBox(width: 10),
+                _isAddingPassenger
+                    ? const SizedBox(
+                        width: 30,
+                        height: 30,
+                        child: Padding(
+                          padding: EdgeInsets.all(6),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            color: AppTheme.purple,
+                          ),
+                        ),
+                      )
+                    : GestureDetector(
+                        onTap: _onAddPassenger,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: AppTheme.purple.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Icon(Icons.add,
+                              color: AppTheme.purple, size: 20),
+                        ),
+                      ),
+              ],
             ],
           ),
           const SizedBox(height: 12),
-          ...List.generate(widget.booking.passengers.length, (i) {
-            final p = widget.booking.passengers[i];
+          ...List.generate(_passengers.length, (i) {
+            final p = _passengers[i];
             return Container(
               margin: EdgeInsets.only(
-                  bottom: i == widget.booking.passengers.length - 1 ? 0 : 10),
+                  bottom: i == _passengers.length - 1 ? 0 : 10),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppTheme.light,
@@ -435,33 +477,53 @@ class _BookedTripDetailsScreenState extends State<BookedTripDetailsScreen> {
                   ),
                   if (_canCancel) ...[
                     const SizedBox(width: 8),
-                    _updatingId == p.id
-                        ? const SizedBox(
-                            width: 38,
-                            height: 38,
-                            child: Padding(
-                              padding: EdgeInsets.all(9),
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.4,
-                                color: AppTheme.purple,
-                              ),
+                    if (_updatingId == p.id)
+                      const SizedBox(
+                        width: 38,
+                        height: 38,
+                        child: Padding(
+                          padding: EdgeInsets.all(9),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.4,
+                            color: AppTheme.purple,
+                          ),
+                        ),
+                      )
+                    else ...[
+                      if (_passengers.length > 1) ...[
+                        GestureDetector(
+                          onTap: () => _removePassenger(p),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(24),
                             ),
-                          )
-                        : GestureDetector(
-                            onTap: () => _editPassengerPickup(p),
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(24),
-                              ),
-                              child: const Icon(
-                                Icons.edit_location_alt_outlined,
-                                size: 20,
-                                color: AppTheme.purple,
-                              ),
+                            child: const Icon(
+                              Icons.delete_outline,
+                              size: 20,
+                              color: AppTheme.red,
                             ),
                           ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      GestureDetector(
+                        onTap: () => _editPassengerPickup(p),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: const Icon(
+                            Icons.edit_location_alt_outlined,
+                            size: 20,
+                            color: AppTheme.purple,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ],
               ),
@@ -470,6 +532,98 @@ class _BookedTripDetailsScreenState extends State<BookedTripDetailsScreen> {
         ],
       ),
     );
+  }
+
+  /// Add a passenger to this booking via the single name/phone/pickup form.
+  void _onAddPassenger() {
+    if (_isAddingPassenger) return;
+    LatLng? shared;
+    for (final p in _passengers) {
+      final lat = double.tryParse(p.latitude);
+      final lng = double.tryParse(p.longitude);
+      if (lat != null && lng != null && (lat != 0 || lng != 0)) {
+        shared = LatLng(lat, lng);
+        break;
+      }
+    }
+    BottomDialog.showAddPassenger(
+      context,
+      PassengerModel(fullName: ""),
+      (data) => _addPassenger(data),
+      place: _from,
+      sharedLocation: shared,
+    );
+  }
+
+  Future<void> _addPassenger(PassengerModel data) async {
+    setState(() => _isAddingPassenger = true);
+    final response = await _repository.fetchAddPassengerToBooking(
+      _bookingId,
+      data.fullName,
+      data.phoneNumber,
+      data.latitude,
+      data.longitude,
+    );
+    if (!mounted) return;
+    if (response.isSuccess) {
+      await _refreshPassengers();
+      if (mounted) {
+        CustomSnackBar()
+            .showSnackBar(context, translate("ketamiz.passenger_added"), 1);
+      }
+    } else {
+      _showActionError(response);
+    }
+    if (mounted) setState(() => _isAddingPassenger = false);
+  }
+
+  void _removePassenger(Passenger p) {
+    CenterDialog.showConfirmation(
+      context,
+      translate("ketamiz.remove_passenger"),
+      translate("ketamiz.remove_passenger_confirm"),
+      onConfirm: () async {
+        Navigator.pop(context); // close the dialog
+        if (!mounted) return;
+        setState(() => _updatingId = p.id);
+        final response = await _repository.fetchRemovePassengerFromBooking(
+          _bookingId,
+          p.id.toString(),
+        );
+        if (!mounted) return;
+        setState(() => _updatingId = 0);
+        if (response.isSuccess) {
+          await _refreshPassengers();
+          if (mounted) {
+            CustomSnackBar().showSnackBar(
+                context, translate("ketamiz.passenger_removed"), 1);
+          }
+        } else {
+          _showActionError(response);
+        }
+      },
+    );
+  }
+
+  /// Re-fetch the booking so the passenger list (and ids) stay accurate.
+  Future<void> _refreshPassengers() async {
+    final response = await _repository.fetchBookingById(_bookingId);
+    if (!mounted || !response.isSuccess) return;
+    final result = response.result;
+    final dataMap = result is Map && result.containsKey('data')
+        ? result['data']
+        : result;
+    try {
+      final updated = BookModel.fromJson(Map<String, dynamic>.from(dataMap));
+      setState(() => _passengers = updated.passengers);
+    } catch (_) {}
+  }
+
+  void _showActionError(dynamic response) {
+    final msg = response.result is Map && response.result['message'] != null
+        ? response.result['message'].toString()
+        : translate("ketamiz.passenger_action_failed");
+    CustomSnackBar().showSnackBar(context, msg, 2);
   }
 
   /// Let the passenger pick a new pickup point on the map and persist it via

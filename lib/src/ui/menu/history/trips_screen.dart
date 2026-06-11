@@ -201,7 +201,7 @@ class _TripsScreenState extends State<TripsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: active ? AppTheme.black : Colors.transparent,
+          color: active ? AppTheme.purple : Colors.transparent,
           borderRadius: BorderRadius.circular(32),
         ),
         child: Text(
@@ -350,19 +350,18 @@ class _TripsScreenState extends State<TripsScreen> {
   }
 
   Widget _buildAddDocsState() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 140),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Lottie.asset('assets/lottie/add_docs.json',
-              width: 200, height: 200, fit: BoxFit.cover),
-          const SizedBox(height: 24),
-          Text16h500w(title: translate('ketamiz.add_docs_title')),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(32, 130, 32, 120),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Lottie.asset('assets/lottie/add_docs.json',
+                width: 200, height: 200, fit: BoxFit.cover),
+            const SizedBox(height: 24),
+            Text16h500w(title: translate('ketamiz.add_docs_title')),
+            const SizedBox(height: 8),
+            Text(
               translate('ketamiz.add_docs_msg'),
               style: const TextStyle(
                 fontSize: 14,
@@ -372,38 +371,33 @@ class _TripsScreenState extends State<TripsScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 24),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: SecondaryButton(
+            const SizedBox(height: 24),
+            SecondaryButton(
               title: translate('ketamiz.add_docs_button'),
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const AddDocsScreen()),
               ),
             ),
-          ),
-          const SizedBox(height: 92),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildVerificationPendingState() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 140),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Lottie.asset('assets/lottie/waiting.json',
-              width: 200, height: 200, fit: BoxFit.cover),
-          const SizedBox(height: 24),
-          Text16h500w(title: translate('ketamiz.verification_in_progress')),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(32, 130, 32, 120),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Lottie.asset('assets/lottie/waiting.json',
+                width: 200, height: 200, fit: BoxFit.cover),
+            const SizedBox(height: 24),
+            Text16h500w(title: translate('ketamiz.verification_in_progress')),
+            const SizedBox(height: 8),
+            Text(
               translate('ketamiz.verification_in_progress_msg'),
               style: const TextStyle(
                 fontSize: 14,
@@ -413,9 +407,8 @@ class _TripsScreenState extends State<TripsScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 92),
-        ],
+          ],
+        ),
       ),
     );
   }
