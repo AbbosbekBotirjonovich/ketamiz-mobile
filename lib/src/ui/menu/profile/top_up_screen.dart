@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../model/credit_card_model.dart';
 import '../../../resources/repository.dart';
+import '../../../utils/card_brand.dart';
 import '../../../utils/text_formatters.dart';
 import '../../../utils/utils.dart';
 import '../../dialogs/center_dialog.dart';
@@ -79,10 +80,12 @@ class _TopUpScreenState extends State<TopUpScreen> {
                 ))
             .toList();
 
-        if (cards.isNotEmpty) {
-          selectedCard = cards.firstWhere((element) => element.isDefault,
-              orElse: () => cards.first);
-          selectedCard!.isDefault = true;
+        // Only verified cards can be selected for payment.
+        final verifiedCards =
+            cards.where((c) => !_needsVerify(c.status)).toList();
+        if (verifiedCards.isNotEmpty) {
+          selectedCard = verifiedCards.firstWhere((c) => c.isDefault,
+              orElse: () => verifiedCards.first);
         } else {
           selectedCard = null;
         }
@@ -493,13 +496,15 @@ class _TopUpScreenState extends State<TopUpScreen> {
   // ── Cards ──────────────────────────────────────────────────────────────────
   Widget _buildCardRow(int index) {
     final card = cards[index];
-    final selected = selectedCard?.id == card.id;
-    final brand = _cardBrand(card.cardNumber);
-    final logo = _brandLogo(brand);
+    final verified = !_needsVerify(card.status);
+    final selected = verified && selectedCard?.id == card.id;
+    final logo = CardBrand.logoAsset(card.cardNumber);
     return GestureDetector(
-      onTap: () => _selectCard(index),
-      onLongPress: () => _deleteCard(index),
       behavior: HitTestBehavior.opaque,
+      onTap: verified
+          ? () => _selectCard(index)
+          : () => CustomSnackBar().showSnackBar(
+              context, translate("home.card_unverified_hint"), 2),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(12),
@@ -513,88 +518,116 @@ class _TopUpScreenState extends State<TopUpScreen> {
         ),
         child: Row(
           children: [
-            _radio(selected),
-            const SizedBox(width: 12),
-            Container(
-              width: 48,
-              height: 32,
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: AppTheme.light,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppTheme.border),
-              ),
-              child: logo != null
-                  ? Image.asset(logo, fit: BoxFit.contain)
-                  : const Icon(Icons.credit_card,
-                      color: AppTheme.gray, size: 18),
-            ),
-            const SizedBox(width: 12),
+            // Card content dims when unverified (disabled); the Remove button
+            // stays fully active.
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _maskedNumber(card.cardNumber),
-                    style: const TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.black,
-                      letterSpacing: 0.5,
+              child: Opacity(
+                opacity: verified ? 1.0 : 0.5,
+                child: Row(
+                  children: [
+                    _radio(selected),
+                    const SizedBox(width: 12),
+                    Container(
+                      width: 48,
+                      height: 32,
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.light,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: AppTheme.border),
+                      ),
+                      child: logo != null
+                          ? Image.asset(logo, fit: BoxFit.contain)
+                          : const Icon(Icons.credit_card,
+                              color: AppTheme.gray, size: 18),
                     ),
-                  ),
-                  if (card.cardHolderName.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      card.cardHolderName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: AppTheme.fontFamily,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        color: AppTheme.gray,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _maskedNumber(card.cardNumber),
+                            style: const TextStyle(
+                              fontFamily: AppTheme.fontFamily,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.black,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          if (card.cardHolderName.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              card.cardHolderName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontFamily: AppTheme.fontFamily,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                                color: AppTheme.gray,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: [
+                              if (card.isDefault)
+                                _badge(translate("home.main_card"),
+                                    AppTheme.green),
+                              _statusBadge(card.status),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ],
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    children: [
-                      if (card.isDefault)
-                        _badge(translate("home.main_card"), AppTheme.green),
-                      _statusBadge(card.status),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            if (_needsVerify(card.status)) ...[
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () => _verifyCard(card),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: AppTheme.purple,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    translate("auth.verify"),
-                    style: const TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
                 ),
               ),
-            ],
+            ),
+            const SizedBox(width: 8),
+            _cardActionButton(
+              label: translate("delete"),
+              color: AppTheme.red,
+              filled: true,
+              onTap: () => _deleteCard(index),
+            ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _cardActionButton({
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+    bool filled = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 94,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: filled ? color : color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+          border: filled ? null : Border.all(color: color.withOpacity(0.4)),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontFamily: AppTheme.fontFamily,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: filled ? Colors.white : color,
+            ),
+          ),
         ),
       ),
     );
@@ -603,46 +636,6 @@ class _TopUpScreenState extends State<TopUpScreen> {
   bool _needsVerify(String status) {
     final s = status.toLowerCase();
     return s == 'not_verified' || s == 'unverified' || s == 'pending';
-  }
-
-  void _verifyCard(CreditCardModel card) {
-    if (card.id == null) return;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => VerifyCardDialog(
-        subtitle: card.phone.isNotEmpty
-            ? "${translate("home.code_sent_to")} ${card.phone}"
-            : null,
-        onVerify: (code) async {
-          Navigator.pop(dialogContext);
-          if (!mounted) return;
-          setState(() => isLoading = true);
-          final response =
-              await _repository.fetchVerifyCard(card.id!, card.cardKey, code);
-          if (!mounted) return;
-          setState(() => isLoading = false);
-          if (response.isSuccess) {
-            CustomSnackBar().showSnackBar(
-              context,
-              response.result is Map && response.result['message'] != null
-                  ? response.result['message']
-                  : translate("home.card_verified_success"),
-              1,
-            );
-            await _fetchCards();
-          } else {
-            CenterDialog.showActionFailed(
-              context,
-              translate("home.verification_failed"),
-              response.result is Map && response.result['message'] != null
-                  ? response.result['message']
-                  : translate("home.verification_failed_msg"),
-            );
-          }
-        },
-      ),
-    );
   }
 
   Widget _badge(String label, Color color) {
@@ -825,21 +818,4 @@ class _TopUpScreenState extends State<TopUpScreen> {
     return '$first4 **** **** $last4';
   }
 
-  String _cardBrand(String raw) {
-    final d = raw.replaceAll(RegExp(r'[^0-9]'), '');
-    if (d.startsWith('8600')) return 'Uzcard';
-    if (d.startsWith('9860')) return 'Humo';
-    return 'Card';
-  }
-
-  String? _brandLogo(String brand) {
-    switch (brand) {
-      case 'Uzcard':
-        return 'assets/logos/uzcard.png';
-      case 'Humo':
-        return 'assets/logos/humo-logo-more.png';
-      default:
-        return null;
-    }
-  }
 }

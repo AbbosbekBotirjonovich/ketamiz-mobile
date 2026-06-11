@@ -189,6 +189,7 @@
     "main_card": "Main card",
     "card_verified": "Verified",
     "card_not_verified": "Not verified",
+    "card_unverified_hint": "This card is not verified. Please remove it and add it again.",
     "verify_card": "Verify card",
     "card_verified_success": "Card verified successfully",
     "code_sent_to": "Confirmation code sent to:",

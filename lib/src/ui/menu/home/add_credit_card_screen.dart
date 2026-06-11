@@ -12,6 +12,7 @@ import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_12h_400w.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
 import '../../../theme/app_theme.dart';
+import '../../../utils/card_brand.dart';
 import '../../../utils/text_formatters.dart';
 import '../../widgets/textfield/main_textfield.dart';
 
@@ -54,7 +55,15 @@ class _AddCreditCardScreenState extends State<AddCreditCardScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
     _animationController.forward();
+    // Keep the live card preview (number / holder / expiry / brand) in sync.
+    _cardNumberController.addListener(_onCardChanged);
+    _cardHolderController.addListener(_onCardChanged);
+    _expiryDateController.addListener(_onCardChanged);
     _loadUserInfo();
+  }
+
+  void _onCardChanged() {
+    if (mounted) setState(() {});
   }
 
   void _loadUserInfo() async {
@@ -239,65 +248,96 @@ class _AddCreditCardScreenState extends State<AddCreditCardScreen>
                               ],
                             ),
                             padding: const EdgeInsets.all(24),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            child: Stack(
                               children: [
-                                Text(
-                                  _cardNumberController.text.isEmpty
-                                      ? translate(
-                                          "home.card_number_placeholder")
-                                      : _cardNumberController.text,
-                                  style: const TextStyle(
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontSize: 24,
-                                    color: Colors.white,
-                                    letterSpacing: 2,
+                                Positioned.fill(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        _cardNumberController.text.isEmpty
+                                            ? translate(
+                                                "home.card_number_placeholder")
+                                            : _cardNumberController.text,
+                                        style: const TextStyle(
+                                          fontFamily: AppTheme.fontFamily,
+                                          fontSize: 24,
+                                          color: Colors.white,
+                                          letterSpacing: 2,
+                                        ),
+                                      ),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text12h400w(
+                                                title: translate(
+                                                    "home.card_holder_label"),
+                                                color: Colors.white70,
+                                              ),
+                                              Text16h500w(
+                                                title: _cardHolderController
+                                                        .text.isEmpty
+                                                    ? translate(
+                                                        "home.card_holder_placeholder")
+                                                    : _cardHolderController
+                                                        .text,
+                                                color: Colors.white,
+                                              ),
+                                            ],
+                                          ),
+                                          Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.end,
+                                            children: [
+                                              Text12h400w(
+                                                title: translate(
+                                                    "home.expires_label"),
+                                                color: Colors.white70,
+                                              ),
+                                              Text16h500w(
+                                                title: _expiryDateController
+                                                        .text.isEmpty
+                                                    ? translate(
+                                                        "home.expiry_date_placeholder")
+                                                    : _expiryDateController
+                                                        .text,
+                                                color: Colors.white,
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text12h400w(
-                                          title: translate(
-                                              "home.card_holder_label"),
-                                          color: Colors.white70,
-                                        ),
-                                        Text16h500w(
-                                          title: _cardHolderController
-                                                  .text.isEmpty
-                                              ? translate(
-                                                  "home.card_holder_placeholder")
-                                              : _cardHolderController.text,
-                                          color: Colors.white,
-                                        ),
-                                      ],
-                                    ),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: [
-                                        Text12h400w(
-                                          title:
-                                              translate("home.expires_label"),
-                                          color: Colors.white70,
-                                        ),
-                                        Text16h500w(
-                                          title: _expiryDateController
-                                                  .text.isEmpty
-                                              ? translate(
-                                                  "home.expiry_date_placeholder")
-                                              : _expiryDateController.text,
-                                          color: Colors.white,
-                                        ),
-                                      ],
-                                    ),
-                                  ],
+                                Positioned(
+                                  top: 0,
+                                  right: 0,
+                                  child: CardBrand.logoAsset(
+                                              _cardNumberController.text) !=
+                                          null
+                                      ? Container(
+                                          padding: const EdgeInsets.all(5),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius:
+                                                BorderRadius.circular(6),
+                                          ),
+                                          child: Image.asset(
+                                            CardBrand.logoAsset(
+                                                _cardNumberController.text)!,
+                                            height: 22,
+                                          ),
+                                        )
+                                      : const SizedBox.shrink(),
                                 ),
                               ],
                             ),

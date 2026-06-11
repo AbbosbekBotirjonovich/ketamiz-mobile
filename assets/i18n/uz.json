@@ -189,6 +189,7 @@
     "main_card": "Asosiy karta",
     "card_verified": "Tasdiqlangan",
     "card_not_verified": "Tasdiqlanmagan",
+    "card_unverified_hint": "Bu karta tasdiqlanmagan. Iltimos, uni o'chirib, qaytadan qo'shing.",
     "verify_card": "Kartani tasdiqlash",
     "card_verified_success": "Karta muvaffaqiyatli tasdiqlandi",
     "code_sent_to": "Tasdiqlash kodi yuborildi:",
