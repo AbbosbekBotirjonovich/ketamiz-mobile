@@ -20,6 +20,7 @@ class MainTextField extends StatefulWidget {
     this.scrollPadding = const EdgeInsets.all(20),
     this.textInputAction,
     this.fillColor,
+    this.dense = false,
   });
 
   final String hintText;
@@ -34,6 +35,9 @@ class MainTextField extends StatefulWidget {
 
   /// Overrides the default cream fill when set (e.g. white inputs on a form).
   final Color? fillColor;
+
+  /// Compact height/padding for denser forms.
+  final bool dense;
 
   @override
   State<MainTextField> createState() => _MainTextFieldState();
@@ -52,7 +56,7 @@ class _MainTextFieldState extends State<MainTextField> {
   Widget build(BuildContext context) {
     final fill = widget.fillColor ?? _kFillColor;
     return Container(
-      height: 58,
+      height: widget.dense ? 50 : 58,
       decoration: BoxDecoration(
         color: fill,
         borderRadius: BorderRadius.circular(14),
@@ -90,8 +94,8 @@ class _MainTextFieldState extends State<MainTextField> {
             borderRadius: BorderRadius.circular(14),
             borderSide: const BorderSide(color: AppTheme.purple, width: 1.5),
           ),
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 18,
+          contentPadding: EdgeInsets.symmetric(
+            vertical: widget.dense ? 11 : 18,
             horizontal: 14,
           ),
           labelText: widget.hintText,

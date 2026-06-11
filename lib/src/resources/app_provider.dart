@@ -800,8 +800,8 @@ class ApiProvider {
   }
 
   /// Get Transaction List
-  Future<HttpResult> fetchTransactionList() async {
-    String url = '$baseUrl/user/balance-transactions';
+  Future<HttpResult> fetchTransactionList({int page = 1}) async {
+    String url = '$baseUrl/user/balance-transactions?page=$page';
     return await getRequest(url);
   }
 

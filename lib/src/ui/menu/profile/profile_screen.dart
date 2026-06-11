@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_translate/flutter_translate.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:ketamiz/src/ui/auth/login_screen.dart';
 import 'package:ketamiz/src/ui/dialogs/center_dialog.dart';
 import 'package:ketamiz/src/ui/menu/new_ketamiz/add_docs_screen.dart';
@@ -9,7 +12,6 @@ import 'package:ketamiz/src/ui/menu/profile/support_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/terms_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/top_up_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/transaction_history_screen.dart';
-import 'package:ketamiz/src/ui/widgets/texts/text_12h_400w.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -21,7 +23,6 @@ import '../../../utils/nav_constants.dart';
 import '../../../utils/utils.dart';
 import '../../widgets/containers/settings_container.dart';
 import '../../widgets/texts/text_14h_400w.dart';
-import '../../widgets/texts/text_18h_500w.dart';
 
 const _kLanguages = [
   {'code': 'uz', 'name': "O'zbek", 'flag': '🇺🇿'},
@@ -39,10 +40,12 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   String balance = "";
   String _myImage = '';
+  String _localAvatarPath = '';
   String _myName = '';
   String _myPhone = '';
   bool _isDriver = false;
   String _verificationStatus = 'none'; // none | pending | approved | rejected
+  String _langName = "O'zbek";
 
   @override
   void initState() {
@@ -56,331 +59,528 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await _getInfo();
   }
 
+  /// First letters of the name, used when no avatar image is set.
+  String get _initials {
+    final parts = _myName
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((s) => s.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return 'U';
+    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+    return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
+        .toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.light,
       appBar: AppBar(
+        backgroundColor: AppTheme.light,
+        elevation: 0,
         title: Text16h500w(title: translate("profile.my_profile")),
         centerTitle: true,
+        actions: [_buildNotificationBell()],
       ),
       body: RefreshIndicator(
         color: AppTheme.purple,
         onRefresh: _refresh,
         child: ListView(
-        padding: const EdgeInsets.only(
-          top: 22,
-          bottom: kNavBarTotalPadding,
-          left: 16,
-          right: 16,
+          padding: const EdgeInsets.only(
+            top: 8,
+            bottom: kNavBarTotalPadding,
+            left: 16,
+            right: 16,
+          ),
+          children: [
+            _buildProfileCard(),
+            const SizedBox(height: 16),
+            _buildBalanceCard(),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const TransactionHistoryScreen(),
+                ),
+              ),
+              child: SettingsContainer(
+                settingsModel: SettingsModel(
+                  icon: Icons.receipt_long_outlined,
+                  title: translate("profile.transactions"),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Role-specific section
+            if (_isDriver) ...[
+              _sectionLabel(translate("profile.driver_section")),
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MyVehiclesScreen()),
+                ),
+                child: SettingsContainer(
+                  settingsModel: SettingsModel(
+                    icon: Icons.directions_car_outlined,
+                    title: translate("profile.my_vehicles"),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ] else ...[
+              _buildBecomeDriverBanner(),
+              const SizedBox(height: 20),
+            ],
+            _sectionLabel(translate("profile.settings")),
+            SettingsContainer(
+              settingsModel: SettingsModel(
+                icon: Icons.lock_outline_rounded,
+                title: translate("profile.change_password"),
+              ),
+            ),
+            GestureDetector(
+              onTap: _showLanguagePicker,
+              child: SettingsContainer(
+                settingsModel: SettingsModel(
+                  icon: Icons.language_rounded,
+                  title: translate("profile.language"),
+                ),
+                trailingText: _langName,
+              ),
+            ),
+            SettingsContainer(
+              settingsModel: SettingsModel(
+                icon: Icons.notifications_none_rounded,
+                title: translate("profile.notifications"),
+              ),
+            ),
+            const SizedBox(height: 20),
+            _sectionLabel(translate("profile.about_us")),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TermsScreen()),
+              ),
+              child: SettingsContainer(
+                settingsModel: SettingsModel(
+                  icon: Icons.description_outlined,
+                  title: translate("profile.terms"),
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TermsScreen()),
+              ),
+              child: SettingsContainer(
+                settingsModel: SettingsModel(
+                  icon: Icons.shield_outlined,
+                  title: translate("profile.privacy_security"),
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SupportScreen()),
+              ),
+              child: SettingsContainer(
+                settingsModel: SettingsModel(
+                  icon: Icons.headset_mic_outlined,
+                  title: translate("profile.contact_us"),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            _sectionLabel(translate("profile.other")),
+            SettingsContainer(
+              settingsModel: SettingsModel(
+                icon: Icons.share_outlined,
+                title: translate("profile.share"),
+              ),
+            ),
+            GestureDetector(
+              onTap: _confirmLogout,
+              child: SettingsContainer(
+                iconColor: AppTheme.red,
+                settingsModel: SettingsModel(
+                  icon: Icons.logout_rounded,
+                  title: translate("profile.logout"),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Center(
+              child: Text(
+                "ketamiz.com  v1.0.0",
+                style: TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  color: AppTheme.gray,
+                ),
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  // ── Top bar ─────────────────────────────────────────────────────────────
+  Widget _buildNotificationBell() {
+    return Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: GestureDetector(
+        onTap: () {},
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppTheme.border),
+              ),
+              child: const Icon(Icons.notifications_none_rounded,
+                  color: AppTheme.purple, size: 22),
+            ),
+            Positioned(
+              right: 9,
+              top: 9,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: AppTheme.red,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1.5),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Profile card ────────────────────────────────────────────────────────
+  Widget _buildProfileCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppTheme.border),
+        boxShadow: [
+          BoxShadow(
+            offset: const Offset(0, 4),
+            blurRadius: 24,
+            color: AppTheme.black.withOpacity(0.04),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.purple),
-              boxShadow: [
-                BoxShadow(
-                  offset: const Offset(0, 4),
-                  blurRadius: 100,
-                  spreadRadius: 0,
-                  color: AppTheme.black.withOpacity(0.05),
-                ),
-              ],
-            ),
-            child: Row(
+          _buildAvatar(),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: CachedNetworkImage(
-                    imageUrl: _myImage,
-                    placeholder: (context, url) => Container(
-                      height: 40,
-                      width: 40,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(24),
-                        color: AppTheme.gray,
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      height: 100,
-                      width: 100,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(24),
-                        color: AppTheme.light,
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.error,
-                          color: AppTheme.purple,
-                          size: 24,
-                        ),
-                      ),
-                    ),
-                    height: 40,
-                    width: 40,
-                    fit: BoxFit.cover,
+                Text(
+                  _myName.isEmpty ? "—" : _myName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.black,
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text18h500w(
-                        title: _myName,
-                      ),
-                      const SizedBox(height: 4),
-                      Text12h400w(
-                        title: _myPhone,
-                        color: AppTheme.gray,
-                      ),
-                    ],
+                const SizedBox(height: 4),
+                Text(
+                  _myPhone,
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    color: AppTheme.gray,
                   ),
                 ),
-                const SizedBox(width: 12),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const EditProfileScreen(),
-                      ),
-                    ).then((_) {
-                      if (mounted) _refresh();
-                    });
-                  },
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: AppTheme.light,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child:
-                        Text14h400w(title: translate("profile.edit_profile")),
-                  ),
-                )
+                if (_isDriver) ...[
+                  const SizedBox(height: 8),
+                  _verifiedBadge(),
+                ],
               ],
             ),
           ),
-          const SizedBox(height: 32),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.black,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  offset: const Offset(0, 4),
-                  blurRadius: 100,
-                  spreadRadius: 0,
-                  color: AppTheme.black.withOpacity(0.05),
-                ),
-              ],
+          const SizedBox(width: 8),
+          _editProfileButton(),
+        ],
+      ),
+    );
+  }
+
+  Widget _editProfileButton() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const EditProfileScreen()),
+        ).then((_) {
+          if (mounted) _refresh();
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+        decoration: BoxDecoration(
+          color: AppTheme.purple.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.edit_outlined, size: 14, color: AppTheme.purple),
+            const SizedBox(width: 6),
+            Text(
+              translate("profile.edit_profile"),
+              style: const TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.purple,
+              ),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _verifiedBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppTheme.green.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.verified_rounded, size: 14, color: AppTheme.green),
+          const SizedBox(width: 4),
+          Text(
+            translate("profile.verified_driver"),
+            style: const TextStyle(
+              fontFamily: AppTheme.fontFamily,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.green,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAvatar() {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: 64,
+          height: 64,
+          alignment: Alignment.center,
+          clipBehavior: Clip.antiAlias,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: [AppTheme.purple, AppTheme.primaryDark],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: _avatarInner(),
+        ),
+        Positioned(
+          right: -2,
+          bottom: -2,
+          child: GestureDetector(
+            onTap: _onEditAvatar,
+            child: Container(
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppTheme.light, width: 1.5),
+              ),
+              child: const Icon(Icons.camera_alt_rounded,
+                  size: 12, color: AppTheme.purple),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _avatarInner() {
+    if (_localAvatarPath.isNotEmpty && File(_localAvatarPath).existsSync()) {
+      return Image.file(
+        File(_localAvatarPath),
+        width: 64,
+        height: 64,
+        fit: BoxFit.cover,
+      );
+    }
+    if (_myImage.isNotEmpty) {
+      return CachedNetworkImage(
+        imageUrl: _myImage,
+        width: 64,
+        height: 64,
+        fit: BoxFit.cover,
+        placeholder: (_, __) => _initialsText(),
+        errorWidget: (_, __, ___) => _initialsText(),
+      );
+    }
+    return _initialsText();
+  }
+
+  Widget _initialsText() {
+    return Center(
+      child: Text(
+        _initials,
+        style: const TextStyle(
+          fontFamily: AppTheme.fontFamily,
+          fontSize: 22,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onEditAvatar() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 800,
+      imageQuality: 85,
+    );
+    if (picked == null || !mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('local_avatar', picked.path);
+    if (!mounted) return;
+    setState(() => _localAvatarPath = picked.path);
+  }
+
+  // ── Balance card ────────────────────────────────────────────────────────
+  Widget _buildBalanceCard() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppTheme.purple, AppTheme.primaryDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            offset: const Offset(0, 8),
+            blurRadius: 20,
+            color: AppTheme.purple.withOpacity(0.3),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text16h500w(
-                        title: translate("profile.my_balance"),
-                        color: AppTheme.light,
-                      ),
-                      const SizedBox(height: 16),
-                      Text18h500w(
-                        title:
-                            "${Utils.priceFormat(balance)} ${translate("currency")}",
-                        color: Colors.white,
-                      )
-                    ],
+                Text(
+                  translate("profile.my_balance"),
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.white.withOpacity(0.85),
                   ),
                 ),
-                const SizedBox(width: 12),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const TopUpScreen(),
-                      ),
-                    ).then((_) {
-                      setState(() {
-                        blocProfile.fetchMe();
-                        getBalance();
-                      });
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      children: [
-                        Text14h400w(
-                          title: translate("profile.top_up"),
-                          color: AppTheme.purple,
-                        ),
-                        const SizedBox(width: 8),
-                        const Icon(
-                          Icons.monetization_on_outlined,
-                          color: AppTheme.purple,
-                          size: 20,
-                        ),
-                      ],
-                    ),
+                const SizedBox(height: 8),
+                Text(
+                  "${Utils.priceFormat(balance)} ${translate("currency")}",
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(width: 12),
           GestureDetector(
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const TransactionHistoryScreen(),
-                ),
-              );
+                MaterialPageRoute(builder: (context) => const TopUpScreen()),
+              ).then((_) {
+                setState(() {
+                  blocProfile.fetchMe();
+                  getBalance();
+                });
+              });
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppTheme.border),
-                boxShadow: [
-                  BoxShadow(
-                    offset: const Offset(0, 4),
-                    blurRadius: 100,
-                    color: AppTheme.black.withOpacity(0.05),
-                  ),
-                ],
+                borderRadius: BorderRadius.circular(14),
               ),
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.receipt_long_outlined,
-                      size: 22, color: AppTheme.purple),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text16h500w(
-                      title: translate("profile.transactions"),
+                  Text(
+                    translate("profile.top_up"),
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.purple,
                     ),
                   ),
-                  const Icon(Icons.chevron_right,
-                      size: 20, color: AppTheme.gray),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.add_circle_outline_rounded,
+                      color: AppTheme.purple, size: 18),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 24),
-          // Role-specific section
-          if (_isDriver) ...[
-            Text16h500w(title: translate("profile.driver_section")),
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const MyVehiclesScreen()),
-              ),
-              child: SettingsContainer(
-                settingsModel: SettingsModel(
-                  icon: Icons.directions_car_outlined,
-                  title: translate("profile.my_vehicles"),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ] else ...[
-            _buildBecomeDriverBanner(),
-            const SizedBox(height: 16),
-          ],
-          Text16h500w(
-            title: translate("profile.settings"),
-          ),
-          SettingsContainer(
-              settingsModel: SettingsModel(
-            icon: Icons.lock_clock,
-            title: translate("profile.change_password"),
-          )),
-          GestureDetector(
-            onTap: () => _showLanguagePicker(),
-            child: SettingsContainer(
-                settingsModel: SettingsModel(
-              icon: Icons.language,
-              title: translate("profile.language"),
-            )),
-          ),
-          SettingsContainer(
-              settingsModel: SettingsModel(
-            icon: Icons.notifications,
-            title: translate("profile.notifications"),
-          )),
-          const SizedBox(height: 16),
-          Text16h500w(
-            title: translate("profile.about_us"),
-          ),
-          GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const TermsScreen()),
-            ),
-            child: SettingsContainer(
-                settingsModel: SettingsModel(
-              icon: Icons.description_outlined,
-              title: translate("profile.terms"),
-            )),
-          ),
-          GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const TermsScreen()),
-            ),
-            child: SettingsContainer(
-                settingsModel: SettingsModel(
-              icon: Icons.privacy_tip,
-              title: translate("profile.privacy_security"),
-            )),
-          ),
-          GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SupportScreen()),
-            ),
-            child: SettingsContainer(
-                settingsModel: SettingsModel(
-              icon: Icons.contact_support,
-              title: translate("profile.contact_us"),
-            )),
-          ),
-          const SizedBox(height: 16),
-          Text16h500w(
-            title: translate("profile.other"),
-          ),
-          SettingsContainer(
-              settingsModel: SettingsModel(
-            icon: Icons.share,
-            title: translate("profile.share"),
-          )),
-          GestureDetector(
-            onTap: _confirmLogout,
-            child: SettingsContainer(
-                settingsModel: SettingsModel(
-              icon: Icons.logout_outlined,
-              title: translate("profile.logout"),
-            )),
-          ),
         ],
+      ),
+    );
+  }
+
+  Widget _sectionLabel(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 2),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontFamily: AppTheme.fontFamily,
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: AppTheme.gray,
         ),
       ),
     );
@@ -468,15 +668,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: AppTheme.red.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child:
-                    const Icon(Icons.error_outline, color: AppTheme.red, size: 22),
+                child: const Icon(Icons.error_outline,
+                    color: AppTheme.red, size: 22),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text16h500w(title: translate("profile.verification_rejected")),
+                    Text16h500w(
+                        title: translate("profile.verification_rejected")),
                     const SizedBox(height: 2),
                     Text14h400w(
                       title: translate("profile.resubmit_docs"),
@@ -501,11 +702,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppTheme.purple,
-              AppTheme.blue,
-            ],
+          gradient: const LinearGradient(
+            colors: [AppTheme.purple, AppTheme.blue],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -555,8 +753,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios,
-                color: Colors.white, size: 16),
+            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
           ],
         ),
       ),
@@ -576,8 +773,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (_) => _LanguagePickerSheet(currentCode: current),
     );
 
-    // Rebuild so the locale change is reflected immediately in this screen
-    if (mounted) setState(() {});
+    // Rebuild so the locale change is reflected immediately in this screen.
+    if (mounted) await _getInfo();
   }
 
   Future<void> getBalance() async {
@@ -591,13 +788,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String firstName = prefs.getString('first_name') ?? '';
     String lastName = prefs.getString('last_name') ?? '';
+    final langCode = prefs.getString('language') ?? 'uz';
+    final lang = _kLanguages.firstWhere(
+      (l) => l['code'] == langCode,
+      orElse: () => _kLanguages.first,
+    );
     setState(() {
       _myImage = prefs.getString('image') ?? '';
-      _myName = '$firstName $lastName';
+      _localAvatarPath = prefs.getString('local_avatar') ?? '';
+      _myName = '$firstName $lastName'.trim();
       _myPhone = prefs.getString('phone') ?? '';
       _isDriver = prefs.getString('role') == 'driver';
       _verificationStatus =
           prefs.getString('driving_verification_status') ?? 'none';
+      _langName = lang['name']!;
     });
   }
 

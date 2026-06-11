@@ -218,7 +218,7 @@ class _AddCreditCardScreenState extends State<AddCreditCardScreen>
                         child: SlideTransition(
                           position: _cardSlideAnimation,
                           child: Container(
-                            height: 200,
+                            height: 180,
                             width: double.infinity,
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
@@ -311,42 +311,57 @@ class _AddCreditCardScreenState extends State<AddCreditCardScreen>
                         icon: Icons.credit_card,
                         controller: _cardNumberController,
                         phone: true,
+                        fillColor: Colors.white,
+                        dense: true,
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly,
                           CardNumberFormatter(),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       MainTextField(
                         hintText: translate("home.cardholder_name_hint"),
                         icon: Icons.person,
                         controller: _cardHolderController,
                         phone: false,
+                        fillColor: Colors.white,
+                        dense: true,
                       ),
-                       const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       MainTextField(
                         hintText: translate("auth.phone_number"),
                         icon: Icons.phone,
                         controller: _phoneController,
                         phone: true,
+                        fillColor: Colors.white,
+                        dense: true,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 6),
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          const Icon(Icons.info_outline,
+                              size: 14, color: AppTheme.gray),
+                          const SizedBox(width: 6),
                           Expanded(
-                            child: MainTextField(
-                              hintText:
-                                  translate("home.expiry_date_placeholder"),
-                              icon: Icons.calendar_today,
-                              controller: _expiryDateController,
-                              phone: true,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                                ExpiryDateFormatter(),
-                              ],
+                            child: Text12h400w(
+                              title: translate("home.card_phone_note"),
+                              color: AppTheme.gray,
                             ),
                           ),
-                         
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      MainTextField(
+                        hintText: translate("home.expiry_date_placeholder"),
+                        icon: Icons.calendar_today,
+                        controller: _expiryDateController,
+                        phone: true,
+                        fillColor: Colors.white,
+                        dense: true,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          ExpiryDateFormatter(),
                         ],
                       ),
                     ],

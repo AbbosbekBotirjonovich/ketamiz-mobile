@@ -58,7 +58,8 @@ class _VerifyCardDialogState extends State<VerifyCardDialog> {
                   letterSpacing: 4,
                 ),
                 filled: true,
-                fillColor: AppTheme.inputFill,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(color: AppTheme.inputBorder),

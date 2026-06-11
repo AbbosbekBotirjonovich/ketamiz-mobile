@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:dotted_line/dotted_line.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:ketamiz/src/model/api/book_model.dart';
@@ -9,8 +8,7 @@ import 'package:ketamiz/src/ui/dialogs/center_dialog.dart';
 import 'package:ketamiz/src/ui/menu/main_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/top_up_screen.dart';
 import 'package:ketamiz/src/ui/widgets/buttons/primary_button.dart';
-import 'package:ketamiz/src/ui/widgets/texts/text_14h_400w.dart';
-import 'package:ketamiz/src/ui/widgets/texts/text_18h_500w.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../lan_localization/load_places.dart';
 import '../../../model/api/trip_list_model.dart';
@@ -21,6 +19,7 @@ import '../../../utils/utils.dart';
 import '../../dialogs/snack_bar.dart';
 import '../../widgets/containers/leading_back.dart';
 import '../../widgets/texts/text_16h_500w.dart';
+import 'map_route_screen.dart';
 
 class PaymentScreen extends StatefulWidget {
   const PaymentScreen({
@@ -158,10 +157,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
     super.dispose();
   }
 
+  int get _totalPrice =>
+      (int.tryParse(pricePerSeat) ?? 0) * widget.passengersNum;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.light,
       appBar: AppBar(
+        backgroundColor: AppTheme.light,
         leading: const LeadingBack(),
         title: Text16h500w(title: translate("home.payment_details")),
         centerTitle: true,
@@ -169,513 +173,647 @@ class _PaymentScreenState extends State<PaymentScreen> {
       ),
       body: Stack(
         children: [
-          Column(
+          ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 150),
             children: [
-              Expanded(
-                child: ListView(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.only(
-                    top: 22,
-                    left: 16,
-                    right: 16,
-                    bottom: 100,
-                  ),
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.dark.withOpacity(0.1),
-                            spreadRadius: 15,
-                            blurRadius: 25,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text14h400w(
-                                  title:
-                                      translate("home.complete_payment_within"),
-                                  color: AppTheme.gray,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: _remainingSeconds < 30
-                                          ? AppTheme.red
-                                          : AppTheme.purple,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text14h400w(
-                                      title: (_remainingSeconds ~/ 60)
-                                          .toString()
-                                          .padLeft(2, '0'),
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  const Padding(
-                                    padding:
-                                        EdgeInsets.symmetric(horizontal: 4.0),
-                                    child: Text(
-                                      ":",
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppTheme.black,
-                                      ),
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _remainingSeconds < 30
-                                          ? AppTheme.red
-                                          : AppTheme.purple,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text14h400w(
-                                      title: seconds,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Text(
-                                "$h1:$m1 $t1",
-                                style: const TextStyle(
-                                  color: AppTheme.black,
-                                  fontSize: 14,
-                                  fontFamily: AppTheme.fontFamily,
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                              Container(
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 8),
-                                width: 4,
-                                height: 4,
-                                decoration: const BoxDecoration(
-                                  color: AppTheme.black,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              Text(
-                                "$weekDay, $month ${widget.trip.startTime.day}",
-                                style: const TextStyle(
-                                  color: AppTheme.gray,
-                                  fontSize: 14,
-                                  fontFamily: AppTheme.fontFamily,
-                                  fontWeight: FontWeight.normal,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          // From / To — full place names, same style as the
-                          // search result and trip details route cards.
-                          _routeRow(
-                            leading: Container(
-                              width: 10,
-                              height: 10,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white,
-                                border: Border.all(
-                                    color: AppTheme.purple, width: 2),
-                              ),
-                            ),
-                            text: from.isEmpty ? "—" : from,
-                          ),
-                          Container(
-                            height: 1,
-                            margin: const EdgeInsets.only(
-                                left: 28, top: 12, bottom: 12),
-                            color: AppTheme.border,
-                          ),
-                          _routeRow(
-                            leading: const Icon(
-                              Icons.location_on_rounded,
-                              color: AppTheme.red,
-                              size: 16,
-                            ),
-                            text: to.isEmpty ? "—" : to,
-                          ),
-                          if (widget.trip.vehicle.model.isNotEmpty) ...[
-                            const SizedBox(height: 14),
-                            Row(
-                              children: [
-                                const SizedBox(
-                                  width: 16,
-                                  child: Center(
-                                    child: Icon(
-                                      Icons.directions_car_rounded,
-                                      color: AppTheme.gray,
-                                      size: 16,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  widget.trip.vehicle.model.toUpperCase(),
-                                  style: const TextStyle(
-                                    color: AppTheme.gray,
-                                    fontSize: 12,
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontWeight: FontWeight.w500,
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppTheme.blue.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppTheme.blue, width: 1),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(
-                            Icons.info_outlined,
-                            color: AppTheme.blue,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text14h400w(
-                              title: translate("home.payment_info"),
-                              color: AppTheme.blue,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.dark.withOpacity(0.1),
-                            spreadRadius: 15,
-                            blurRadius: 25,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text16h500w(
-                                    title: translate("profile.my_balance")),
-                                const SizedBox(height: 16),
-                                Text18h500w(
-                                    title:
-                                        "${Utils.priceFormat(balance)} ${translate("currency")}")
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const TopUpScreen(),
-                                ),
-                              ).then((_) {
-                                getBalance();
-                              });
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 8,
-                                horizontal: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppTheme.purple,
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Row(
-                                children: [
-                                  Text14h400w(
-                                    title: translate("profile.top_up"),
-                                    color: Colors.white,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  const Icon(
-                                    Icons.monetization_on_outlined,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text16h500w(title: translate("home.payment")),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.dark.withOpacity(0.1),
-                            spreadRadius: 15,
-                            blurRadius: 25,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text14h400w(
-                                    title: translate("home.number_passenger"),
-                                    color: AppTheme.gray,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text16h500w(
-                                      title: "${widget.passengersNum}x"),
-                                ],
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text14h400w(
-                                    title: translate("home.price_per_seat"),
-                                    color: AppTheme.gray,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text16h500w(
-                                    title:
-                                        "${Utils.priceFormat(pricePerSeat)} ${translate("currency")}",
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 24),
-                          const DottedLine(
-                            dashColor: AppTheme.gray,
-                            direction: Axis.horizontal,
-                            lineLength: double.infinity,
-                            lineThickness: 1,
-                            dashLength: 4,
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text16h500w(
-                                title: "${translate("home.total_price")}:",
-                                color: AppTheme.gray,
-                              ),
-                              Text(
-                                "${Utils.priceFormat((int.parse(pricePerSeat) * widget.passengersNum).toString())} ${translate("currency")}",
-                                style: const TextStyle(
-                                  color: AppTheme.black,
-                                  fontSize: 20,
-                                  fontFamily: AppTheme.fontFamily,
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _buildCountdownCard(),
+              const SizedBox(height: 14),
+              _buildTripCard(),
+              const SizedBox(height: 14),
+              _buildInfoBanner(),
+              const SizedBox(height: 14),
+              _buildBalanceCard(),
+              const SizedBox(height: 20),
+              _sectionLabel(translate("home.payment")),
+              const SizedBox(height: 10),
+              _buildBreakdownCard(),
             ],
           ),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(
-                  left: 16,
-                  right: 16,
-                  bottom: 32,
-                ),
-                child: GestureDetector(
-                  onTap: () async {
-                    if (_remainingSeconds > 0) {
-                      if (Utils().stringToInt(balance) >
-                          Utils().stringToInt(Utils.priceFormat(
-                              (int.parse(pricePerSeat) * widget.passengersNum)
-                                  .toString()))) {
-                        if (!mounted) return;
-                        setState(() {
-                          isLoading = true;
-                        });
-                        try {
-                          var response = await _repository.fetchBookTrip(
-                              widget.trip.id.toString(), widget.passengers);
-
-                          if (!mounted) return;
-
-                          if (response.isSuccess) {
-                            var result = BookModel.fromJson(response.result);
-                            if (result.status == "confirmed") {
-                              CustomSnackBar().showSnackBar(
-                                context,
-                                translate("ketamiz.booking_success"),
-                                1,
-                              );
-                              SharedPreferences prefs =
-                                  await SharedPreferences.getInstance();
-                              prefs.setString("active_booked_id",
-                                  result.bookingId.toString());
-                              if (!mounted) return;
-                              Navigator.of(context).popUntil(
-                                (route) => route.isFirst,
-                              );
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) {
-                                    return const MainScreen();
-                                  },
-                                ),
-                              );
-                            } else {
-                              CenterDialog.showActionFailed(
-                                context,
-                                translate("ketamiz.booking_failed"),
-                                translate("ketamiz.booking_failed_msg"),
-                              );
-                            }
-                          } else {
-                            if (response.status == -1) {
-                              CenterDialog.showActionFailed(
-                                context,
-                                translate("auth.connection_failed"),
-                                translate("auth.connection_failed_msg"),
-                              );
-                            } else {
-                              CenterDialog.showActionFailed(
-                                context,
-                                translate("auth.something_went_wrong"),
-                                translate("auth.failed_msg"),
-                              );
-                            }
-                          }
-                        } catch (e) {
-                          if (!mounted) return;
-                          CenterDialog.showActionFailed(
-                            context,
-                            translate("auth.something_went_wrong"),
-                            translate("auth.failed_msg"),
-                          );
-                        } finally {
-                          if (mounted) setState(() { isLoading = false; });
-                        }
-                      } else {
-                        CenterDialog.showActionFailed(
-                          context,
-                          translate("ketamiz.not_enough_balance"),
-                          translate("ketamiz.not_enough_balance_msg"),
-                        );
-                      }
-                    } else {
-                      CenterDialog.showActionFailed(
-                        context,
-                        translate("ketamiz.time_is_up"),
-                        translate("ketamiz.time_is_up_msg"),
-                      );
-                    }
-                  },
-                  child: PrimaryButton(
-                    title: translate("home.confirm_payment"),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              color: AppTheme.light,
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: _onConfirmPayment,
+                    child: PrimaryButton(
+                      title: translate("home.confirm_payment"),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildTermsFooter(),
+                ],
+              ),
+            ),
+          ),
+          if (isLoading)
+            Container(
+              color: AppTheme.black.withOpacity(0.45),
+              child: Center(
+                child: Container(
+                  height: 96,
+                  width: 96,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(AppTheme.purple),
+                    ),
                   ),
                 ),
               ),
-            ],
-          ),
-          isLoading == true
-              ? Container(
-                  color: AppTheme.black.withOpacity(0.45),
-                  child: Center(
-                    child: Container(
-                      height: 96,
-                      width: 96,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            offset: const Offset(0, 5),
-                            blurRadius: 25,
-                            spreadRadius: 0,
-                            color: AppTheme.dark.withOpacity(0.2),
-                          ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(AppTheme.purple),
-                        ),
-                      ),
-                    ),
-                  ),
-                )
-              : Container()
+            ),
         ],
       ),
     );
   }
 
-  initTimeState(DateTime time) {
+  // ── Cards ─────────────────────────────────────────────────────────────────
+
+  BoxDecoration _cardDecoration() => BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.border),
+        boxShadow: [
+          BoxShadow(
+            offset: const Offset(0, 4),
+            blurRadius: 20,
+            color: AppTheme.black.withOpacity(0.04),
+          ),
+        ],
+      );
+
+  Widget _iconBox(IconData icon, {Color color = AppTheme.purple}) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Icon(icon, size: 20, color: color),
+    );
+  }
+
+  Widget _buildCountdownCard() {
+    final mins = (_remainingSeconds ~/ 60).toString().padLeft(2, '0');
+    final danger = _remainingSeconds < 30;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: _cardDecoration(),
+      child: Row(
+        children: [
+          _iconBox(Icons.calendar_today_rounded),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              translate("home.complete_payment_within"),
+              style: const TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                height: 1.3,
+                color: AppTheme.black,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          _timerUnit(mins, translate("home.minutes_short"), danger),
+          SizedBox(
+            height: 40,
+            child: Center(
+              child: Text(
+                ":",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: danger ? AppTheme.red : AppTheme.purple,
+                ),
+              ),
+            ),
+          ),
+          _timerUnit(seconds, translate("home.seconds_short"), danger),
+        ],
+      ),
+    );
+  }
+
+  Widget _timerUnit(String value, String label, bool danger) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: danger ? AppTheme.red : AppTheme.purple,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontFamily: AppTheme.fontFamily,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: AppTheme.fontFamily,
+            fontSize: 10,
+            fontWeight: FontWeight.w400,
+            color: AppTheme.gray,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTripCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.access_time_rounded,
+                  size: 16, color: AppTheme.gray),
+              const SizedBox(width: 8),
+              Text(
+                "$h1:$m1 $t1",
+                style: const TextStyle(
+                  color: AppTheme.black,
+                  fontSize: 14,
+                  fontFamily: AppTheme.fontFamily,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+                width: 4,
+                height: 4,
+                decoration: const BoxDecoration(
+                  color: AppTheme.gray,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  "$weekDay, $month ${widget.trip.startTime.day}",
+                  style: const TextStyle(
+                    color: AppTheme.gray,
+                    fontSize: 14,
+                    fontFamily: AppTheme.fontFamily,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _routeRow(
+            leading: Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+                border: Border.all(color: AppTheme.purple, width: 3),
+              ),
+            ),
+            text: from.isEmpty ? "—" : from,
+          ),
+          Container(
+            height: 16,
+            margin: const EdgeInsets.only(left: 7),
+            width: 2,
+            color: AppTheme.border,
+          ),
+          _routeRow(
+            leading: const Icon(Icons.location_on_rounded,
+                color: AppTheme.red, size: 18),
+            text: to.isEmpty ? "—" : to,
+          ),
+          if (widget.trip.vehicle.model.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            const Divider(height: 1, color: AppTheme.border),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                const Icon(Icons.directions_car_rounded,
+                    color: AppTheme.purple, size: 18),
+                const SizedBox(width: 10),
+                Text(
+                  widget.trip.vehicle.model.toUpperCase(),
+                  style: const TextStyle(
+                    color: AppTheme.black,
+                    fontSize: 13,
+                    fontFamily: AppTheme.fontFamily,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                if (widget.trip.vehicle.seats > 0) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppTheme.light,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      "${widget.trip.vehicle.seats} ${translate("history.seats")}",
+                      style: const TextStyle(
+                        color: AppTheme.gray,
+                        fontSize: 11,
+                        fontFamily: AppTheme.fontFamily,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _routeRow({required Widget leading, required String text}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 16,
+          child: Center(child: leading),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Text(
+              text,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppTheme.black,
+                fontSize: 14,
+                fontFamily: AppTheme.fontFamily,
+                fontWeight: FontWeight.w500,
+                height: 1.3,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        GestureDetector(
+          onTap: _openRoute,
+          child: Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: AppTheme.purple.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.near_me_rounded,
+                size: 15, color: AppTheme.purple),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoBanner() {
+    return GestureDetector(
+      onTap: () => CenterDialog.showInfo(
+        context,
+        translate("home.payment_details"),
+        translate("home.payment_info"),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppTheme.blue.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.info_outline_rounded,
+                color: AppTheme.blue, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                translate("home.payment_info"),
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w500,
+                  height: 1.4,
+                  color: AppTheme.blue,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(Icons.chevron_right_rounded,
+                color: AppTheme.blue, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBalanceCard() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: _cardDecoration(),
+      child: Row(
+        children: [
+          _iconBox(Icons.account_balance_wallet_outlined),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  translate("profile.my_balance"),
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: AppTheme.gray,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "${Utils.priceFormat(balance)} ${translate("currency")}",
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.black,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const TopUpScreen()),
+              ).then((_) => getBalance());
+            },
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+              decoration: BoxDecoration(
+                color: AppTheme.purple,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    translate("profile.top_up"),
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.add_circle_outline_rounded,
+                      color: Colors.white, size: 18),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBreakdownCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: _cardDecoration(),
+      child: Column(
+        children: [
+          _payRow(
+            icon: Icons.person_outline_rounded,
+            label: translate("home.number_passenger"),
+            value: "${widget.passengersNum}",
+          ),
+          const SizedBox(height: 14),
+          _payRow(
+            icon: Icons.sell_outlined,
+            label: translate("home.price_per_seat"),
+            value:
+                "${Utils.priceFormat(pricePerSeat)} ${translate("currency")}",
+          ),
+          const SizedBox(height: 14),
+          const Divider(height: 1, color: AppTheme.border),
+          const SizedBox(height: 14),
+          _payRow(
+            label: translate("home.total_price"),
+            value:
+                "${Utils.priceFormat(_totalPrice.toString())} ${translate("currency")}",
+            bold: true,
+            valueColor: AppTheme.purple,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _payRow({
+    IconData? icon,
+    required String label,
+    required String value,
+    bool bold = false,
+    Color? valueColor,
+  }) {
+    return Row(
+      children: [
+        if (icon != null) ...[
+          Icon(icon, size: 18, color: AppTheme.gray),
+          const SizedBox(width: 10),
+        ],
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontFamily: AppTheme.fontFamily,
+              fontSize: 14,
+              fontWeight: bold ? FontWeight.w600 : FontWeight.w400,
+              color: bold ? AppTheme.black : AppTheme.gray,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontFamily: AppTheme.fontFamily,
+            fontSize: bold ? 16 : 14,
+            fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
+            color: valueColor ?? AppTheme.black,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _sectionLabel(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontFamily: AppTheme.fontFamily,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: AppTheme.black,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTermsFooter() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.lock_outline_rounded, size: 13, color: AppTheme.gray),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            translate("home.payment_terms"),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontFamily: AppTheme.fontFamily,
+              fontSize: 11,
+              fontWeight: FontWeight.w400,
+              height: 1.3,
+              color: AppTheme.gray,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _openRoute() {
+    final s = LatLng(double.tryParse(widget.trip.startLat) ?? 0,
+        double.tryParse(widget.trip.startLong) ?? 0);
+    final e = LatLng(double.tryParse(widget.trip.endLat) ?? 0,
+        double.tryParse(widget.trip.endLong) ?? 0);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapRouteScreen(
+          start: s,
+          end: e,
+          startText: from,
+          endText: to,
+          // Not booked yet — keep the exact points hidden.
+          approximate: true,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onConfirmPayment() async {
+    if (_remainingSeconds <= 0) {
+      CenterDialog.showActionFailed(
+        context,
+        translate("ketamiz.time_is_up"),
+        translate("ketamiz.time_is_up_msg"),
+      );
+      return;
+    }
+    if (Utils().stringToInt(balance) <= _totalPrice) {
+      CenterDialog.showActionFailed(
+        context,
+        translate("ketamiz.not_enough_balance"),
+        translate("ketamiz.not_enough_balance_msg"),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+    try {
+      var response = await _repository.fetchBookTrip(
+          widget.trip.id.toString(), widget.passengers);
+      if (!mounted) return;
+
+      if (response.isSuccess) {
+        var result = BookModel.fromJson(response.result);
+        if (result.status == "confirmed") {
+          CustomSnackBar().showSnackBar(
+            context,
+            translate("ketamiz.booking_success"),
+            1,
+          );
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          prefs.setString("active_booked_id", result.bookingId.toString());
+          if (!mounted) return;
+          Navigator.of(context).popUntil((route) => route.isFirst);
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const MainScreen()),
+          );
+        } else {
+          CenterDialog.showActionFailed(
+            context,
+            translate("ketamiz.booking_failed"),
+            translate("ketamiz.booking_failed_msg"),
+          );
+        }
+      } else {
+        if (response.status == -1) {
+          CenterDialog.showActionFailed(
+            context,
+            translate("auth.connection_failed"),
+            translate("auth.connection_failed_msg"),
+          );
+        } else {
+          CenterDialog.showActionFailed(
+            context,
+            translate("auth.something_went_wrong"),
+            translate("auth.failed_msg"),
+          );
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      CenterDialog.showActionFailed(
+        context,
+        translate("auth.something_went_wrong"),
+        translate("auth.failed_msg"),
+      );
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  void initTimeState(DateTime time) {
     m1 = time.minute < 10 ? '0${time.minute}' : time.minute.toString();
     time.weekday == 1
         ? weekDay = 'Monday'
@@ -716,29 +854,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                                 : month = 'December';
 
     time.hour < 12 ? t1 = 'AM' : t1 = 'PM';
-    h1 = time.hour == 0 ? '12' : (time.hour > 12 ? (time.hour - 12).toString() : time.hour.toString());
-  }
-
-  Widget _routeRow({required Widget leading, required String text}) {
-    return Row(
-      children: [
-        SizedBox(width: 16, child: Center(child: leading)),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: AppTheme.black,
-              fontSize: 14,
-              fontFamily: AppTheme.fontFamily,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ],
-    );
+    h1 = time.hour == 0
+        ? '12'
+        : (time.hour > 12 ? (time.hour - 12).toString() : time.hour.toString());
   }
 
   Future<void> getBalance() async {

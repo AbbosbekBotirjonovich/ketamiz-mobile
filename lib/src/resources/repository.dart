@@ -244,8 +244,8 @@ class Repository {
   Future<HttpResult> fetchConfirmPayment(String payId, String confirmCode) =>
       apiProvider.fetchConfirmPayment(payId, confirmCode);
 
-  Future<HttpResult> fetchTransactionList() =>
-      apiProvider.fetchTransactionList();
+  Future<HttpResult> fetchTransactionList({int page = 1}) =>
+      apiProvider.fetchTransactionList(page: page);
 
   Future<List<int>?> fetchTransactionPdfBytes(int id) =>
       apiProvider.fetchTransactionPdfBytes(id);

@@ -12,6 +12,11 @@ import '../../widgets/texts/text_16h_500w.dart';
 import 'top_up_screen.dart';
 import 'transaction_details.dart';
 import 'withdraw_screen.dart';
+import '../home/add_credit_card_screen.dart';
+import '../../../model/settings_model.dart';
+import '../../widgets/containers/settings_container.dart';
+
+enum _TxnFilter { all, today, days4, days7 }
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -22,22 +27,45 @@ class WalletScreen extends StatefulWidget {
 
 class _WalletScreenState extends State<WalletScreen> {
   final Repository _repository = Repository();
+  final ScrollController _scrollController = ScrollController();
   String _balance = "0";
   String _lockedBalance = "0";
   List<TransactionModel> _transactions = [];
   bool _isLoading = false;
+  bool _isLoadingMore = false;
+  int _page = 1;
+  int _lastPage = 1;
+  _TxnFilter _filter = _TxnFilter.all;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    // Only the "All" view loads on scroll; date filters auto-load their range.
+    if (_filter != _TxnFilter.all) return;
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 240) {
+      _loadMore();
+    }
   }
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     await blocProfile.fetchMe();
-    await Future.wait([_loadBalance(), _fetchTransactions()]);
+    await _loadBalance();
+    await _fetchTransactions(reset: true);
     if (mounted) setState(() => _isLoading = false);
+    await _autoFillForFilter();
   }
 
   Future<void> _loadBalance() async {
@@ -50,29 +78,144 @@ class _WalletScreenState extends State<WalletScreen> {
     }
   }
 
-  Future<void> _fetchTransactions() async {
+  Future<void> _fetchTransactions({bool reset = false}) async {
     try {
-      final response = await _repository.fetchTransactionList();
-      if (!mounted) return;
-      if (response.isSuccess) {
-        List<dynamic> data = [];
-        if (response.result is List) {
-          data = response.result as List<dynamic>;
-        } else if (response.result is Map &&
-            response.result.containsKey('transactions')) {
-          data = response.result['transactions'] as List<dynamic>;
-        } else if (response.result is Map &&
-            response.result.containsKey('data')) {
-          data = response.result['data'] as List<dynamic>;
-        }
-        if (mounted) {
-          setState(() {
-            _transactions =
-                data.map((e) => TransactionModel.fromJson(e)).toList();
-          });
-        }
+      final page = reset ? 1 : _page + 1;
+      final response = await _repository.fetchTransactionList(page: page);
+      if (!mounted || !response.isSuccess) return;
+      final result = response.result;
+      List<dynamic> data = [];
+      if (result is List) {
+        data = result;
+      } else if (result is Map && result.containsKey('data')) {
+        data = result['data'] as List<dynamic>;
+      } else if (result is Map && result.containsKey('transactions')) {
+        data = result['transactions'] as List<dynamic>;
+      }
+      // Pagination meta — absent meta means a single page.
+      if (result is Map && result['meta'] is Map) {
+        final meta = result['meta'] as Map;
+        _page = (meta['current_page'] as num?)?.toInt() ?? page;
+        _lastPage = (meta['last_page'] as num?)?.toInt() ?? _page;
+      } else {
+        _page = page;
+        _lastPage = page;
+      }
+      final list = data.map((e) => TransactionModel.fromJson(e)).toList();
+      if (mounted) {
+        setState(() {
+          if (reset) {
+            _transactions = list;
+          } else {
+            _transactions.addAll(list);
+          }
+        });
       }
     } catch (_) {}
+  }
+
+  bool get _hasMore => _page < _lastPage;
+
+  Future<void> _loadMore() async {
+    if (_isLoadingMore || !_hasMore) return;
+    setState(() => _isLoadingMore = true);
+    await _fetchTransactions();
+    if (mounted) setState(() => _isLoadingMore = false);
+  }
+
+  /// Keep loading pages until the selected date range is fully covered.
+  Future<void> _autoFillForFilter() async {
+    final cutoff = _cutoffFor(_filter);
+    if (cutoff == null) return;
+    var guard = 0;
+    while (mounted &&
+        _hasMore &&
+        guard++ < 30 &&
+        _transactions.isNotEmpty &&
+        (_transactions.last.createdAt?.toLocal().isAfter(cutoff) ?? false)) {
+      await _loadMore();
+    }
+  }
+
+  DateTime? _cutoffFor(_TxnFilter f) {
+    final now = DateTime.now();
+    switch (f) {
+      case _TxnFilter.all:
+        return null;
+      case _TxnFilter.today:
+        return DateTime(now.year, now.month, now.day);
+      case _TxnFilter.days4:
+        return now.subtract(const Duration(days: 4));
+      case _TxnFilter.days7:
+        return now.subtract(const Duration(days: 7));
+    }
+  }
+
+  List<TransactionModel> get _visible {
+    final cutoff = _cutoffFor(_filter);
+    if (cutoff == null) return _transactions;
+    return _transactions
+        .where((t) =>
+            t.createdAt != null && t.createdAt!.toLocal().isAfter(cutoff))
+        .toList();
+  }
+
+  Future<void> _setFilter(_TxnFilter f) async {
+    if (_filter == f) return;
+    setState(() => _filter = f);
+    await _autoFillForFilter();
+  }
+
+  Widget _buildFilterChips() {
+    Widget chip(_TxnFilter f, String label) {
+      final active = _filter == f;
+      return Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: GestureDetector(
+          onTap: () => _setFilter(f),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: active ? AppTheme.purple : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: active ? AppTheme.purple : AppTheme.border,
+              ),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: active ? Colors.white : AppTheme.dark,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          chip(_TxnFilter.all, translate("home.filter_all")),
+          chip(_TxnFilter.today, translate("home.filter_today")),
+          chip(_TxnFilter.days4, translate("home.filter_4days")),
+          chip(_TxnFilter.days7, translate("home.filter_7days")),
+        ],
+      ),
+    );
+  }
+
+  void _openAddCard() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddCreditCardScreen(onAdded: (_, __) {}),
+      ),
+    ).then((_) => _loadData());
   }
 
   @override
@@ -89,13 +232,25 @@ class _WalletScreenState extends State<WalletScreen> {
         color: AppTheme.purple,
         onRefresh: _loadData,
         child: ListView(
+          controller: _scrollController,
           padding: const EdgeInsets.only(
               top: 20, left: 16, right: 16, bottom: kNavBarTotalPadding),
           children: [
             _buildBalanceCard(),
+            GestureDetector(
+              onTap: _openAddCard,
+              child: SettingsContainer(
+                settingsModel: SettingsModel(
+                  icon: Icons.add_card_outlined,
+                  title: translate("home.add_card_action"),
+                ),
+              ),
+            ),
             const SizedBox(height: 24),
             Text16h500w(title: translate("profile.transactions")),
             const SizedBox(height: 12),
+            _buildFilterChips(),
+            const SizedBox(height: 14),
             if (_isLoading)
               const Center(
                 child: Padding(
@@ -104,7 +259,7 @@ class _WalletScreenState extends State<WalletScreen> {
                       CircularProgressIndicator(color: AppTheme.purple),
                 ),
               )
-            else if (_transactions.isEmpty)
+            else if (_visible.isEmpty)
               Center(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 32),
@@ -124,19 +279,27 @@ class _WalletScreenState extends State<WalletScreen> {
                   ),
                 ),
               )
-            else
+            else ...[
               ...List.generate(
-                _transactions.length,
+                _visible.length,
                 (i) => Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () =>
-                        showTransactionDetailsSheet(context, _transactions[i]),
-                    child: _TransactionItem(transaction: _transactions[i]),
+                        showTransactionDetailsSheet(context, _visible[i]),
+                    child: _TransactionItem(transaction: _visible[i]),
                   ),
                 ),
               ),
+              if (_isLoadingMore)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Center(
+                    child: CircularProgressIndicator(color: AppTheme.purple),
+                  ),
+                ),
+            ],
           ],
         ),
       ),
@@ -147,15 +310,26 @@ class _WalletScreenState extends State<WalletScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.black,
+        gradient: const LinearGradient(
+          colors: [AppTheme.purple, AppTheme.primaryDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            offset: const Offset(0, 8),
+            blurRadius: 20,
+            color: AppTheme.purple.withOpacity(0.3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text16h500w(
             title: translate("profile.my_balance"),
-            color: AppTheme.gray,
+            color: Colors.white70,
           ),
           const SizedBox(height: 6),
           Text(
@@ -179,12 +353,12 @@ class _WalletScreenState extends State<WalletScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.lock_outline,
-                    color: AppTheme.gray, size: 16),
+                    color: Colors.white70, size: 16),
                 const SizedBox(width: 8),
                 Text14h400w(
                   title:
                       "${translate("profile.locked")}: ${Utils.priceFormat(_lockedBalance)} ${translate("currency")}",
-                  color: AppTheme.gray,
+                  color: Colors.white70,
                 ),
               ],
             ),
