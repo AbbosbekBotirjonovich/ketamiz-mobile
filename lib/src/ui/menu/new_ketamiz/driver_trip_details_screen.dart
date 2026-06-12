@@ -6,6 +6,7 @@ import 'package:ketamiz/src/model/api/driver_trips_list_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:ketamiz/src/model/passenger_info_model.dart';
 import 'package:ketamiz/src/ui/menu/home/map_single_screen.dart';
+import 'package:ketamiz/src/ui/menu/profile/terms_screen.dart';
 import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_14h_400w.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
@@ -125,6 +126,10 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
                 _buildDetailsCard(),
                 const SizedBox(height: 16),
                 _buildPassengersCard(),
+                const SizedBox(height: 16),
+                _buildCancelInfoCard(),
+                const SizedBox(height: 12),
+                _buildDriverTermsButton(),
               ],
             ),
           ),
@@ -696,6 +701,79 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
             }),
           ],
         ],
+      ),
+    );
+  }
+
+  // ── Cancel info card ───────────────────────────────────────────────────────
+  Widget _buildCancelInfoCard() {
+    final deadline =
+        widget.trip.startTime.subtract(const Duration(minutes: 30));
+    final deadlineStr = Utils.searchDateFormat(deadline);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.yellow.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.yellow.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline_rounded,
+              color: AppTheme.yellow, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              translate("ketamiz.cancel_info_msg", args: {"time": deadlineStr}),
+              style: const TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                fontSize: 13,
+                color: AppTheme.dark,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Driver terms link ──────────────────────────────────────────────────────
+  Widget _buildDriverTermsButton() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const TermsScreen()),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        decoration: BoxDecoration(
+          color: AppTheme.purple.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+              color: AppTheme.purple.withValues(alpha: 0.18), width: 1),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.article_outlined,
+                color: AppTheme.purple, size: 16),
+            const SizedBox(width: 8),
+            Text(
+              translate("ketamiz.driver_terms"),
+              style: const TextStyle(
+                color: AppTheme.purple,
+                fontSize: 13,
+                fontFamily: AppTheme.fontFamily,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

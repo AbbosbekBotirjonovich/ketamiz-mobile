@@ -21,6 +21,7 @@ class MainTextField extends StatefulWidget {
     this.textInputAction,
     this.fillColor,
     this.dense = false,
+    this.keyboardType,
   });
 
   final String hintText;
@@ -38,6 +39,9 @@ class MainTextField extends StatefulWidget {
 
   /// Compact height/padding for denser forms.
   final bool dense;
+
+  /// Overrides the keyboard type. Falls back to phone/text based on [phone].
+  final TextInputType? keyboardType;
 
   @override
   State<MainTextField> createState() => _MainTextFieldState();
@@ -74,7 +78,8 @@ class _MainTextFieldState extends State<MainTextField> {
           height: 1.5,
           color: AppTheme.black,
         ),
-        keyboardType: widget.phone ? TextInputType.phone : TextInputType.text,
+        keyboardType: widget.keyboardType ??
+            (widget.phone ? TextInputType.phone : TextInputType.text),
         autofocus: false,
         scrollPadding: widget.scrollPadding,
         textInputAction: widget.textInputAction,

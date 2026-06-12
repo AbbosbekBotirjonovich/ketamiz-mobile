@@ -21,6 +21,7 @@ import '../../../resources/repository.dart';
 import '../../../theme/app_theme.dart';
 import '../../dialogs/snack_bar.dart';
 import 'map_route_screen.dart';
+import '../profile/terms_screen.dart';
 
 /// How a passenger's pickup point is chosen when others already have one.
 enum _PickupChoice { same, map }
@@ -527,6 +528,10 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                 if (widget.isDriver) ...[
                   const SizedBox(height: 16),
                   _buildBookedPassengersCard(),
+                  const SizedBox(height: 16),
+                  _buildCancelInfoCard(),
+                  const SizedBox(height: 12),
+                  _buildDriverTermsButton(),
                 ],
                 // Passenger form exists only for booking: active trip,
                 // client view, and not the viewer's own trip.
@@ -1355,6 +1360,77 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCancelInfoCard() {
+    final deadline =
+        widget.trip.startTime.subtract(const Duration(minutes: 30));
+    final deadlineStr = Utils.searchDateFormat(deadline);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.yellow.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.yellow.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline_rounded,
+              color: AppTheme.yellow, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              translate("ketamiz.cancel_info_msg", args: {"time": deadlineStr}),
+              style: const TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                fontSize: 13,
+                color: AppTheme.dark,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDriverTermsButton() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const TermsScreen()),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        decoration: BoxDecoration(
+          color: AppTheme.purple.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+              color: AppTheme.purple.withValues(alpha: 0.18), width: 1),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.article_outlined,
+                color: AppTheme.purple, size: 16),
+            const SizedBox(width: 8),
+            Text(
+              translate("ketamiz.driver_terms"),
+              style: const TextStyle(
+                color: AppTheme.purple,
+                fontSize: 13,
+                fontFamily: AppTheme.fontFamily,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

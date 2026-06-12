@@ -13,6 +13,7 @@ import 'package:ketamiz/src/ui/widgets/textfield/main_textfield.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../model/api/apply_driver_response_model.dart';
 import '../../../model/color_model.dart';
+import '../../../utils/input_formatters.dart';
 import '../../../model/event_bus/http_result.dart';
 import '../../../model/vehicle_model.dart';
 import '../../../resources/repository.dart';
@@ -50,6 +51,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
   TextEditingController carModelController = TextEditingController();
   TextEditingController carNumberController = TextEditingController();
   TextEditingController colorController = TextEditingController();
+  TextEditingController techSerieController = TextEditingController();
   TextEditingController techPassportController = TextEditingController();
   int seats = 1;
 
@@ -242,6 +244,8 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
           hintText: translate("ketamiz.driver_license_number"),
           icon: Icons.numbers_outlined,
           controller: licenseNumController,
+          inputFormatters: [DocumentNumberFormatter()],
+          keyboardType: TextInputType.text,
         ),
         const SizedBox(height: 16),
         _buildDateField(
@@ -588,6 +592,8 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
           hintText: translate("profile.car_number"),
           icon: Icons.numbers,
           controller: carNumberController,
+          inputFormatters: [VehiclePlateFormatter()],
+          keyboardType: TextInputType.text,
         ),
         const SizedBox(height: 16),
         _buildDropdownField(
@@ -613,11 +619,30 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
             ),
           ),
         ),
-         const SizedBox(height: 16),
-        MainTextField(
-          hintText: translate("profile.car_tech_passport"),
-          icon: Icons.numbers,
-          controller: techPassportController,
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            SizedBox(
+              width: 130,
+              child: MainTextField(
+                hintText: translate("ketamiz.tech_serie"),
+                icon: Icons.badge_outlined,
+                controller: techSerieController,
+                inputFormatters: [TechSerieFormatter()],
+                keyboardType: TextInputType.text,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: MainTextField(
+                hintText: translate("ketamiz.tech_number"),
+                icon: Icons.numbers,
+                controller: techPassportController,
+                inputFormatters: [TechNumberFormatter()],
+                keyboardType: TextInputType.number,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         _buildSeatCounter(),
@@ -924,10 +949,13 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
 
   bool _validateStep() {
     if (currentStep == 1) {
-      if (licenseNumController.text.isEmpty ||
-          licenseExpiryDateController.text.isEmpty ||
+      if (licenseExpiryDateController.text.isEmpty ||
           birthDateController.text.isEmpty) {
         _showError(translate("home.fill_all_fields"));
+        return false;
+      }
+      if (licenseNumController.text.length != 9) {
+        _showError(translate("ketamiz.invalid_license"));
         return false;
       }
       if (licenseExpiryDate.isBefore(DateTime.now())) {
@@ -942,14 +970,25 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
       }
     }
     if (currentStep == 3) {
-      if (carModelController.text.isEmpty ||
-          carNumberController.text.isEmpty ||
-          techPassportController.text.isEmpty) {
+      if (carModelController.text.isEmpty) {
         _showError(translate("ketamiz.missing_docs"));
+        return false;
+      }
+      final plateLen = carNumberController.text.length;
+      if (plateLen != 10 && plateLen != 11) {
+        _showError(translate("ketamiz.invalid_plate"));
         return false;
       }
       if (selectedColor.id == 0) {
         _showError(translate("ketamiz.select_color"));
+        return false;
+      }
+      if (techSerieController.text.length != 3) {
+        _showError(translate("ketamiz.invalid_tech_serie"));
+        return false;
+      }
+      if (techPassportController.text.length != 7) {
+        _showError(translate("ketamiz.invalid_tech_number"));
         return false;
       }
     }
@@ -1002,7 +1041,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
       carNumberController.text,
       selectedVehicle.vehicleName,
       selectedColor.id,
-      techPassportController.text,
+      techSerieController.text + techPassportController.text,
       seats,
     );
 
