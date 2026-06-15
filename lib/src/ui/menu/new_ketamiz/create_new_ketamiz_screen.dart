@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
+import 'package:http/http.dart' as http;
 import 'package:ketamiz/src/model/api/created_trip_model.dart';
 import 'package:ketamiz/src/model/api/driver_trips_list_model.dart';
 import 'package:ketamiz/src/ui/widgets/buttons/primary_button.dart';
@@ -66,6 +69,16 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
 
   String vehicleId = "0";
   bool isLoading = false;
+
+  // Route preview
+  List<LatLng> _routePoints = [];
+  bool _routeLoading = false;
+  final MapController _routeMapController = MapController();
+
+  // Rule checkboxes
+  bool _check1 = false;
+  bool _check2 = false;
+  bool _check3 = false;
 
   LocationModel fromRegion = LocationModel(id: "0", text: "", parentID: '0');
   LocationModel fromCity = LocationModel(id: "0", text: "", parentID: '0');
@@ -248,6 +261,15 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
       return;
     }
 
+    if (!_check1 || !_check2 || !_check3) {
+      CustomSnackBar().showSnackBar(
+        context,
+        translate("ketamiz.accept_rules"),
+        2,
+      );
+      return;
+    }
+
     setState(() {
       isLoading = true;
     });
@@ -397,6 +419,7 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
               startLong = data.longitude.toString();
             });
             _recenter(_fromMapController, data);
+            if (endLat.isNotEmpty && endLong.isNotEmpty) _fetchRoute();
           },
         ),
       ),
@@ -420,10 +443,56 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
               endLong = data.longitude.toString();
             });
             _recenter(_toMapController, data);
+            if (startLat.isNotEmpty && startLong.isNotEmpty) _fetchRoute();
           },
         ),
       ),
     );
+  }
+
+  Future<void> _fetchRoute() async {
+    final from = _fromPoint;
+    final to = _toPoint;
+    if (from == null || to == null) return;
+    setState(() {
+      _routeLoading = true;
+      _routePoints = [];
+    });
+    final url = 'https://router.project-osrm.org/route/v1/driving/'
+        '${from.longitude},${from.latitude};${to.longitude},${to.latitude}'
+        '?overview=full&geometries=geojson';
+    try {
+      final response = await http
+          .get(Uri.parse(url), headers: const {'User-Agent': 'uz.ketamiz.app'})
+          .timeout(const Duration(seconds: 12));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['code'] == 'Ok' && (data['routes'] as List).isNotEmpty) {
+          final coords = data['routes'][0]['geometry']['coordinates'] as List;
+          final decoded = coords
+              .map((c) => LatLng(
+                    (c[1] as num).toDouble(),
+                    (c[0] as num).toDouble(),
+                  ))
+              .toList();
+          if (decoded.length >= 2 && mounted) {
+            setState(() => _routePoints = decoded);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              try {
+                _routeMapController.fitCamera(CameraFit.bounds(
+                  bounds: LatLngBounds(from, to),
+                  padding: const EdgeInsets.all(40),
+                ));
+              } catch (_) {}
+            });
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Route fetch error: $e');
+      if (mounted) setState(() => _routePoints = [from, to]);
+    }
+    if (mounted) setState(() => _routeLoading = false);
   }
 
   void _openVehicleSheet() {
@@ -615,6 +684,7 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
               ),
               const SizedBox(height: 16),
               _priceCard(),
+              _buildRouteSection(),
             ],
           ),
           Align(
@@ -1076,6 +1146,283 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: AppTheme.purple,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Route preview + rules
+  // ---------------------------------------------------------------------------
+
+  Widget _buildRouteSection() {
+    if (_fromPoint == null || _toPoint == null) return const SizedBox.shrink();
+    return Column(
+      children: [
+        const SizedBox(height: 16),
+        _routePreviewCard(),
+        const SizedBox(height: 16),
+        _rulesCard(),
+      ],
+    );
+  }
+
+  Widget _routePreviewCard() {
+    final from = _fromPoint!;
+    final to = _toPoint!;
+    return Container(
+      decoration: _cardDecoration(),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            child: Row(
+              children: [
+                const Icon(Icons.route_outlined, color: AppTheme.purple, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  translate("ketamiz.route_preview_title"),
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.black,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 260,
+            child: Stack(
+              children: [
+                FlutterMap(
+                  mapController: _routeMapController,
+                  options: MapOptions(
+                    initialCameraFit: CameraFit.bounds(
+                      bounds: LatLngBounds(from, to),
+                      padding: const EdgeInsets.all(48),
+                    ),
+                    interactionOptions: const InteractionOptions(
+                      flags: InteractiveFlag.none,
+                    ),
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'uz.ketamiz.app',
+                    ),
+                    if (_routePoints.length >= 2)
+                      PolylineLayer(
+                        polylines: [
+                          Polyline(
+                            points: _routePoints,
+                            color: AppTheme.purple,
+                            strokeWidth: 5,
+                          ),
+                        ],
+                      ),
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: from,
+                          width: 36,
+                          height: 36,
+                          alignment: Alignment.topCenter,
+                          child: const Icon(Icons.location_on,
+                              color: AppTheme.purple, size: 36),
+                        ),
+                        Marker(
+                          point: to,
+                          width: 36,
+                          height: 36,
+                          alignment: Alignment.topCenter,
+                          child: const Icon(Icons.location_on,
+                              color: AppTheme.red, size: 36),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                if (_routeLoading)
+                  Container(
+                    color: Colors.white.withOpacity(0.55),
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(AppTheme.purple),
+                      ),
+                    ),
+                  ),
+                // Start / end labels
+                Positioned(
+                  left: 12,
+                  bottom: 12,
+                  child: _mapLegendBadge(
+                      color: AppTheme.purple,
+                      label: translate("home.from")),
+                ),
+                Positioned(
+                  right: 12,
+                  bottom: 12,
+                  child: _mapLegendBadge(
+                      color: AppTheme.red,
+                      label: translate("home.to")),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _mapLegendBadge({required Color color, required String label}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.black.withOpacity(0.12),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: AppTheme.fontFamily,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _rulesCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Info banner
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF8E1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFFFE082)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.info_outline_rounded,
+                    color: Color(0xFFB8860B), size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    translate("ketamiz.route_rules_info"),
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 13,
+                      color: Color(0xFF7A5800),
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            translate("ketamiz.route_rules_title"),
+            style: const TextStyle(
+              fontFamily: AppTheme.fontFamily,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.black,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _ruleCheckbox(
+            value: _check1,
+            text: translate("ketamiz.rule_radius"),
+            onChanged: (v) => setState(() => _check1 = v ?? false),
+          ),
+          const SizedBox(height: 10),
+          _ruleCheckbox(
+            value: _check2,
+            text: translate("ketamiz.rule_direction"),
+            onChanged: (v) => setState(() => _check2 = v ?? false),
+          ),
+          const SizedBox(height: 10),
+          _ruleCheckbox(
+            value: _check3,
+            text: translate("ketamiz.rule_route_distance"),
+            onChanged: (v) => setState(() => _check3 = v ?? false),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _ruleCheckbox({
+    required bool value,
+    required String text,
+    required ValueChanged<bool?> onChanged,
+  }) {
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 22,
+            height: 22,
+            child: Checkbox(
+              value: value,
+              onChanged: onChanged,
+              activeColor: AppTheme.purple,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4)),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                text,
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 13,
+                  color: AppTheme.black,
+                  height: 1.45,
                 ),
               ),
             ),
