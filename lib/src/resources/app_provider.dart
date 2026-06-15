@@ -14,7 +14,7 @@ class ApiProvider {
   static Duration durationTimeout = const Duration(seconds: 30);
   static String get baseUrl => kIsWeb
       ? "http://localhost:8081/api/v1"
-      : "https://qadam.services/api/v1";
+      : "https://backend.ketamiz.com/api/v1";
 
   /// Shared HTTP client. Reused across all requests so the underlying
   /// connection is kept alive/pooled instead of opening a new socket each
