@@ -111,6 +111,11 @@ class Repository {
         passportPath: passportPath,
       );
 
+  Future<HttpResult> fetchUploadProfileImage(String imagePath) =>
+      apiProvider.fetchUploadProfileImage(imagePath);
+
+  Future<HttpResult> fetchDeleteAccount() => apiProvider.fetchDeleteAccount();
+
   Future<HttpResult> fetchApplyDriver(
     String drivingLicenceNumber,
     DateTime expiryDate,

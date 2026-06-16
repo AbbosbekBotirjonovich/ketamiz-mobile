@@ -576,6 +576,51 @@ class ApiProvider {
     }
   }
 
+  /// Upload Profile Image (multipart, field `image`)
+  Future<HttpResult> fetchUploadProfileImage(String imagePath) async {
+    String url = '$baseUrl/auth/upload-profile-image';
+
+    final token = await SecureStorage.getToken();
+    final dio = _dio;
+    final headers = {
+      "Accept": "application/json",
+      if (token != null) "Authorization": "Bearer $token",
+    };
+
+    final List<File> tempFiles = [];
+    try {
+      final resized = await _resizeImage(File(imagePath));
+      if (resized.path != imagePath) tempFiles.add(resized);
+
+      final bodyMap = <String, dynamic>{
+        "image": await MultipartFile.fromFile(
+          resized.path,
+          filename: basename(resized.path),
+          contentType: _jpegMediaType,
+        ),
+      };
+
+      Response response = await dio.post(
+        url,
+        data: FormData.fromMap(bodyMap),
+        options: Options(headers: headers, validateStatus: (s) => true),
+      );
+      return _processResponse(response);
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return _handleGenericError(e);
+    } finally {
+      _deleteTempFiles(tempFiles);
+    }
+  }
+
+  /// Delete Account
+  Future<HttpResult> fetchDeleteAccount() async {
+    String url = '$baseUrl/auth/delete-account';
+    return await deleteRequest(url);
+  }
+
   /// Apply for Driver Post
   Future<HttpResult> fetchApplyDriver(
     String drivingLicenceNumber,

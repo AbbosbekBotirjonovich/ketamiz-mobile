@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ketamiz/src/ui/auth/login_screen.dart';
+import 'package:ketamiz/src/ui/dialogs/bottom_dialog.dart';
 import 'package:ketamiz/src/ui/dialogs/center_dialog.dart';
+import 'package:ketamiz/src/ui/dialogs/snack_bar.dart';
 import 'package:ketamiz/src/ui/menu/new_ketamiz/add_docs_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/edit_profile_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/my_vehicles_screen.dart';
@@ -16,10 +18,13 @@ import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../bloc/profile_bloc.dart';
+import '../../../model/api/get_user_model.dart';
 import '../../../model/settings_model.dart';
 import '../../../resources/repository.dart';
 import '../../../theme/app_theme.dart';
+import '../../../utils/image_helper.dart';
 import '../../../utils/nav_constants.dart';
+import '../../../utils/secure_storage.dart';
 import '../../../utils/utils.dart';
 import '../../widgets/containers/settings_container.dart';
 import '../../widgets/notification_button.dart';
@@ -47,6 +52,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isDriver = false;
   String _verificationStatus = 'none'; // none | pending | approved | rejected
   String _langName = "O'zbek";
+  bool _isUploadingAvatar = false;
+  bool _isDeletingAccount = false;
 
   @override
   void initState() {
@@ -84,10 +91,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         centerTitle: true,
         actions: [_buildNotificationBell()],
       ),
-      body: RefreshIndicator(
-        color: AppTheme.purple,
-        onRefresh: _refresh,
-        child: ListView(
+      body: Stack(
+        children: [
+          RefreshIndicator(
+            color: AppTheme.purple,
+            onRefresh: _refresh,
+            child: ListView(
           padding: const EdgeInsets.only(
             top: 8,
             bottom: kNavBarTotalPadding,
@@ -213,6 +222,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
+            GestureDetector(
+              onTap: _confirmDeleteAccount,
+              child: SettingsContainer(
+                iconColor: AppTheme.red,
+                settingsModel: SettingsModel(
+                  icon: Icons.delete_forever_rounded,
+                  title: translate("profile.delete_account"),
+                ),
+              ),
+            ),
             const SizedBox(height: 24),
             Center(
               child: Text(
@@ -225,8 +244,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
+            ],
+          ),
+          ),
+          if (_isDeletingAccount) ...[
+            const ModalBarrier(dismissible: false, color: Colors.black54),
+            const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.purple),
+              ),
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -402,6 +431,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _avatarInner() {
+    if (_isUploadingAvatar) {
+      return const Padding(
+        padding: EdgeInsets.all(20),
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          strokeWidth: 2.5,
+        ),
+      );
+    }
     if (_localAvatarPath.isNotEmpty && File(_localAvatarPath).existsSync()) {
       return Image.file(
         File(_localAvatarPath),
@@ -437,17 +475,68 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Future<void> _onEditAvatar() async {
-    final picked = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 800,
-      imageQuality: 85,
+  void _onEditAvatar() {
+    BottomDialog.showUploadImage(
+      context,
+      onGallery: () => _pickAndUploadAvatar(ImageSource.gallery),
+      onCamera: () => _pickAndUploadAvatar(ImageSource.camera),
     );
+  }
+
+  Future<void> _pickAndUploadAvatar(ImageSource source) async {
+    final XFile? picked = await ImageHelper.pick(source);
     if (picked == null || !mounted) return;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('local_avatar', picked.path);
+
+    // Optimistic in-memory preview while the upload is in flight.
+    setState(() {
+      _localAvatarPath = picked.path;
+      _isUploadingAvatar = true;
+    });
+
+    final response = await Repository().fetchUploadProfileImage(picked.path);
     if (!mounted) return;
-    setState(() => _localAvatarPath = picked.path);
+
+    if (response.isSuccess) {
+      // The server is the source of truth — pull a fresh /me (with the new
+      // image URL), switch the avatar over to it and drop the local preview.
+      await _syncMeFromServer();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('local_avatar');
+      if (!mounted) return;
+      setState(() {
+        _localAvatarPath = '';
+        _myImage = prefs.getString('image') ?? '';
+        _isUploadingAvatar = false;
+      });
+      CustomSnackBar().showSnackBar(
+        context,
+        translate("profile.image_updated"),
+        1,
+      );
+    } else {
+      // Upload failed — revert the optimistic preview.
+      setState(() {
+        _localAvatarPath = '';
+        _isUploadingAvatar = false;
+      });
+      CenterDialog.showActionFailed(
+        context,
+        translate("ketamiz.error"),
+        translate("profile.image_update_failed"),
+      );
+    }
+  }
+
+  /// Fetches /me from the server and writes it to the local cache so the next
+  /// prefs read reflects the latest values (e.g. the newly uploaded image URL).
+  Future<void> _syncMeFromServer() async {
+    final res = await Repository().fetchMe();
+    if (res.isSuccess && res.result is Map<String, dynamic>) {
+      final model = GetUserModel.fromJson(res.result);
+      if (model.status == 'success') {
+        await Repository().cacheSetMe(model.user);
+      }
+    }
   }
 
   // ── Balance card ────────────────────────────────────────────────────────
@@ -574,6 +663,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
           context,
           MaterialPageRoute(builder: (context) => const LoginScreen()),
         );
+      },
+    );
+  }
+
+  void _confirmDeleteAccount() {
+    CenterDialog.showConfirmation(
+      context,
+      translate("profile.delete_account"),
+      translate("profile.delete_account_confirm"),
+      onConfirm: () async {
+        Navigator.pop(context); // close the confirmation dialog
+        setState(() => _isDeletingAccount = true);
+
+        final response = await Repository().fetchDeleteAccount();
+        if (!mounted) return;
+
+        if (response.isSuccess) {
+          // Account is gone — clear everything (prefs + secure token) and
+          // send the user back to the login screen.
+          await wipeSharedPreferences();
+          await SecureStorage.clearAll();
+          if (!mounted) return;
+          Navigator.of(context).popUntil((route) => route.isFirst);
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+          );
+        } else {
+          setState(() => _isDeletingAccount = false);
+          CenterDialog.showActionFailed(
+            context,
+            translate("ketamiz.error"),
+            response.result is Map && response.result['message'] != null
+                ? response.result['message']
+                : translate("profile.delete_account_failed"),
+          );
+        }
       },
     );
   }
