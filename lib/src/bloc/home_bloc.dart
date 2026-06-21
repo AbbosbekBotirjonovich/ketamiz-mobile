@@ -72,8 +72,16 @@ class HomeBloc {
         isRoundTrip,
       );
       if (response.isSuccess) {
-        if (response.result is Map<String, dynamic>) {
-          TripSearchModel result = TripSearchModel.fromJson(response.result);
+        // The search results live under the `data` envelope
+        // ({"data": {"departure_trips": [...], "return_trips": [...]}}), so
+        // unwrap it before parsing — otherwise the model reads top-level keys
+        // that don't exist and always returns empty results.
+        var data = response.result;
+        if (data is Map && data.containsKey('data')) {
+          data = data['data'];
+        }
+        if (data is Map<String, dynamic>) {
+          TripSearchModel result = TripSearchModel.fromJson(data);
           _infoTripSearchFetcher.sink.add(result);
         } else {
           _errorFetcher.sink.add(BlocErrors.unexpectedFormat);
