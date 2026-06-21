@@ -483,6 +483,8 @@
     "resubmit_docs": "Tap to resubmit your documents",
     "driver_section": "Driver",
     "profile_updated": "Profile updated successfully",
+    "complete_profile": "Complete your profile",
+    "complete_profile_msg": "Add your email and father's name to finish setting up your account.",
     "delete_card": "Delete Card",
     "delete_card_confirm": "Are you sure you want to delete this card?",
     "card_deleted": "Card deleted successfully",

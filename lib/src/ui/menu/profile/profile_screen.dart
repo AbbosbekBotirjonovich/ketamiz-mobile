@@ -49,6 +49,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _localAvatarPath = '';
   String _myName = '';
   String _myPhone = '';
+  String _myEmail = '';
+  String _myFatherName = '';
   bool _isDriver = false;
   String _verificationStatus = 'none'; // none | pending | approved | rejected
   String _langName = "O'zbek";
@@ -66,6 +68,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await getBalance();
     await _getInfo();
   }
+
+  /// Email and father's name are no longer asked at registration — prompt the
+  /// user to fill whichever is still missing from their profile.
+  bool get _needsProfileCompletion =>
+      _myEmail.trim().isEmpty || _myFatherName.trim().isEmpty;
 
   /// First letters of the name, used when no avatar image is set.
   String get _initials {
@@ -105,6 +112,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           children: [
             _buildProfileCard(),
+            if (_needsProfileCompletion) ...[
+              const SizedBox(height: 12),
+              _buildCompleteProfileBanner(),
+            ],
             const SizedBox(height: 16),
             _buildBalanceCard(),
             const SizedBox(height: 12),
@@ -324,6 +335,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(width: 8),
           _editProfileButton(),
         ],
+      ),
+    );
+  }
+
+  /// Tappable banner nudging the user to fill in the email / father's name
+  /// that are no longer collected during registration. Opens the edit screen.
+  Widget _buildCompleteProfileBanner() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const EditProfileScreen()),
+        ).then((_) {
+          if (mounted) _refresh();
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppTheme.yellow.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.yellow.withOpacity(0.4)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppTheme.yellow.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.info_outline_rounded,
+                  color: AppTheme.yellow, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text16h500w(title: translate("profile.complete_profile")),
+                  const SizedBox(height: 2),
+                  Text14h400w(
+                    title: translate("profile.complete_profile_msg"),
+                    color: AppTheme.dark,
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: AppTheme.yellow, size: 20),
+          ],
+        ),
       ),
     );
   }
@@ -894,6 +956,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _localAvatarPath = prefs.getString('local_avatar') ?? '';
       _myName = '$firstName $lastName'.trim();
       _myPhone = prefs.getString('phone') ?? '';
+      _myEmail = prefs.getString('email') ?? '';
+      _myFatherName = prefs.getString('father_name') ?? '';
       _isDriver = prefs.getString('role') == 'driver';
       _verificationStatus =
           prefs.getString('driving_verification_status') ?? 'none';

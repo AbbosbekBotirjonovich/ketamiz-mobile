@@ -56,7 +56,6 @@ class _LoginScreenState extends State<LoginScreen> {
   TextEditingController firstNameController = TextEditingController();
   TextEditingController lastNameController = TextEditingController();
   TextEditingController fatherNameController = TextEditingController();
-  TextEditingController emailController = TextEditingController();
 
   String _getErrorMessage(dynamic result) {
     if (result == null) return translate("auth.failed_msg");
@@ -449,16 +448,6 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(height: 14),
         LabeledInputField(
-          title: translate("auth.email"),
-          hint: translate("auth.email_hint"),
-          icon: Icons.email_outlined,
-          controller: emailController,
-          keyboardType: TextInputType.emailAddress,
-          scrollPadding: _fieldScrollPadding,
-          textInputAction: TextInputAction.next,
-        ),
-        const SizedBox(height: 14),
-        LabeledInputField(
           title: translate("auth.password"),
           hint: translate("auth.password_min_hint"),
           icon: Icons.lock_outline_rounded,
@@ -655,7 +644,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (firstNameController.text.isNotEmpty &&
           lastNameController.text.isNotEmpty &&
-          emailController.text.isNotEmpty &&
           phoneRegController.text.isNotEmpty &&
           passRegController.text.isNotEmpty &&
           Validators.phoneNumberValidator(phone) == true &&
@@ -664,11 +652,12 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() {
           isLoading = true;
         });
+        // Email is collected later in the profile section, so it's not sent
+        // here. The father's name stays optional.
         var response = await _repository.fetchRegister(
           firstNameController.text,
           lastNameController.text,
           fatherNameController.text,
-          emailController.text,
           phone,
           passRegController.text,
           passAgainController.text,
@@ -723,7 +712,6 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       } else if (firstNameController.text.isEmpty ||
           lastNameController.text.isEmpty ||
-          emailController.text.isEmpty ||
           phoneRegController.text.isEmpty ||
           passRegController.text.isEmpty ||
           passAgainController.text.isEmpty) {
@@ -737,12 +725,6 @@ class _LoginScreenState extends State<LoginScreen> {
           context,
           translate('auth.error'),
           translate('auth.invalid_phone_format'),
-        );
-      } else if (!Validators.emailValidator(emailController.text)) {
-        CenterDialog.showActionFailed(
-          context,
-          translate('auth.error'),
-          translate('auth.invalid_email'),
         );
       } else if (Validators.passwordValidator(passRegController.text) ==
           false) {

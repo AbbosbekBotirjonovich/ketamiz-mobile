@@ -193,7 +193,6 @@ class ApiProvider {
     String firstName,
     String lastName,
     String fatherName,
-    String email,
     String phone,
     String password,
     String passwordConfirm,
@@ -205,12 +204,13 @@ class ApiProvider {
       phone = '+$phone';
     }
 
+    // Email is no longer collected at registration — it's gathered later in
+    // the profile section. Father's name stays optional and is omitted when
+    // empty so backend validation passes.
     final data = {
       "first_name": firstName,
       "last_name": lastName,
-      // Optional — omit entirely when empty so backend validation passes.
       if (fatherName.trim().isNotEmpty) "father_name": fatherName,
-      "email": email,
       "phone": phone,
       "password": password,
       "password_confirmation": passwordConfirm,

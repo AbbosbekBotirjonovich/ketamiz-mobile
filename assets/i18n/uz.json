@@ -483,6 +483,8 @@
     "resubmit_docs": "Hujjatlarni qayta yuborish uchun bosing",
     "driver_section": "Haydovchi",
     "profile_updated": "Profil muvaffaqiyatli yangilandi",
+    "complete_profile": "Profilingizni to'ldiring",
+    "complete_profile_msg": "Hisobingizni to'liq sozlash uchun email va otangizning ismini qo'shing.",
     "delete_card": "Kartani o'chirish",
     "delete_card_confirm": "Haqiqatan ham bu kartani o'chirmoqchimisiz?",
     "card_deleted": "Karta muvaffaqiyatli o'chirildi",
