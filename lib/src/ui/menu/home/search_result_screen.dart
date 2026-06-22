@@ -81,7 +81,7 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.light,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         leading: const LeadingBack(),
         title: Text16h500w(title: translate("home.search_result")),
@@ -178,18 +178,16 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
   // ── Route summary card — mirrors the home screen search card ─────────────
 
   Widget _buildRouteCard() {
-    final fromText = _placeText(
-      widget.trip.fromVillageId,
-      widget.trip.fromCityId,
-      widget.trip.fromRegionId,
-      widget.trip.fromWhere,
-    );
-    final toText = _placeText(
-      widget.trip.toVillageId,
-      widget.trip.toCityId,
-      widget.trip.toRegionId,
-      widget.trip.toWhere,
-    );
+    // Prefer the exact names captured from the backend-driven picker
+    // (fromWhere/toWhere); fall back to a local lookup only if absent.
+    final fromText = widget.trip.fromWhere.isNotEmpty
+        ? widget.trip.fromWhere
+        : _placeText(widget.trip.fromVillageId, widget.trip.fromCityId,
+            widget.trip.fromRegionId, '');
+    final toText = widget.trip.toWhere.isNotEmpty
+        ? widget.trip.toWhere
+        : _placeText(widget.trip.toVillageId, widget.trip.toCityId,
+            widget.trip.toRegionId, '');
 
     return Container(
       padding: const EdgeInsets.all(16),

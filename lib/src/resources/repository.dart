@@ -60,6 +60,14 @@ class Repository {
 
   Future<HttpResult> fetchTripList() => apiProvider.fetchTripList();
 
+  Future<HttpResult> fetchRegions() => apiProvider.fetchRegions();
+
+  Future<HttpResult> fetchDistricts(String regionId) =>
+      apiProvider.fetchDistricts(regionId);
+
+  Future<HttpResult> fetchQuarters(String districtId) =>
+      apiProvider.fetchQuarters(districtId);
+
   Future<HttpResult> fetchTripSearch(
     String fromRegionId,
     String toRegionId,

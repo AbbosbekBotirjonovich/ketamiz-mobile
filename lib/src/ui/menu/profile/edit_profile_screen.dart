@@ -120,9 +120,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.light,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: AppTheme.light,
+        backgroundColor: Colors.white,
         elevation: 0,
         leading: const LeadingBack(),
         title: Text16h500w(title: translate("profile.account_details")),
@@ -183,7 +183,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             Align(
               alignment: Alignment.bottomCenter,
               child: Container(
-                color: AppTheme.light,
+                color: Colors.white,
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                 child: SecondaryButton(
                   title: translate("profile.save_changes"),

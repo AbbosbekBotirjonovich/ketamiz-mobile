@@ -163,9 +163,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.light,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: AppTheme.light,
+        backgroundColor: Colors.white,
         leading: const LeadingBack(),
         title: Text16h500w(title: translate("home.payment_details")),
         centerTitle: true,
@@ -192,7 +192,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
-              color: AppTheme.light,
+              color: Colors.white,
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
