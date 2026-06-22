@@ -4,6 +4,8 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -29,7 +31,9 @@
 	<key>NSCameraUsageDescription</key>
 	<string>Your app needs camera access to take photos for uploading car images.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>App needs location to show map</string>
+	<string>This app needs access to your location to show your position on the map and provide route and trip information.</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>This app needs access to your location to show your position on the map and provide route and trip information, including while the app is in the background.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Your app needs to save images to the photo library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
