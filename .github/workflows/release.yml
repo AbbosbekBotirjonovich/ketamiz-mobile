@@ -1,0 +1,71 @@
+name: Release to Play Store
+
+# Tag (masalan v1.0.2) push qilinganda ishga tushadi.
+# Imzolangan AAB build qilib, Google Play (internal track) ga yuklaydi.
+on:
+  push:
+    tags:
+      - 'v*'   # v1.0.2, v2.0.0 va h.k.
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy AAB
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.41.9
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # --- Keystore'ni Secrets'dan tiklash ---
+      # KEYSTORE_BASE64 = upload-keystore.jks faylining base64 ko'rinishi
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/upload-keystore.jks
+
+      # key.properties faylini Secrets'dagi parollardan yaratish.
+      # storeFile yo'li build.gradle'dagi bilan bir xil bo'lishi shart: ../upload-keystore.jks
+      - name: Create key.properties
+        run: |
+          cat > android/key.properties <<EOF
+          storePassword=${{ secrets.STORE_PASSWORD }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          storeFile=../upload-keystore.jks
+          EOF
+
+      - name: Build App Bundle
+        run: flutter build appbundle --release
+
+      # --- Google Play'ga yuklash ---
+      # SERVICE_ACCOUNT_JSON = Play Console service account kalitining to'liq JSON matni
+      - name: Upload to Google Play (internal track)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+          packageName: uz.ketamiz.app
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: internal           # avval internal'da sinab ko'ring, keyin production'ga ko'tarasiz
+          status: completed
+
+      # AAB'ni GitHub'da ham saqlash (zaxira / qo'lda yuklash uchun)
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 30

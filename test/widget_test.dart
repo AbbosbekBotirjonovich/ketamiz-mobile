@@ -1,30 +1,18 @@
-// This is a basic Flutter widget test.
+// Asosiy smoke test'lar.
 //
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
+// Standart Flutter "counter" testi olib tashlandi, chunki bu ilovada counter
+// yo'q va u localization (flutter_translate) hamda SharedPreferences'ga
+// bog'liq bo'lib, MyApp'ni to'g'ridan-to'g'ri pump qilishni murakkablashtiradi.
+//
+// Bu yerda ilova kodi importga muammosiz yuklanishini tekshiramiz. Keyinchalik
+// haqiqiy widget/unit testlarni shu yerga qo'shib boring.
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:ketamiz/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
-
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  test('App entry point imports without errors', () {
+    // main.dart muvaffaqiyatli yuklansa, scaffoldKey global mavjud bo'ladi.
+    expect(scaffoldKey, isNotNull);
   });
 }
