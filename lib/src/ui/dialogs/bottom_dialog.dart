@@ -20,6 +20,12 @@ import 'snack_bar.dart';
 import 'package:latlong2/latlong.dart';
 
 class BottomDialog {
+  /// Region → district → quarter picker. Each level is fetched live from the
+  /// backend (see [LocationData.fetchRegions]/`fetchDistricts`/`fetchQuarters`)
+  /// so the IDs and names handed back through [onChanged] match the server's
+  /// data exactly — which is what the trip search filters on. The [region],
+  /// [city] and [village] params are accepted for call-site compatibility; the
+  /// sheet always starts fresh at the region level.
   static void showSelectLocation(
       BuildContext context,
       LocationModel? region,
@@ -27,199 +33,12 @@ class BottomDialog {
       LocationModel? village,
       Function(LocationModel, LocationModel, LocationModel) onChanged,
       ) {
-    // Initialize with default empty models if null
-    LocationModel selectedRegion = region ??
-        LocationModel(id: '0', text: '', parentID: '0');
-    LocationModel selectedCity = city ??
-        LocationModel(id: '0', text: '', parentID: '0');
-    LocationModel selectedVillage = village ??
-        LocationModel(id: '0', text: '', parentID: '0');
-
     showModalBottomSheet(
-      barrierColor: Colors.black.withOpacity(0.45), // Using AppTheme.black
+      barrierColor: Colors.black.withOpacity(0.45),
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            // Determine the list to display based on selection state
-            List<LocationModel> currentList = selectedRegion.id == '0'
-                ? LocationData.regions
-                : selectedCity.id == '0'
-                ? LocationData.cities
-                .where((c) => c.parentID == selectedRegion.id)
-                .toList()
-                : LocationData.villages
-                .where((v) => v.parentID == selectedCity.id)
-                .toList();
-
-            return Container(
-              height: 524,
-              decoration: const BoxDecoration(
-                borderRadius: BorderRadius.only(
-                  topRight: Radius.circular(24),
-                  topLeft: Radius.circular(24),
-                ),
-                color: Colors.white,
-              ),
-              padding: const EdgeInsets.only(top: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        height: 5,
-                        width: 80,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(5),
-                          color: AppTheme.gray,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        selectedRegion.id == '0'
-                            ? translate("home.select_region")
-                            : selectedCity.id == '0'
-                            ? translate("home.select_city")
-                            : translate("home.select_neighborhood"),
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: currentList.length,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 4),
-                      itemBuilder: (context, index) {
-                        LocationModel location = currentList[index];
-                        return Column(
-                          children: [
-                            GestureDetector(
-                              // Selecting advances straight to the next level
-                              // (region -> district -> village) — no Apply.
-                              onTap: () {
-                                setState(() {
-                                  if (selectedRegion.id == '0') {
-                                    selectedRegion = location;
-                                  } else if (selectedCity.id == '0') {
-                                    selectedCity = location;
-                                    // District without villages — finish now.
-                                    final hasVillages = LocationData.villages
-                                        .any((v) =>
-                                            v.parentID == selectedCity.id);
-                                    if (!hasVillages) {
-                                      onChanged(
-                                        selectedRegion,
-                                        selectedCity,
-                                        LocationModel(
-                                            id: '0', text: '', parentID: '0'),
-                                      );
-                                      Navigator.pop(context);
-                                    }
-                                  } else {
-                                    selectedVillage = location;
-                                    onChanged(
-                                      selectedRegion,
-                                      selectedCity,
-                                      selectedVillage,
-                                    );
-                                    Navigator.pop(context);
-                                  }
-                                });
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                color: AppTheme.light,
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        location.text,
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            Container(
-                              height: 1,
-                              color: AppTheme.blue,
-                              margin: const EdgeInsets.symmetric(horizontal: 8),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-                    child: Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              if (selectedCity.id != '0') {
-                                // Back to district list
-                                selectedCity = LocationModel(
-                                    id: '0', text: '', parentID: '0');
-                                selectedVillage = LocationModel(
-                                    id: '0', text: '', parentID: '0');
-                              } else if (selectedRegion.id != '0') {
-                                // Back to region list
-                                selectedRegion = LocationModel(
-                                    id: '0', text: '', parentID: '0');
-                              } else {
-                                Navigator.pop(context);
-                              }
-                            });
-                          },
-                          child: Container(
-                            height: 56,
-                            width: 72,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              color: AppTheme.purple.withOpacity(0.1), // Using AppTheme.purple
-                            ),
-                            child: Center(
-                              child: SvgPicture.asset(
-                                'assets/icons/left.svg',
-                                height: 24,
-                                width: 24,
-                                colorFilter: const ColorFilter.mode(
-                                  AppTheme.purple,
-                                  BlendMode.srcIn,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+      builder: (context) => _LocationPickerSheet(onChanged: onChanged),
     );
   }
 
@@ -1155,6 +974,245 @@ class BottomDialog {
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+}
+
+enum _PickLevel { region, district, quarter }
+
+/// Backend-driven location picker used by the search and create-trip screens.
+/// Loads regions, then a region's districts, then a district's quarters — one
+/// network level at a time, with caching handled by [LocationData].
+class _LocationPickerSheet extends StatefulWidget {
+  const _LocationPickerSheet({required this.onChanged});
+
+  final Function(LocationModel, LocationModel, LocationModel) onChanged;
+
+  @override
+  State<_LocationPickerSheet> createState() => _LocationPickerSheetState();
+}
+
+class _LocationPickerSheetState extends State<_LocationPickerSheet> {
+  static const _empty = LocationModel(id: '0', text: '', parentID: '0');
+
+  _PickLevel _level = _PickLevel.region;
+  List<LocationModel> _items = const [];
+  bool _loading = true;
+
+  LocationModel _region = _empty;
+  LocationModel _city = _empty;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRegions();
+  }
+
+  Future<void> _loadRegions() async {
+    setState(() => _loading = true);
+    final list = await LocationData.fetchRegions();
+    if (!mounted) return;
+    setState(() {
+      _items = list;
+      _level = _PickLevel.region;
+      _loading = false;
+    });
+  }
+
+  Future<void> _onTap(LocationModel location) async {
+    switch (_level) {
+      case _PickLevel.region:
+        setState(() {
+          _region = location;
+          _loading = true;
+        });
+        final districts = await LocationData.fetchDistricts(location.id);
+        if (!mounted) return;
+        setState(() {
+          _items = districts;
+          _level = _PickLevel.district;
+          _loading = false;
+        });
+        break;
+      case _PickLevel.district:
+        setState(() {
+          _city = location;
+          _loading = true;
+        });
+        final quarters = await LocationData.fetchQuarters(location.id);
+        if (!mounted) return;
+        // A district with no quarters — finish with region + district only.
+        if (quarters.isEmpty) {
+          widget.onChanged(_region, _city, _empty);
+          Navigator.pop(context);
+          return;
+        }
+        setState(() {
+          _items = quarters;
+          _level = _PickLevel.quarter;
+          _loading = false;
+        });
+        break;
+      case _PickLevel.quarter:
+        widget.onChanged(_region, _city, location);
+        Navigator.pop(context);
+        break;
+    }
+  }
+
+  Future<void> _onBack() async {
+    switch (_level) {
+      case _PickLevel.quarter:
+        setState(() {
+          _city = _empty;
+          _loading = true;
+        });
+        final districts = await LocationData.fetchDistricts(_region.id);
+        if (!mounted) return;
+        setState(() {
+          _items = districts;
+          _level = _PickLevel.district;
+          _loading = false;
+        });
+        break;
+      case _PickLevel.district:
+        _region = _empty;
+        _loadRegions();
+        break;
+      case _PickLevel.region:
+        Navigator.pop(context);
+        break;
+    }
+  }
+
+  String get _title {
+    switch (_level) {
+      case _PickLevel.region:
+        return translate("home.select_region");
+      case _PickLevel.district:
+        return translate("home.select_city");
+      case _PickLevel.quarter:
+        return translate("home.select_neighborhood");
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 524,
+      decoration: const BoxDecoration(
+        borderRadius: BorderRadius.only(
+          topRight: Radius.circular(24),
+          topLeft: Radius.circular(24),
+        ),
+        color: Colors.white,
+      ),
+      padding: const EdgeInsets.only(top: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              height: 5,
+              width: 80,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(5),
+                color: AppTheme.gray,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Center(
+            child: Text(
+              _title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Expanded(child: _buildList()),
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+            child: GestureDetector(
+              onTap: _onBack,
+              child: Container(
+                height: 56,
+                width: 72,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: AppTheme.purple.withOpacity(0.1),
+                ),
+                child: Center(
+                  child: SvgPicture.asset(
+                    'assets/icons/left.svg',
+                    height: 24,
+                    width: 24,
+                    colorFilter: const ColorFilter.mode(
+                      AppTheme.purple,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildList() {
+    if (_loading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.purple),
+        ),
+      );
+    }
+    if (_items.isEmpty) {
+      return Center(
+        child: Text(
+          translate("search.nothing_found"),
+          style: const TextStyle(fontSize: 14, color: AppTheme.gray),
+        ),
+      );
+    }
+    return ListView.builder(
+      itemCount: _items.length,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      itemBuilder: (context, index) {
+        final location = _items[index];
+        return Column(
+          children: [
+            GestureDetector(
+              onTap: () => _onTap(location),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                color: Colors.white,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        location.text,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right,
+                        color: AppTheme.gray, size: 20),
+                  ],
+                ),
+              ),
+            ),
+            Container(
+              height: 1,
+              color: AppTheme.border,
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+          ],
         );
       },
     );

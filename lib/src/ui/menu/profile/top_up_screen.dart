@@ -274,9 +274,9 @@ class _TopUpScreenState extends State<TopUpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.light,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: AppTheme.light,
+        backgroundColor: Colors.white,
         leading: const LeadingBack(),
         title: Text16h500w(title: translate("profile.top_up")),
         centerTitle: true,

@@ -32,8 +32,8 @@ import '../../widgets/info_tooltip.dart';
 import '../profile/add_vehicle_screen.dart';
 import 'map_select_screen.dart';
 
-// Cream border on white-filled input fields.
-const _kBorderColor = Color(0xFFDDD5C8);
+// Light neutral border on white-filled input fields.
+const _kBorderColor = Color(0xFFE2E8F0);
 
 class CreateNewKetamizScreen extends StatefulWidget {
   const CreateNewKetamizScreen({
@@ -594,7 +594,7 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
   Widget build(BuildContext context) {
     final bool isEdit = widget.driverTrip.id != 0;
     return Scaffold(
-      backgroundColor: AppTheme.light,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         leading: const LeadingBack(),
         backgroundColor: Colors.white,
@@ -690,7 +690,7 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
-              color: AppTheme.light,
+              color: Colors.white,
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,

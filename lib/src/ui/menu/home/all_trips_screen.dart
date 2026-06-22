@@ -33,7 +33,7 @@ class _AllTripsScreenState extends State<AllTripsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.light,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         leading: const LeadingBack(),
         title: Text16h500w(title: translate("home.all_trips")),

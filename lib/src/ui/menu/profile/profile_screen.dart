@@ -90,9 +90,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.light,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: AppTheme.light,
+        backgroundColor: Colors.white,
         elevation: 0,
         title: Text16h500w(title: translate("profile.my_profile")),
         centerTitle: true,

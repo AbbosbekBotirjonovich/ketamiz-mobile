@@ -324,6 +324,21 @@ class ApiProvider {
     return await getRequest(url);
   }
 
+  /// Get all regions (bare JSON array: [{id, name_uz, name_ru, name_en}])
+  Future<HttpResult> fetchRegions() async {
+    return await getRequest('$baseUrl/regions');
+  }
+
+  /// Get districts for a region (bare JSON array: [{id, name_uz, name_ru, name_en}])
+  Future<HttpResult> fetchDistricts(String regionId) async {
+    return await getRequest('$baseUrl/districts/region/$regionId');
+  }
+
+  /// Get quarters (neighborhoods) for a district (bare JSON array: [{id, name}])
+  Future<HttpResult> fetchQuarters(String districtId) async {
+    return await getRequest('$baseUrl/quarters/districts/$districtId');
+  }
+
   /// Get Trip Search
   Future<HttpResult> fetchTripSearch(
     String fromRegionId,

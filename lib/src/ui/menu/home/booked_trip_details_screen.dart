@@ -105,7 +105,7 @@ class _BookedTripDetailsScreenState extends State<BookedTripDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.light,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         leading: const LeadingBack(),
         title: Text16h500w(title: translate("home.booking_details")),

@@ -221,7 +221,7 @@ class _WalletScreenState extends State<WalletScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.light,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text16h500w(title: translate("profile.wallet")),
         centerTitle: true,

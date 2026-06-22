@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:ketamiz/src/theme/app_theme.dart';
 
-const _kBorderColor = Color(0xFFDDD5C8);
-const _kFillColor   = Color(0xFFFFFBF7);
+const _kBorderColor = Color(0xFFE2E8F0);
+const _kFillColor   = Color(0xFFFFFFFF);
 
 class AppDropdownItem<T> {
   final T value;

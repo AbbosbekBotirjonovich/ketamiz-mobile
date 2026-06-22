@@ -35,7 +35,7 @@ class _TermsScreenState extends State<TermsScreen> {
   Widget build(BuildContext context) {
     final terms = _terms;
     return Scaffold(
-      backgroundColor: AppTheme.light,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         leading: const LeadingBack(),
         title: Text16h500w(title: translate("profile.terms")),

@@ -139,7 +139,7 @@ class _MainScreenState extends State<MainScreen>
 
     final safeBottom = MediaQuery.of(context).padding.bottom;
     return Scaffold(
-      backgroundColor: AppTheme.light,
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
           // Tab transition: incoming screen fades in while sliding from the
