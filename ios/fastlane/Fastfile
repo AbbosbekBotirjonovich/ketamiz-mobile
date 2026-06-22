@@ -28,13 +28,26 @@ platform :ios do
       api_key: api_key
     )
 
-    # Flutter allaqachon Runner.xcarchive uchun kerakli sozlamalarni qo'ygan.
+    # Loyiha CODE_SIGN_STYLE=Automatic bilan keladi, lekin Match manual
+    # imzolash ishlatadi. Build'dan oldin Runner target'ni manual rejimga
+    # o'tkazib, Match yaratgan profilga ulaymiz (aks holda ARCHIVE FAILED).
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "Runner.xcodeproj",
+      team_id: "DJ6Z29BM4D",
+      code_sign_identity: "Apple Distribution",
+      bundle_identifier: "uz.ketamiz.app",
+      profile_name: "match AppStore uz.ketamiz.app",
+      targets: ["Runner"]
+    )
+
     # IPA build qilish (imzolangan).
     build_app(
       workspace: "Runner.xcworkspace",
       scheme: "Runner",
       export_method: "app-store",
       export_options: {
+        signingStyle: "manual",
         provisioningProfiles: {
           "uz.ketamiz.app" => "match AppStore uz.ketamiz.app"
         }
@@ -45,6 +58,33 @@ platform :ios do
     upload_to_testflight(
       api_key: api_key,
       skip_waiting_for_build_processing: true
+    )
+  end
+
+  desc "Faqat IPA build (upload'siz) — lokal sinov uchun, API key kerak emas"
+  lane :build_only do
+    match(type: "appstore", readonly: true)
+
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "Runner.xcodeproj",
+      team_id: "DJ6Z29BM4D",
+      code_sign_identity: "Apple Distribution",
+      bundle_identifier: "uz.ketamiz.app",
+      profile_name: "match AppStore uz.ketamiz.app",
+      targets: ["Runner"]
+    )
+
+    build_app(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      export_method: "app-store",
+      export_options: {
+        signingStyle: "manual",
+        provisioningProfiles: {
+          "uz.ketamiz.app" => "match AppStore uz.ketamiz.app"
+        }
+      }
     )
   end
 end

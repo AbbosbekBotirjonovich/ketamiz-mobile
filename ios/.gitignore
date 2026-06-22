@@ -37,6 +37,10 @@ Runner/GeneratedPluginRegistrant.*
 .bundle/
 vendor/bundle/
 
+# Build artefaktlari (fastlane build_app chiqishi)
+*.ipa
+*.dSYM.zip
+
 # Fastlane — maxfiy va vaqtinchalik fayllar (hech qachon commit qilinmasin)
 fastlane/report.xml
 fastlane/Preview.html
