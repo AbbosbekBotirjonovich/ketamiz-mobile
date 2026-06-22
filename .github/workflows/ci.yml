@@ -1,0 +1,39 @@
+name: CI
+
+# Har bir PR va main'ga push'da kodni tekshiradi.
+# Maxfiy fayllar (keystore) kerak emas — faqat statik tahlil va testlar.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  analyze-and-test:
+    name: Analyze & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.41.9
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Format mos kelmasa CI'ni qizil qilmaydi, faqat log'da ko'rsatadi.
+      - name: Verify formatting (warning only)
+        continue-on-error: true
+        run: dart format --output=none --set-exit-if-changed .
+
+      # error/warning'da fail bo'ladi; info/deprecation faqat log'da ko'rinadi.
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+
+      - name: Run tests
+        run: flutter test
