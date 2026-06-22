@@ -20,12 +20,32 @@ platform :ios do
   lane :beta do
     api_key = asc_api_key
 
+    # CI runner'da Match sertifikatni o'rnatish uchun vaqtinchalik keychain
+    # kerak (default keychain bloklangan). Lokalda CI=true bo'lmaydi, shuning
+    # uchun Mac'ning login keychain'i ishlatiladi.
+    keychain_name = nil
+    keychain_password = nil
+    if ENV["CI"]
+      keychain_name = "fastlane_tmp.keychain"
+      keychain_password = "ci_temp_password"
+      create_keychain(
+        name: keychain_name,
+        password: keychain_password,
+        default_keychain: true,
+        unlock: true,
+        timeout: 3600,
+        lock_when_sleeps: false
+      )
+    end
+
     # Match orqali distribution sertifikat + provisioning profilni tiklash.
     # readonly: CI hech qachon yangi sertifikat yaratmaydi.
     match(
       type: "appstore",
       readonly: true,
-      api_key: api_key
+      api_key: api_key,
+      keychain_name: keychain_name,
+      keychain_password: keychain_password
     )
 
     # Loyiha CODE_SIGN_STYLE=Automatic bilan keladi, lekin Match manual
