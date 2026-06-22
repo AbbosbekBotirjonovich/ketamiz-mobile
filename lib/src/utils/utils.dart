@@ -3,13 +3,12 @@ import 'dart:ui';
 import 'package:flutter_translate/flutter_translate.dart';
 
 class Utils {
-  /// Localized "Sat, 8 June, 12:00" style format for the search date chip.
+  /// Localized "Sat, 8 June" style format for the search date chip.
+  /// Date only — the trip search filters by day, not time.
   static String searchDateFormat(DateTime t) {
     final wd = translate('date.wd_${t.weekday}');
     final month = translate('date.m_${t.month}');
-    final hh = t.hour.toString().padLeft(2, '0');
-    final mm = t.minute.toString().padLeft(2, '0');
-    return '$wd, ${t.day} $month, $hh:$mm';
+    return '$wd, ${t.day} $month';
   }
 
   /// 24h "HH:mm" format used on trip cards.

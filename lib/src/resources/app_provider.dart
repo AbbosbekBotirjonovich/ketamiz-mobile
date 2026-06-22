@@ -356,7 +356,9 @@ class ApiProvider {
     final queryParams = <String, String>{
       'start_region_id': fromRegionId,
       'end_region_id': toRegionId,
-      'departure_date': _formatBackendDateTime(departureDate),
+      // Search by day only — pin to the start of the day so the exact pick
+      // time never excludes trips departing earlier that same day.
+      'departure_date': _formatBackendDate(departureDate),
     };
     // District/quarter are optional — only narrow the search when provided.
     // This lets region-to-region searches (district/quarter = "0") work.
@@ -365,7 +367,7 @@ class ApiProvider {
     if (fromQuarterId != "0") queryParams['start_quarter_id'] = fromQuarterId;
     if (toQuarterId != "0") queryParams['end_quarter_id'] = toQuarterId;
     if (isRoundTrip && returnDate != null) {
-      queryParams['return_date'] = _formatBackendDateTime(returnDate);
+      queryParams['return_date'] = _formatBackendDate(returnDate);
       queryParams['is_round_trip'] = 'true';
     }
 
@@ -379,6 +381,13 @@ class ApiProvider {
     String two(int v) => v.toString().padLeft(2, '0');
     return '${dt.year}-${two(dt.month)}-${two(dt.day)} '
         '${two(dt.hour)}:${two(dt.minute)}:${two(dt.second)}';
+  }
+
+  /// Format a DateTime as the start of its day (`Y-m-d 00:00:00`) for the
+  /// backend. Used by the trip search so only the date matters, not the time.
+  static String _formatBackendDate(DateTime dt) {
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${dt.year}-${two(dt.month)}-${two(dt.day)} 00:00:00';
   }
 
 

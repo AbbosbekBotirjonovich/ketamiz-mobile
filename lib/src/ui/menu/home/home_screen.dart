@@ -135,7 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> _pickDateTime() async {
+  Future<void> _pickDate() async {
     final now = DateTime.now();
     final date = await showDatePicker(
       context: context,
@@ -154,29 +154,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
     if (date == null || !mounted) return;
-    final time = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(departureDate),
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(
-            primary: AppTheme.purple,
-            onPrimary: Colors.white,
-            onSurface: AppTheme.black,
-          ),
-        ),
-        child: child!,
-      ),
-    );
-    if (!mounted) return;
+    // Search filters by day only — pin to the start of the day.
     setState(() {
-      departureDate = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        time?.hour ?? departureDate.hour,
-        time?.minute ?? departureDate.minute,
-      );
+      departureDate = DateTime(date.year, date.month, date.day);
     });
   }
 
@@ -542,7 +522,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: _selectorChip(
                       icon: Icons.calendar_today_outlined,
                       label: Utils.searchDateFormat(departureDate),
-                      onTap: _pickDateTime,
+                      onTap: _pickDate,
                     ),
                   ),
                   Container(width: 1, color: AppTheme.border),
