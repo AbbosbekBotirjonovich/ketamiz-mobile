@@ -1,0 +1,4 @@
+# Ilova identifikatori va Apple team ma'lumotlari.
+# Apple ID CI'da kerak emas (App Store Connect API key ishlatamiz).
+app_identifier("uz.ketamiz.app")
+team_id("DJ6Z29BM4D")

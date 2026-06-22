@@ -1,0 +1,61 @@
+name: iOS Release to TestFlight
+
+# 'ios-v*' tag push qilinganda ishga tushadi (Android tag'idan ajratish uchun).
+# Masalan: ios-v1.0.2
+on:
+  push:
+    tags:
+      - 'ios-v*'
+  workflow_dispatch:   # Actions sahifasidan qo'lda ishga tushirish
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy IPA
+    runs-on: macos-latest   # iOS build uchun macOS runner shart
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.41.9
+          channel: stable
+          cache: true
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Setup Ruby (fastlane)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+          working-directory: ios
+
+      - name: Install CocoaPods
+        working-directory: ios
+        run: pod install --repo-update
+
+      # Certs repo'ga kirish uchun read-only SSH deploy key'ni ssh-agent'ga yuklaymiz.
+      - name: Setup SSH deploy key for certs repo
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.MATCH_SSH_PRIVATE_KEY }}
+
+      - name: Build & upload to TestFlight
+        working-directory: ios
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_P8: ${{ secrets.APP_STORE_CONNECT_KEY_P8 }}
+        run: bundle exec fastlane ios beta
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-ipa
+          path: ios/*.ipa
+          retention-days: 30

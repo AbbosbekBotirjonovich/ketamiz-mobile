@@ -32,3 +32,18 @@ Runner/GeneratedPluginRegistrant.*
 !default.mode2v3
 !default.pbxuser
 !default.perspectivev3
+
+# Bundler — lokal sozlamalar va o'rnatilgan gem'lar (CI'ga ko'chmasin)
+.bundle/
+vendor/bundle/
+
+# Fastlane — maxfiy va vaqtinchalik fayllar (hech qachon commit qilinmasin)
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+*.p8
+*.p12
+*.mobileprovision
+*.cer
+*.certSigningRequest

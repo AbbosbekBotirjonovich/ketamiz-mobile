@@ -1,0 +1,6 @@
+# Fastlane'ni barqaror versiyada o'rnatish uchun.
+# Lokal va CI bir xil versiyadan foydalanishi uchun: `bundle install`
+source "https://rubygems.org"
+
+gem "fastlane"
+gem "cocoapods"

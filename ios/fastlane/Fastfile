@@ -1,0 +1,50 @@
+# Fastlane lane'lari — iOS build va TestFlight'ga yuklash.
+# CI'da `bundle exec fastlane ios beta` chaqiriladi.
+
+default_platform(:ios)
+
+platform :ios do
+  # App Store Connect API key'ni Secrets'dagi qiymatlardan tayyorlaydi.
+  # ENV o'zgaruvchilar GitHub Actions workflow'da o'rnatiladi.
+  def asc_api_key
+    app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
+      key_content: ENV["APP_STORE_CONNECT_KEY_P8"],
+      is_key_content_base64: false,
+      in_house: false
+    )
+  end
+
+  desc "Build va TestFlight'ga yuklash"
+  lane :beta do
+    api_key = asc_api_key
+
+    # Match orqali distribution sertifikat + provisioning profilni tiklash.
+    # readonly: CI hech qachon yangi sertifikat yaratmaydi.
+    match(
+      type: "appstore",
+      readonly: true,
+      api_key: api_key
+    )
+
+    # Flutter allaqachon Runner.xcarchive uchun kerakli sozlamalarni qo'ygan.
+    # IPA build qilish (imzolangan).
+    build_app(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      export_method: "app-store",
+      export_options: {
+        provisioningProfiles: {
+          "uz.ketamiz.app" => "match AppStore uz.ketamiz.app"
+        }
+      }
+    )
+
+    # TestFlight'ga yuklash (review'siz, sinovchilar uchun).
+    upload_to_testflight(
+      api_key: api_key,
+      skip_waiting_for_build_processing: true
+    )
+  end
+end
