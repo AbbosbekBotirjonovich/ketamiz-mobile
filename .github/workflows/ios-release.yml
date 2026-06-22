@@ -16,6 +16,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Apple endi App Store upload uchun iOS 26 SDK (Xcode 26+) talab qiladi.
+      # Runner default'da eski Xcode tanlaydi, shuning uchun mavjud eng yangi
+      # Xcode 26.x ni topib tanlaymiz.
+      - name: Select Xcode 26
+        run: |
+          XC=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$XC" ]; then
+            echo "Xcode 26 topilmadi. Mavjud versiyalar:"
+            ls -d /Applications/Xcode_*.app
+            exit 1
+          fi
+          echo "Tanlanmoqda: $XC"
+          sudo xcode-select -s "$XC"
+          xcodebuild -version
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
