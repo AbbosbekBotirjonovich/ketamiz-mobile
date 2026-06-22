@@ -33,9 +33,10 @@ jobs:
           bundler-cache: true
           working-directory: ios
 
-      - name: Install CocoaPods
-        working-directory: ios
-        run: pod install --repo-update
+      # Flutter generated fayllar (Generated.xcconfig va h.k.) + pod install'ni
+      # to'g'ri tartibda tayyorlaydi. Busiz Xcode archive darrov yiqiladi.
+      - name: Prepare iOS build config
+        run: flutter build ios --release --no-codesign --config-only
 
       # Certs repo'ga kirish uchun read-only SSH deploy key'ni ssh-agent'ga yuklaymiz.
       - name: Setup SSH deploy key for certs repo
