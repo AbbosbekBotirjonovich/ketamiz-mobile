@@ -111,11 +111,41 @@ Repo: `AbbosbekBotirjonovich/ketamiz-mobile`
 
 ## 6. GitHub Actions workflow
 
-`.github/workflows/ios-release.yml` (skript yaratadi). `v*` tag push'da:
-1. macOS runner'da Flutter + CocoaPods o'rnatadi
-2. Match orqali sertifikat/profilni tiklaydi
-3. `flutter build ipa` (imzolangan)
-4. App Store Connect API bilan TestFlight'ga yuklaydi
+`.github/workflows/ios-release.yml`. `ios-v*` tag push'da:
+1. macOS runner'da Xcode 26 ni tanlaydi (Apple iOS 26 SDK talab qiladi)
+2. Flutter + CocoaPods o'rnatadi (`flutter build ios --config-only`)
+3. Match orqali sertifikat/profilni tiklaydi (CI'da vaqtinchalik keychain)
+4. Manual signing'ga o'tib (`update_code_signing_settings`) IPA build qiladi
+5. App Store Connect API bilan **TestFlight**'ga yuklaydi (`fastlane ios beta`)
+
+---
+
+## 7. TestFlight'dan App Store'ga o'tish (kelajakda)
+
+Hozir CI **TestFlight**'ga yuklaydi (`beta` lane). App Store'ga avtomatik
+chiqarish uchun `release` lane allaqachon `Fastfile`'da tayyor, lekin
+**ataylab yoqilmagan**.
+
+### Yoqishdan OLDIN (App Store Connect'da, qo'lda)
+- **Metadata**: nom, subtitle, tavsif, kalit so'zlar, kategoriya
+- **Maxfiylik siyosati URL** (veb-sahifa kerak)
+- **Skrinshotlar** (har xil ekran o'lchamlari: 6.7", 6.5", 5.5"...)
+- **App Privacy** anketa (qanday ma'lumot to'planadi)
+- **Yosh reytingi**, **Export Compliance**
+- **Birinchi versiyani KAMIDA BIR MARTA qo'lda submit** qilib, review'dan
+  o'tkazing. Avtomatik submit faqat shundan keyin ishonchli ishlaydi.
+
+### Yoqish
+`.github/workflows/ios-release.yml`'da oxirgi qadamni o'zgartiring:
+```yaml
+run: bundle exec fastlane ios beta      # eski (TestFlight)
+run: bundle exec fastlane ios release   # yangi (App Store + review)
+```
+`release` lane `submit_for_review: true` va `automatic_release: true` bilan
+keladi — review o'tgach ilova avtomatik publik chiqadi.
+
+> ⚠️ Metadata to'liq bo'lmasa `upload_to_app_store` yiqiladi. Avval qo'lda
+> sozlanganiga ishonch hosil qiling.
 
 ---
 

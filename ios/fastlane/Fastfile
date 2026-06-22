@@ -81,6 +81,72 @@ platform :ios do
     )
   end
 
+  # ⚠️ HALI ISHLATILMAYDI — kelajakda App Store'ga avtomatik chiqarish uchun.
+  #
+  # Yoqishdan OLDIN App Store Connect'da quyidagilar TO'LIQ bo'lishi shart:
+  #   - Metadata (tavsif, kalit so'zlar, kategoriya, maxfiylik siyosati URL)
+  #   - Skrinshotlar (har xil ekran o'lchamlari uchun)
+  #   - App Privacy anketa, yosh reytingi, export compliance
+  #   - Birinchi versiya KAMIDA BIR MARTA qo'lda submit qilingan bo'lsin
+  #
+  # Yoqish: ios-release.yml workflow'da `fastlane ios beta` o'rniga
+  # `fastlane ios release` yozing (yoki yangi tag namunasi qo'shing).
+  desc "App Store'ga yuklab, review'ga jo'natish (metadata to'liq bo'lishi shart)"
+  lane :release do
+    api_key = asc_api_key
+
+    if ENV["CI"]
+      keychain_name = "fastlane_tmp.keychain"
+      keychain_password = "ci_temp_password"
+      create_keychain(
+        name: keychain_name, password: keychain_password,
+        default_keychain: true, unlock: true, timeout: 3600,
+        lock_when_sleeps: false
+      )
+      match(type: "appstore", readonly: true, api_key: api_key,
+            keychain_name: keychain_name, keychain_password: keychain_password)
+    else
+      match(type: "appstore", readonly: true, api_key: api_key)
+    end
+
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "Runner.xcodeproj",
+      team_id: "DJ6Z29BM4D",
+      code_sign_identity: "Apple Distribution",
+      bundle_identifier: "uz.ketamiz.app",
+      profile_name: "match AppStore uz.ketamiz.app",
+      targets: ["Runner"]
+    )
+
+    build_app(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      export_method: "app-store",
+      export_options: {
+        signingStyle: "manual",
+        provisioningProfiles: {
+          "uz.ketamiz.app" => "match AppStore uz.ketamiz.app"
+        }
+      }
+    )
+
+    # App Store'ga yuklab, review'ga jo'natish.
+    # submit_for_review: true -> avtomatik review navbatiga qo'yadi
+    # automatic_release: true -> review o'tgach avtomatik publik chiqaradi
+    upload_to_app_store(
+      api_key: api_key,
+      submit_for_review: true,
+      automatic_release: true,
+      force: true,                       # metadata HTML preview'ini o'tkazib yuborish
+      precheck_include_in_app_purchases: false,
+      submission_information: {
+        export_compliance_uses_encryption: false,
+        add_id_info_uses_idfa: false
+      }
+    )
+  end
+
   desc "Faqat IPA build (upload'siz) — lokal sinov uchun, API key kerak emas"
   lane :build_only do
     match(type: "appstore", readonly: true)
