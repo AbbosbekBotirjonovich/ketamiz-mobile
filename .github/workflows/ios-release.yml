@@ -1,33 +1,33 @@
 name: iOS Release to TestFlight
 
-# 'ios-v*' tag push qilinganda ishga tushadi (Android tag'idan ajratish uchun).
-# Masalan: ios-v1.0.2
+# Runs when an 'ios-v*' tag is pushed (kept separate from the Android tag).
+# For example: ios-v1.0.2
 on:
   push:
     tags:
       - 'ios-v*'
-  workflow_dispatch:   # Actions sahifasidan qo'lda ishga tushirish
+  workflow_dispatch:   # allows running manually from the Actions tab
 
 jobs:
   build-and-deploy:
     name: Build & Deploy IPA
-    runs-on: macos-latest   # iOS build uchun macOS runner shart
+    runs-on: macos-latest   # iOS builds require a macOS runner
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Apple endi App Store upload uchun iOS 26 SDK (Xcode 26+) talab qiladi.
-      # Runner default'da eski Xcode tanlaydi, shuning uchun mavjud eng yangi
-      # Xcode 26.x ni topib tanlaymiz.
+      # Apple now requires the iOS 26 SDK (Xcode 26+) for App Store uploads.
+      # The runner defaults to an older Xcode, so pick the newest installed
+      # Xcode 26.x.
       - name: Select Xcode 26
         run: |
           XC=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
           if [ -z "$XC" ]; then
-            echo "Xcode 26 topilmadi. Mavjud versiyalar:"
+            echo "Xcode 26 not found. Available versions:"
             ls -d /Applications/Xcode_*.app
             exit 1
           fi
-          echo "Tanlanmoqda: $XC"
+          echo "Selecting: $XC"
           sudo xcode-select -s "$XC"
           xcodebuild -version
 
@@ -48,12 +48,12 @@ jobs:
           bundler-cache: true
           working-directory: ios
 
-      # Flutter generated fayllar (Generated.xcconfig va h.k.) + pod install'ni
-      # to'g'ri tartibda tayyorlaydi. Busiz Xcode archive darrov yiqiladi.
+      # Generates Flutter's files (Generated.xcconfig, etc.) and runs pod
+      # install in the right order. Without this the Xcode archive fails.
       - name: Prepare iOS build config
         run: flutter build ios --release --no-codesign --config-only
 
-      # Certs repo'ga kirish uchun read-only SSH deploy key'ni ssh-agent'ga yuklaymiz.
+      # Load the read-only SSH deploy key for the certs repo into ssh-agent.
       - name: Setup SSH deploy key for certs repo
         uses: webfactory/ssh-agent@v0.9.0
         with:

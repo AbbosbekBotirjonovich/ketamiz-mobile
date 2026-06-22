@@ -1,5 +1,5 @@
-# Fastlane'ni barqaror versiyada o'rnatish uchun.
-# Lokal va CI bir xil versiyadan foydalanishi uchun: `bundle install`
+# Pin fastlane to a stable version so local and CI use the same one.
+# Install with: bundle install
 source "https://rubygems.org"
 
 gem "fastlane"

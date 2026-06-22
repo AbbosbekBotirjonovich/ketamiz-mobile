@@ -1,13 +1,13 @@
-# Fastlane Match sozlamalari.
-# Lokalda AbbosbekBotirjonovich SSH host orqali ishlaydi.
-# CI'da bu qiymat MATCH_GIT_URL env orqali ustidan yoziladi.
+# Fastlane Match configuration.
+# Locally this works through the AbbosbekBotirjonovich SSH host.
+# On CI this value is overridden by the MATCH_GIT_URL env variable.
 git_url(ENV["MATCH_GIT_URL"] || "git@AbbosbekBotirjonovich:AbbosbekBotirjonovich/ketamiz-ios-certs.git")
 storage_mode("git")
 
-type("appstore")            # distribution sertifikat + App Store provisioning
+type("appstore")            # distribution certificate + App Store provisioning
 app_identifier(["uz.ketamiz.app"])
 
-# CI'da sertifikatlar faqat o'qiladi, yangisi yaratilmaydi (xavfsizlik).
-# Sertifikatlar allaqachon yaratilgan; yangisi kerak bo'lsa, vaqtincha
-# false qilib `match appstore` ni lokalda qayta ishga tushiring.
+# On CI certificates are only read, never created (safety).
+# They already exist; if new ones are needed, temporarily set this to false
+# and re-run `match appstore` locally.
 readonly(true)

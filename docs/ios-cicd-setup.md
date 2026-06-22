@@ -1,159 +1,150 @@
-# iOS CI/CD sozlash qo'llanmasi (Fastlane Match + GitHub Actions)
+# iOS CI/CD setup (Fastlane Match + GitHub Actions)
 
-Bu qo'llanma `ketamiz` ilovasini iOS uchun avtomatik build qilib **TestFlight**ga
-yuklashni sozlaydi. Imzolash uchun **Fastlane Match** ishlatiladi.
+This guide documents how the `ketamiz` app is built for iOS and uploaded to
+**TestFlight** automatically. Code signing is handled by **Fastlane Match**.
 
-Loyiha ma'lumotlari:
+Project details:
 - Bundle ID: `uz.ketamiz.app`
-- Apple Team ID: `2N8JD58W7U`
-- Build muhiti: GitHub Actions `macos-latest` runner
+- Apple Team ID: `DJ6Z29BM4D`
+- Build environment: GitHub Actions `macos-latest` runner (Xcode 26)
 
-> ⚠️ **Tartib muhim:** iOS ilovasi hali App Store'ga chiqarilmagan. Birinchi
-> TestFlight build'ini **qo'lda** yuklash tavsiya etiladi (App Store Connect'da
-> metadata to'ldirilishi va Apple'ning dastlabki tekshiruvi uchun). Match setup'i
-> ham qo'lda, ham CI yuklashda ishlatiladi.
-
----
-
-## 0. Oldindan kerak bo'ladigan narsalar
-
-- Apple Developer Program a'zoligi (yillik $99) — Team `2N8JD58W7U`
-- App Store Connect'da `uz.ketamiz.app` ilovasi yaratilgan bo'lishi
-- Match sertifikatlarini saqlash uchun **alohida private git repo**
-  (masalan `AbbosbekBotirjonovich/ketamiz-ios-certs`)
+> ⚠️ **Order matters:** the first App Store submission should be done manually
+> (so App Store Connect metadata is filled in and Apple's initial review
+> passes). The Match setup is used both for the manual build and for CI.
 
 ---
 
-## 1. Fastlane'ni lokalda o'rnatish
+## 0. Prerequisites
 
-Loyiha ildizida `Gemfile` orqali o'rnatamiz (versiya barqarorligi uchun):
+- Apple Developer Program membership — Team `DJ6Z29BM4D`
+- The `uz.ketamiz.app` app created in App Store Connect
+- A **separate private git repo** to store the Match certificates
+  (e.g. `AbbosbekBotirjonovich/ketamiz-ios-certs`)
+
+---
+
+## 1. Install fastlane locally
+
+Installed via the `Gemfile` (for version stability):
 
 ```bash
-# ios/ papkasida ishlaymiz
 cd ios
-
-# Gemfile yaratiladi (pastdagi 2-bo'limda mazmuni berilgan), keyin:
 bundle install
 ```
 
-`fastlane` to'g'ridan-to'g'ri ham o'rnatsa bo'ladi, lekin Gemfile usuli CI bilan
-bir xil versiyani kafolatlaydi.
+The Gemfile approach guarantees the same fastlane version as CI.
 
 ---
 
-## 2. Fastlane fayllari
+## 2. Fastlane files
 
-`ios/` ichida quyidagi fayllar bo'ladi (skript ularni yaratadi):
+Under `ios/`:
 
-- `ios/Gemfile` — fastlane versiyasi
-- `ios/fastlane/Appfile` — bundle id, Apple ID, team
-- `ios/fastlane/Fastfile` — build/upload lane'lari
-- `ios/fastlane/Matchfile` — Match sozlamalari
-
-(Mazmuni quyida "Fayllar" bo'limida.)
+- `ios/Gemfile` — fastlane version
+- `ios/fastlane/Appfile` — bundle id and team
+- `ios/fastlane/Fastfile` — build/upload lanes
+- `ios/fastlane/Matchfile` — Match configuration
 
 ---
 
-## 3. App Store Connect API Key yaratish
+## 3. Create an App Store Connect API key
 
-CI'da Apple ID + parol o'rniga API kalit ishlatiladi (2FA muammosini yo'q qiladi).
+CI uses an API key instead of an Apple ID + password (avoids 2FA issues).
 
 1. https://appstoreconnect.apple.com → **Users and Access → Integrations → App Store Connect API**
-2. **"Generate API Key"** (yoki "+") → nom: `github-ci`, Access: **App Manager**
-3. Yaratilgach yuklab oling: `AuthKey_XXXXXXXXXX.p8` (**faqat bir marta yuklanadi!**)
-4. Eslab qoling:
-   - **Key ID** (masalan `XXXXXXXXXX`)
-   - **Issuer ID** (sahifaning tepasida, UUID ko'rinishida)
+2. **"Generate API Key"** → name: `github-ci`, Access: **App Manager**
+3. Download the key once: `AuthKey_XXXXXXXXXX.p8` (**downloadable only once!**)
+4. Note down:
+   - **Key ID** (e.g. `Y4ZWNJF593`)
+   - **Issuer ID** (shown at the top of the page, as a UUID)
 
 ---
 
-## 4. Fastlane Match'ni birinchi marta ishga tushirish (lokalda)
+## 4. Run Fastlane Match for the first time (locally)
 
-Match sertifikat va profillarni shifrlab private repo'ga joylaydi.
+Match encrypts the certificate/profiles and stores them in the private repo.
 
 ```bash
 cd ios
 
-# Match init — certs repo URL'ini so'raydi
-bundle exec fastlane match init
-
-# AppStore turidagi sertifikat + profil yaratish va repo'ga yuklash
+# Creates the certificate + profile and pushes them to the certs repo.
+# Temporarily set readonly(false) in Matchfile before the first run.
 bundle exec fastlane match appstore
 ```
 
-- Match sizdan **parol** so'raydi (`MATCH_PASSWORD`) — shifrlash uchun. Eslab qoling.
-- Bu sertifikat/profilni certs repo'siga shifrlangan holda push qiladi.
+- Match asks for a **passphrase** (`MATCH_PASSWORD`) used for encryption — remember it.
+- Set `readonly(true)` back in `Matchfile` afterwards.
 
 ---
 
-## 5. GitHub Secrets (iOS uchun)
+## 5. GitHub Secrets (iOS)
 
 Repo: `AbbosbekBotirjonovich/ketamiz-mobile`
 → Settings → Secrets and variables → Actions
 
-| Secret nomi | Qiymati |
-|-------------|---------|
-| `MATCH_PASSWORD` | Match shifrlash paroli (4-qadamdan) |
-| `MATCH_GIT_URL` | `git@github.com:AbbosbekBotirjonovich/ketamiz-ios-certs.git` (CI uchun standart github.com host) |
-| `MATCH_SSH_PRIVATE_KEY` | Certs repo'ga read-only deploy key'ning PRIVATE qismi (BEGIN…END to'liq) |
-| `APP_STORE_CONNECT_KEY_ID` | API Key ID (3-qadam) |
-| `APP_STORE_CONNECT_ISSUER_ID` | API Issuer ID (3-qadam) |
-| `APP_STORE_CONNECT_KEY_P8` | `.p8` faylning to'liq matni |
+| Secret name | Value |
+|-------------|-------|
+| `MATCH_PASSWORD` | Match encryption passphrase (from step 4) |
+| `MATCH_GIT_URL` | `git@github.com:AbbosbekBotirjonovich/ketamiz-ios-certs.git` (standard github.com host for CI) |
+| `MATCH_SSH_PRIVATE_KEY` | PRIVATE part of the certs-repo read-only deploy key (full BEGIN…END) |
+| `APP_STORE_CONNECT_KEY_ID` | API Key ID (step 3) |
+| `APP_STORE_CONNECT_ISSUER_ID` | API Issuer ID (step 3) |
+| `APP_STORE_CONNECT_KEY_P8` | Full contents of the `.p8` file |
 
-> **Certs repo'ga CI kirishi — SSH deploy key:**
-> 1. Lokalda kalit juftligi yaratiladi (`ssh-keygen -t ed25519`).
-> 2. PUBLIC qismi certs repo → Settings → Deploy keys → "Add deploy key"
->    (read-only, "Allow write access" BELGILANMAYDI).
-> 3. PRIVATE qismi `MATCH_SSH_PRIVATE_KEY` secret bo'ladi.
-> 4. Workflow `webfactory/ssh-agent` action bilan kalitni runner'ga yuklaydi.
+> **CI access to the certs repo — SSH deploy key:**
+> 1. Generate a key pair locally (`ssh-keygen -t ed25519`).
+> 2. Add the PUBLIC part to the certs repo → Settings → Deploy keys → "Add deploy key"
+>    (read-only, do NOT check "Allow write access").
+> 3. The PRIVATE part becomes the `MATCH_SSH_PRIVATE_KEY` secret.
+> 4. The workflow loads it into the runner via the `webfactory/ssh-agent` action.
 
 ---
 
 ## 6. GitHub Actions workflow
 
-`.github/workflows/ios-release.yml`. `ios-v*` tag push'da:
-1. macOS runner'da Xcode 26 ni tanlaydi (Apple iOS 26 SDK talab qiladi)
-2. Flutter + CocoaPods o'rnatadi (`flutter build ios --config-only`)
-3. Match orqali sertifikat/profilni tiklaydi (CI'da vaqtinchalik keychain)
-4. Manual signing'ga o'tib (`update_code_signing_settings`) IPA build qiladi
-5. App Store Connect API bilan **TestFlight**'ga yuklaydi (`fastlane ios beta`)
+`.github/workflows/ios-release.yml`. On an `ios-v*` tag push:
+1. Selects Xcode 26 on the macOS runner (Apple requires the iOS 26 SDK)
+2. Installs Flutter + CocoaPods (`flutter build ios --config-only`)
+3. Restores the certificate/profile via Match (temporary keychain on CI)
+4. Switches to manual signing (`update_code_signing_settings`) and builds the IPA
+5. Uploads to **TestFlight** via the App Store Connect API (`fastlane ios beta`)
 
 ---
 
-## 7. TestFlight'dan App Store'ga o'tish (kelajakda)
+## 7. Moving from TestFlight to the App Store (future)
 
-Hozir CI **TestFlight**'ga yuklaydi (`beta` lane). App Store'ga avtomatik
-chiqarish uchun `release` lane allaqachon `Fastfile`'da tayyor, lekin
-**ataylab yoqilmagan**.
+CI currently uploads to **TestFlight** (the `beta` lane). A `release` lane for
+automatic App Store releases already exists in `Fastfile` but is **intentionally
+not wired into CI**.
 
-### Yoqishdan OLDIN (App Store Connect'da, qo'lda)
-- **Metadata**: nom, subtitle, tavsif, kalit so'zlar, kategoriya
-- **Maxfiylik siyosati URL** (veb-sahifa kerak)
-- **Skrinshotlar** (har xil ekran o'lchamlari: 6.7", 6.5", 5.5"...)
-- **App Privacy** anketa (qanday ma'lumot to'planadi)
-- **Yosh reytingi**, **Export Compliance**
-- **Birinchi versiyani KAMIDA BIR MARTA qo'lda submit** qilib, review'dan
-  o'tkazing. Avtomatik submit faqat shundan keyin ishonchli ishlaydi.
+### Before enabling (manually, in App Store Connect)
+- **Metadata**: name, subtitle, description, keywords, category
+- **Privacy policy URL** (a web page is required)
+- **Screenshots** (for every required device size: 6.7", 6.5", 5.5"...)
+- **App Privacy** questionnaire (what data is collected)
+- **Age rating**, **Export Compliance**
+- **Submit the first version manually at least once** and let it pass review.
+  Automatic submission is only reliable after that.
 
-### Yoqish
-`.github/workflows/ios-release.yml`'da oxirgi qadamni o'zgartiring:
+### Enabling
+In `.github/workflows/ios-release.yml` change the last step:
 ```yaml
-run: bundle exec fastlane ios beta      # eski (TestFlight)
-run: bundle exec fastlane ios release   # yangi (App Store + review)
+run: bundle exec fastlane ios beta      # current (TestFlight)
+run: bundle exec fastlane ios release   # new (App Store + review)
 ```
-`release` lane `submit_for_review: true` va `automatic_release: true` bilan
-keladi — review o'tgach ilova avtomatik publik chiqadi.
+The `release` lane uses `submit_for_review: true` and `automatic_release: true`,
+so the app is released publicly once review passes.
 
-> ⚠️ Metadata to'liq bo'lmasa `upload_to_app_store` yiqiladi. Avval qo'lda
-> sozlanganiga ishonch hosil qiling.
+> ⚠️ `upload_to_app_store` fails if metadata is incomplete. Make sure everything
+> is configured manually first.
 
 ---
 
-## Eslatmalar
+## Notes
 
-- **macOS runner qimmatroq:** public repo'da bepul, lekin Linux'dan ~10x daqiqa
-  hisoblanadi. Private bo'lsa, byudjetga e'tibor bering.
-- **Build raqami:** iOS'da ham har yuklamada `versionCode` (build number) oshishi
-  kerak. `pubspec.yaml`dagi `+N` qism iOS build raqamiga ham aylanadi.
-- **Birinchi TestFlight build qo'lda:** App Store Connect to'liq sozlangach,
-  CI silliq ishlaydi.
+- **macOS runners are costlier:** free on public repos, but count ~10x the
+  minutes of Linux. Watch the budget on private repos.
+- **Build number:** the iOS build number must increase on every upload. The
+  `+N` part of the `pubspec.yaml` version maps to the iOS build number.
+- **First TestFlight build:** once App Store Connect is fully configured, CI
+  runs smoothly.
