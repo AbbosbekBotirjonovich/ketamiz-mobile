@@ -59,8 +59,9 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           packageName: uz.ketamiz.app
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          track: internal           # avval internal'da sinab ko'ring, keyin production'ga ko'tarasiz
-          status: completed
+          track: production         # production track: review'ga avtomatik ketadi
+          status: inProgress        # to'liq emas — bosqichli (staged) rollout
+          userFraction: 0.2         # avval foydalanuvchilarning 20% iga chiqadi
 
       # AAB'ni GitHub'da ham saqlash (zaxira / qo'lda yuklash uchun)
       - name: Upload AAB artifact
